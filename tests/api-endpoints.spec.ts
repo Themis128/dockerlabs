@@ -54,30 +54,39 @@ test.describe('API Endpoints - GET Requests', () => {
   });
 
   test('GET /api/test-connections should test connectivity to all Pis', async ({ request }) => {
-    const result = await apiRequest(request, '/test-connections');
+    const result = await apiRequest(request, '/test-connections', {
+      timeout: 5000,
+      retries: 0,
+    });
 
-    // Should return 200, 400, 404, or 500 (depending on Pi availability)
-    expect([200, 400, 404, 500]).toContain(result.status);
+    // Should return 200, 400, 404, 500, or 504 (timeout) (depending on Pi availability)
+    expect([200, 400, 404, 500, 503, 504]).toContain(result.status);
     expect(result.data).toBeDefined();
     expect(typeof result.data === 'object').toBeTruthy();
   });
 
   test('GET /api/test-ssh should test SSH authentication for a Pi', async ({ request }) => {
     // Test with pi parameter
-    const result = await apiRequest(request, '/test-ssh?pi=1');
+    const result = await apiRequest(request, '/test-ssh?pi=1', {
+      timeout: 5000,
+      retries: 0,
+    });
 
     // Should return a response (may be success or error depending on Pi availability)
-    expect([200, 400, 404, 500]).toContain(result.status);
+    expect([200, 400, 404, 500, 503, 504]).toContain(result.status);
     expect(result.data).toBeDefined();
     expect(typeof result.data === 'object').toBeTruthy();
   });
 
   test('GET /api/get-pi-info should return information for a specific Pi', async ({ request }) => {
     // Test with pi parameter
-    const result = await apiRequest(request, '/get-pi-info?pi=1');
+    const result = await apiRequest(request, '/get-pi-info?pi=1', {
+      timeout: 5000,
+      retries: 0,
+    });
 
     // Should return a response (may be success or error depending on Pi availability)
-    expect([200, 400, 404, 500]).toContain(result.status);
+    expect([200, 400, 404, 500, 503, 504]).toContain(result.status);
     expect(result.data).toBeDefined();
     expect(typeof result.data === 'object').toBeTruthy();
   });
