@@ -227,7 +227,13 @@ async function refreshSDCards(showLoading = true) {
                     <p><strong>Device:</strong> ${card.device_id}</p>
                     <p><strong>Size:</strong> ${card.size_gb} GB</p>
                     <p><strong>Status:</strong> ${card.status}</p>
-                    <button class="btn btn-secondary" onclick="formatSDCard('${card.device_id}')" style="margin-top: 10px;">Format</button>
+                    <div style="margin-top: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <select id="pi-model-${card.device_id.replace(/[^a-zA-Z0-9]/g, '_')}" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="pi5">Raspberry Pi 5</option>
+                            <option value="pi3b">Raspberry Pi 3B</option>
+                        </select>
+                        <button class="btn btn-secondary" onclick="formatSDCard('${card.device_id}', '${card.device_id.replace(/[^a-zA-Z0-9]/g, '_')}')">Format for Pi</button>
+                    </div>
                 </div>
             `).join('');
 
@@ -334,6 +340,46 @@ document.querySelectorAll('input[name="os-source"]').forEach(radio => {
     });
 });
 
+// WiFi settings toggle
+document.getElementById('os-enable-wifi')?.addEventListener('change', (e) => {
+    const wifiSettings = document.getElementById('os-wifi-settings');
+    if (wifiSettings) {
+        wifiSettings.style.display = e.target.checked ? 'block' : 'none';
+    }
+});
+
+// Static IP settings toggle
+document.getElementById('os-use-static-ip')?.addEventListener('change', (e) => {
+    const staticIpSettings = document.getElementById('os-static-ip-settings');
+    if (staticIpSettings) {
+        staticIpSettings.style.display = e.target.checked ? 'block' : 'none';
+    }
+});
+
+// Add user functionality
+let userCounter = 0;
+document.getElementById('os-add-user')?.addEventListener('click', () => {
+    const container = document.getElementById('os-users-container');
+    if (!container) return;
+
+    const userDiv = document.createElement('div');
+    userDiv.className = 'user-entry';
+    userDiv.style.cssText = 'margin-bottom: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9;';
+    userDiv.innerHTML = `
+        <div style="display: grid; grid-template-columns: 2fr 2fr 1fr 1fr auto; gap: 10px; align-items: center;">
+            <input type="text" placeholder="Username" class="os-user-username" style="padding: 5px;">
+            <input type="password" placeholder="Password" class="os-user-password" style="padding: 5px;">
+            <label style="display: flex; align-items: center; gap: 5px;">
+                <input type="checkbox" class="os-user-sudo" checked> Sudo
+            </label>
+            <input type="text" placeholder="Groups (comma-sep)" class="os-user-groups" style="padding: 5px;">
+            <button type="button" class="btn btn-secondary" onclick="this.parentElement.parentElement.remove()" style="padding: 5px 10px;">Remove</button>
+        </div>
+    `;
+    container.appendChild(userDiv);
+    userCounter++;
+});
+
 document.getElementById('install-os')?.addEventListener('click', async () => {
     const deviceId = document.getElementById('os-sdcard-select').value;
     if (!deviceId) {
@@ -351,10 +397,81 @@ document.getElementById('install-os')?.addEventListener('click', async () => {
     statusText.textContent = 'Starting OS installation...';
 
     try {
+        // Collect all configuration options
+        const config = {
+            boot: {
+                enable_ssh: document.getElementById('os-enable-ssh')?.checked ?? true,
+                enable_serial: document.getElementById('os-enable-serial')?.checked ?? false,
+                disable_overscan: document.getElementById('os-disable-overscan')?.checked ?? true,
+                gpu_memory: parseInt(document.getElementById('os-gpu-memory')?.value || '64')
+            },
+            system: {
+                hostname: document.getElementById('os-hostname')?.value || 'raspberrypi',
+                timezone: document.getElementById('os-timezone')?.value || 'UTC',
+                locale: document.getElementById('os-locale')?.value || 'en_US.UTF-8',
+                enable_camera: document.getElementById('os-enable-camera')?.checked ?? false,
+                enable_spi: document.getElementById('os-enable-spi')?.checked ?? false,
+                enable_i2c: document.getElementById('os-enable-i2c')?.checked ?? false,
+                enable_serial_hw: document.getElementById('os-enable-serial-hw')?.checked ?? false
+            },
+            network: {
+                enable_ethernet: document.getElementById('os-enable-ethernet')?.checked ?? true,
+                enable_wifi: document.getElementById('os-enable-wifi')?.checked ?? false,
+                wifi_ssid: document.getElementById('os-wifi-ssid')?.value || '',
+                wifi_password: document.getElementById('os-wifi-password')?.value || '',
+                wifi_country: document.getElementById('os-wifi-country')?.value || 'US',
+                use_static_ip: document.getElementById('os-use-static-ip')?.checked ?? false,
+                static_ip: document.getElementById('os-static-ip')?.value || '',
+                gateway: document.getElementById('os-gateway')?.value || '',
+                dns: document.getElementById('os-dns')?.value || ''
+            },
+            users: {
+                default_password: document.getElementById('os-default-password')?.value || '',
+                additional_users: []
+            },
+            ssh: {
+                port: parseInt(document.getElementById('os-ssh-port')?.value || '22'),
+                enable_password_auth: document.getElementById('os-ssh-password-auth')?.checked ?? true,
+                disable_root_login: document.getElementById('os-ssh-disable-root')?.checked ?? true,
+                authorized_keys: (document.getElementById('os-ssh-keys')?.value || '').split('\n').filter(k => k.trim())
+            },
+            packages: {
+                update_package_list: document.getElementById('os-update-packages')?.checked ?? true,
+                upgrade_packages: document.getElementById('os-upgrade-packages')?.checked ?? false,
+                packages_to_install: (document.getElementById('os-packages')?.value || '').split(',').map(p => p.trim()).filter(p => p)
+            },
+            scripts: {
+                pre_install: (document.getElementById('os-pre-scripts')?.value || '').split('\n').filter(s => s.trim()),
+                post_install: (document.getElementById('os-post-scripts')?.value || '').split('\n').filter(s => s.trim()),
+                first_boot: (document.getElementById('os-firstboot-scripts')?.value || '').split('\n').filter(s => s.trim())
+            }
+        };
+
+        // Collect additional users
+        document.querySelectorAll('.user-entry').forEach(entry => {
+            const username = entry.querySelector('.os-user-username')?.value;
+            if (username) {
+                config.users.additional_users.push({
+                    username: username,
+                    password: entry.querySelector('.os-user-password')?.value || '',
+                    has_sudo: entry.querySelector('.os-user-sudo')?.checked ?? false,
+                    groups: (entry.querySelector('.os-user-groups')?.value || '').split(',').map(g => g.trim()).filter(g => g)
+                });
+            }
+        });
+
+        // Get selected OS version and download URL
+        const osSelect = document.getElementById('os-version-select');
+        const selectedOption = osSelect.options[osSelect.selectedIndex];
+        const osVersion = osSource === 'download' ? selectedOption.value : null;
+        const downloadUrl = selectedOption ? selectedOption.getAttribute('data-url') : null;
+
         const requestData = {
             device_id: deviceId,
-            os_version: osSource === 'download' ? document.getElementById('os-version-select').value : null,
-            custom_image: osSource === 'custom' ? document.getElementById('os-custom-file').files[0]?.name : null
+            os_version: osVersion,
+            download_url: downloadUrl, // Include the download URL for the backend to fetch
+            custom_image: osSource === 'custom' ? document.getElementById('os-custom-file').files[0]?.name : null,
+            configuration: config
         };
 
         const response = await fetch(`${API_BASE}/install-os`, {
@@ -443,22 +560,49 @@ document.getElementById('apply-settings')?.addEventListener('click', async () =>
 });
 
 // Helper function for SD card formatting
-async function formatSDCard(deviceId) {
-    if (!confirm(`Are you sure you want to format ${deviceId}? This will erase all data!`)) {
+async function formatSDCard(deviceId, elementId) {
+    const modelSelect = document.getElementById(`pi-model-${elementId}`);
+    const piModel = modelSelect ? modelSelect.value : 'pi5';
+    const piModelName = piModel === 'pi5' ? 'Raspberry Pi 5' : 'Raspberry Pi 3B';
+
+    if (!confirm(`Are you sure you want to format ${deviceId} for ${piModelName}?\n\nThis will:\n- Erase ALL data on the card\n- Create boot partition (FAT32, 512MB)\n- Create root partition (ext4, remaining space)\n\nThis action cannot be undone!`)) {
         return;
     }
+
+    // Show formatting status
+    const sdcardList = document.getElementById('sdcard-list');
+    const originalContent = sdcardList.innerHTML;
+    sdcardList.innerHTML = '<p class="loading" style="color: #667eea;">Formatting SD card for ' + piModelName + '... This may take a few minutes. Please wait...</p>';
 
     try {
         const response = await fetch(`${API_BASE}/format-sdcard`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ device_id: deviceId })
+            body: JSON.stringify({
+                device_id: deviceId,
+                pi_model: piModel
+            })
         });
 
         const data = await response.json();
-        alert(data.message || (data.success ? 'Formatting initiated' : `Error: ${data.error}`));
+
+        if (data.success) {
+            sdcardList.innerHTML = '<p class="loading" style="color: #28a745;">✓ ' + (data.message || 'SD card formatted successfully!') + '</p>';
+            // Refresh the SD card list after a short delay
+            setTimeout(() => {
+                refreshSDCards(true);
+            }, 2000);
+        } else {
+            sdcardList.innerHTML = `<p class="loading" style="color: #dc3545;">✗ Error: ${data.error || 'Formatting failed'}</p>`;
+            setTimeout(() => {
+                refreshSDCards(true);
+            }, 3000);
+        }
     } catch (error) {
-        alert(`Error: ${error.message}`);
+        sdcardList.innerHTML = `<p class="loading" style="color: #dc3545;">✗ Error: ${error.message}</p>`;
+        setTimeout(() => {
+            refreshSDCards(true);
+        }, 3000);
     }
 }
 
@@ -495,6 +639,152 @@ document.addEventListener('visibilitychange', () => {
         }
     }
 });
+
+// Remote Connection State
+let remoteConnected = false;
+let currentPiNumber = null;
+let currentConnectionType = null;
+
+// Remote Connection Functions
+document.getElementById('remote-connect-btn')?.addEventListener('click', async () => {
+    const piNumber = document.getElementById('remote-pi-select').value;
+    const connectionType = document.getElementById('remote-connection-type').value;
+    const statusDiv = document.getElementById('remote-connection-status');
+
+    if (remoteConnected) {
+        // Disconnect
+        remoteConnected = false;
+        currentPiNumber = null;
+        currentConnectionType = null;
+        statusDiv.textContent = 'Disconnected';
+        statusDiv.style.color = '#666';
+        document.getElementById('remote-connect-btn').textContent = 'Connect';
+        appendToTerminal('Disconnected from Raspberry Pi', '#ff6b6b');
+    } else {
+        // Connect
+        statusDiv.textContent = 'Connecting...';
+        statusDiv.style.color = '#667eea';
+
+        try {
+            const response = await fetch(`${API_BASE}/get-pi-info?pi=${piNumber}`);
+            const data = await response.json();
+
+            if (data.success) {
+                remoteConnected = true;
+                currentPiNumber = piNumber;
+                currentConnectionType = connectionType;
+                statusDiv.textContent = `Connected to Pi ${piNumber} (${data.pi.ip}) via ${connectionType.toUpperCase()}`;
+                statusDiv.style.color = '#28a745';
+                document.getElementById('remote-connect-btn').textContent = 'Disconnect';
+                appendToTerminal(`Connected to Raspberry Pi ${piNumber} (${data.pi.ip}) via ${connectionType.toUpperCase()}`, '#4ec9b0');
+                appendToTerminal(`Connection: ${data.pi.connection}`, '#4ec9b0');
+                appendToTerminal('Type commands below or use quick commands', '#4ec9b0');
+                appendToTerminal('', '#d4d4d4');
+            } else {
+                statusDiv.textContent = `Error: ${data.error}`;
+                statusDiv.style.color = '#dc3545';
+                appendToTerminal(`Connection failed: ${data.error}`, '#ff6b6b');
+            }
+        } catch (error) {
+            statusDiv.textContent = `Error: ${error.message}`;
+            statusDiv.style.color = '#dc3545';
+            appendToTerminal(`Connection error: ${error.message}`, '#ff6b6b');
+        }
+    }
+});
+
+// Execute remote command
+async function executeRemoteCommand() {
+    if (!remoteConnected) {
+        appendToTerminal('Not connected. Please connect first.', '#ff6b6b');
+        return;
+    }
+
+    const commandInput = document.getElementById('remote-command-input');
+    const command = commandInput.value.trim();
+
+    if (!command) {
+        return;
+    }
+
+    // Display command in terminal
+    appendToTerminal(`$ ${command}`, '#d4d4d4');
+
+    // Clear input
+    commandInput.value = '';
+
+    try {
+        const piNumber = document.getElementById('remote-pi-select').value;
+        const connectionType = document.getElementById('remote-connection-type').value;
+        const networkType = document.getElementById('remote-network-type').value;
+        const username = document.getElementById('remote-username').value || 'pi';
+        const password = document.getElementById('remote-password').value || null;
+        const keyPath = document.getElementById('remote-key-path').value || null;
+
+        const response = await fetch(`${API_BASE}/execute-remote`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                pi_number: piNumber,
+                command: command,
+                connection_type: connectionType,
+                network_type: networkType,
+                username: username,
+                password: password,
+                key_path: keyPath
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            if (data.output) {
+                appendToTerminal(data.output, '#d4d4d4');
+            }
+            if (data.error && data.error.trim()) {
+                appendToTerminal(data.error, '#ff6b6b');
+            }
+        } else {
+            appendToTerminal(`Error: ${data.error || 'Command execution failed'}`, '#ff6b6b');
+            if (data.output) {
+                appendToTerminal(data.output, '#ff6b6b');
+            }
+        }
+    } catch (error) {
+        appendToTerminal(`Error: ${error.message}`, '#ff6b6b');
+    }
+
+    // Add separator
+    appendToTerminal('', '#d4d4d4');
+}
+
+// Run quick command
+function runQuickCommand(command) {
+    if (!remoteConnected) {
+        appendToTerminal('Not connected. Please connect first.', '#ff6b6b');
+        return;
+    }
+
+    document.getElementById('remote-command-input').value = command;
+    executeRemoteCommand();
+}
+
+// Append text to terminal
+function appendToTerminal(text, color = '#d4d4d4') {
+    const terminal = document.getElementById('remote-terminal');
+    const line = document.createElement('div');
+    line.style.color = color;
+    line.style.marginBottom = '2px';
+    line.textContent = text;
+    terminal.appendChild(line);
+    terminal.scrollTop = terminal.scrollHeight;
+}
+
+// Clear terminal
+function clearRemoteTerminal() {
+    const terminal = document.getElementById('remote-terminal');
+    terminal.innerHTML = '<div style="color: #4ec9b0;">Terminal cleared</div>';
+}
 
 // Load initial data
 loadPis();

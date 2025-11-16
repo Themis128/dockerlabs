@@ -20,6 +20,7 @@
             <button class="tab-button" data-tab="osinstall">OS Install</button>
             <button class="tab-button" data-tab="settings">Settings</button>
             <button class="tab-button" data-tab="connections">Test Connections</button>
+            <button class="tab-button" data-tab="remote">Remote Connection</button>
         </nav>
 
         <main>
@@ -81,6 +82,7 @@
             <!-- OS Installation Tab -->
             <div id="osinstall" class="tab-content">
                 <h2>OS Installation</h2>
+                <form id="os-install-form" onsubmit="event.preventDefault(); return false;">
                 <div class="test-section">
                     <h3>Select SD Card</h3>
                     <select id="os-sdcard-select" style="width: 100%; padding: 10px; margin-bottom: 15px;">
@@ -90,7 +92,7 @@
                     <h3>Select OS Image</h3>
                     <div style="margin-bottom: 15px;">
                         <label>
-                            <input type="radio" name="os-source" value="download" checked> Download Raspberry Pi OS
+                            <input type="radio" name="os-source" value="download" checked> Download OS Image
                         </label><br>
                         <label>
                             <input type="radio" name="os-source" value="custom"> Use Custom Image File
@@ -99,18 +101,281 @@
 
                     <div id="os-download-section">
                         <select id="os-version-select" style="width: 100%; padding: 10px; margin-bottom: 15px;">
-                            <option value="raspios_lite_armhf">Raspberry Pi OS Lite (32-bit)</option>
-                            <option value="raspios_armhf">Raspberry Pi OS with Desktop (32-bit)</option>
-                            <option value="raspios_lite_arm64">Raspberry Pi OS Lite (64-bit)</option>
-                            <option value="raspios_arm64">Raspberry Pi OS with Desktop (64-bit)</option>
+                            <optgroup label="Raspberry Pi OS - Official (32-bit)">
+                                <option value="raspios_lite_armhf" data-url="https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-latest/" data-desc="Minimal Raspberry Pi OS without desktop environment. Perfect for headless servers, IoT projects, and applications where you don't need a GUI. Uses less resources and boots faster.">Raspberry Pi OS Lite (32-bit)</option>
+                                <option value="raspios_armhf" data-url="https://downloads.raspberrypi.org/raspios_armhf/images/raspios_armhf-latest/" data-desc="Raspberry Pi OS with desktop environment (PIXEL). Ideal for general computing, programming, web browsing, and educational use. Includes essential software but not all recommended packages.">Raspberry Pi OS with Desktop (32-bit)</option>
+                                <option value="raspios_full_armhf" data-url="https://downloads.raspberrypi.org/raspios_full_armhf/images/raspios_full_armhf-latest/" data-desc="Full Raspberry Pi OS with desktop and all recommended software pre-installed. Best for beginners who want everything ready to use, including office suite, programming tools, and educational software.">Raspberry Pi OS Full (32-bit)</option>
+                            </optgroup>
+                            <optgroup label="Raspberry Pi OS - Official (64-bit)">
+                                <option value="raspios_lite_arm64" data-url="https://downloads.raspberrypi.org/raspios_lite_arm64/images/raspios_lite_arm64-latest/" data-desc="64-bit minimal Raspberry Pi OS without desktop. Better performance on Pi 4/5, supports more RAM, and runs 64-bit applications. Perfect for servers and headless projects.">Raspberry Pi OS Lite (64-bit)</option>
+                                <option value="raspios_arm64" data-url="https://downloads.raspberrypi.org/raspios_arm64/images/raspios_arm64-latest/" data-desc="64-bit Raspberry Pi OS with desktop environment. Takes advantage of 64-bit architecture for better performance on Pi 4/5. Ideal for modern applications and development.">Raspberry Pi OS with Desktop (64-bit)</option>
+                                <option value="raspios_full_arm64" data-url="https://downloads.raspberrypi.org/raspios_full_arm64/images/raspios_full_arm64-latest/" data-desc="Complete 64-bit Raspberry Pi OS with all software pre-installed. Best performance and compatibility for Pi 4/5 with full software suite ready to use.">Raspberry Pi OS Full (64-bit)</option>
+                            </optgroup>
+                            <optgroup label="Ubuntu - Official">
+                                <option value="ubuntu_server_24.04" data-url="https://cdimage.ubuntu.com/releases/24.04/release/ubuntu-24.04-preinstalled-server-arm64+raspi.img.xz" data-desc="Ubuntu Server 24.04 LTS - Enterprise-grade server OS with long-term support. Perfect for web servers, databases, containers, and cloud applications. Includes latest packages and security updates.">Ubuntu Server 24.04 LTS (64-bit)</option>
+                                <option value="ubuntu_server_22.04" data-url="https://cdimage.ubuntu.com/releases/22.04/release/ubuntu-22.04-preinstalled-server-arm64+raspi.img.xz" data-desc="Ubuntu Server 22.04 LTS - Stable server OS with proven reliability. Ideal for production environments, Docker hosts, and enterprise deployments requiring stability.">Ubuntu Server 22.04 LTS (64-bit)</option>
+                                <option value="ubuntu_desktop_24.04" data-url="https://cdimage.ubuntu.com/releases/24.04/release/ubuntu-24.04-preinstalled-desktop-arm64+raspi.img.xz" data-desc="Ubuntu Desktop 24.04 LTS - Full desktop environment with GNOME. Great for general computing, development, and users familiar with Ubuntu. Includes office suite and multimedia apps.">Ubuntu Desktop 24.04 LTS (64-bit)</option>
+                                <option value="ubuntu_desktop_22.04" data-url="https://cdimage.ubuntu.com/releases/22.04/release/ubuntu-22.04-preinstalled-desktop-arm64+raspi.img.xz" data-desc="Ubuntu Desktop 22.04 LTS - Stable desktop OS with long-term support. Perfect for users who need a reliable, well-supported desktop environment.">Ubuntu Desktop 22.04 LTS (64-bit)</option>
+                                <option value="ubuntu_core_24" data-url="https://cdimage.ubuntu.com/ubuntu-core/24/stable/current/ubuntu-core-24-arm64+raspi.img.xz" data-desc="Ubuntu Core 24 - Minimal, transactional OS designed for IoT and embedded devices. Features atomic updates, snap packages, and enhanced security. Ideal for production IoT deployments.">Ubuntu Core 24 (64-bit)</option>
+                            </optgroup>
+                            <optgroup label="Debian - Official">
+                                <option value="debian_bookworm_arm64" data-url="https://raspi.debian.net/tested-images/current/arm64/images/debian-12.7.0-arm64-netinst.img.xz" data-desc="Debian 12 (Bookworm) - Pure Debian for Raspberry Pi. Minimal netinstall image - you choose what to install. Perfect for users who want full control and a clean Debian experience without Raspberry Pi-specific modifications.">Debian 12 (Bookworm) - Netinst (64-bit)</option>
+                                <option value="debian_bullseye_arm64" data-url="https://raspi.debian.net/tested-images/current/arm64/images/debian-11.9.0-arm64-netinst.img.xz" data-desc="Debian 11 (Bullseye) - Stable Debian release. Netinstall allows you to build a custom system from scratch. Ideal for advanced users who want a minimal base and prefer to install only what they need.">Debian 11 (Bullseye) - Netinst (64-bit)</option>
+                            </optgroup>
+                            <optgroup label="Specialized OS - Media Center">
+                                <option value="libreelec_rpi4" data-url="https://releases.libreelec.tv/LibreELEC-RPi4.arm-12.0.0.img.gz" data-desc="LibreELEC 12.0 - Lightweight Kodi media center OS. Boots directly into Kodi for the ultimate media center experience. Perfect for streaming movies, TV shows, music, and photos. Minimal overhead, maximum performance.">LibreELEC 12.0 (Raspberry Pi 4/400)</option>
+                                <option value="libreelec_rpi5" data-url="https://releases.libreelec.tv/LibreELEC-RPi5.arm-12.0.0.img.gz" data-desc="LibreELEC 12.0 for Pi 5 - Optimized Kodi media center for Raspberry Pi 5. Takes advantage of Pi 5's improved performance for 4K video playback and faster interface.">LibreELEC 12.0 (Raspberry Pi 5)</option>
+                                <option value="osmc_rpi4" data-url="https://download.osmc.tv/installers/diskimages/OSMC_TGT_rbp4_20240101.img.gz" data-desc="OSMC (Open Source Media Center) - Full-featured Kodi-based media center with additional tools and customization. Includes package manager, SSH access, and easy addon installation. Great for advanced media center users.">OSMC (Raspberry Pi 4)</option>
+                                <option value="volumio_rpi" data-url="https://updates.volumio.org/pi/volumio/3.0/volumio-3.0.0-2024-01-01-pi.img.zip" data-desc="Volumio 3.0 - High-fidelity music player OS. Transforms your Pi into a premium audio streaming device. Supports Spotify, Tidal, Qobuz, and local music libraries. Perfect for audiophiles and music enthusiasts.">Volumio 3.0</option>
+                            </optgroup>
+                            <optgroup label="Specialized OS - Gaming">
+                                <option value="retropie_rpi4" data-url="https://github.com/RetroPie/RetroPie-Setup/releases/download/4.9/retropie-buster-4.9-rpi4_400.img.gz" data-desc="RetroPie 4.9 - Comprehensive retro gaming platform. Emulates thousands of classic games from arcade, console, and computer systems. Highly customizable with extensive emulator support. Perfect for building your own retro gaming console.">RetroPie 4.9 (Raspberry Pi 4)</option>
+                                <option value="recalbox_rpi4" data-url="https://download.recalbox.com/recalbox-rpi4-9.2.1.img.gz" data-desc="Recalbox 9.2.1 - User-friendly retro gaming OS with beautiful interface. Supports 50+ gaming systems with automatic controller configuration. Great for beginners who want a plug-and-play retro gaming experience.">Recalbox 9.2.1 (Raspberry Pi 4)</option>
+                                <option value="batocera_rpi4" data-url="https://updates.batocera.org/rpi4/stable/last/batocera-rpi4-39.img.gz" data-desc="Batocera Linux - Modern retro gaming distribution with sleek interface. Features automatic game scraping, beautiful themes, and support for 100+ gaming systems. Ideal for creating a professional retro gaming setup.">Batocera Linux (Raspberry Pi 4)</option>
+                            </optgroup>
+                            <optgroup label="Specialized OS - Home Automation">
+                                <option value="homeassistant_rpi4" data-url="https://github.com/home-assistant/operating-system/releases/download/12.0/haos_rpi4-64-12.0.img.xz">Home Assistant OS 12.0 (Raspberry Pi 4)</option>
+                                <option value="homeassistant_rpi5" data-url="https://github.com/home-assistant/operating-system/releases/download/12.0/haos_rpi5-64-12.0.img.xz">Home Assistant OS 12.0 (Raspberry Pi 5)</option>
+                                <option value="openhabian_rpi" data-url="https://github.com/openhab/openhabian/releases/download/v1.9/openhabianpi-rpi-1.9.img.xz">openHABian 1.9</option>
+                            </optgroup>
+                            <optgroup label="Specialized OS - 3D Printing">
+                                <option value="octopi_rpi" data-url="https://github.com/OctoPrint/OctoPi/releases/download/0.19.0/octopi-0.19.0.zip">OctoPi 0.19.0</option>
+                                <option value="klipper_rpi" data-url="https://github.com/Klipper3d/klipper/releases/download/v0.12.0/klipper-rpi.img.xz">Klipper (Raspberry Pi)</option>
+                            </optgroup>
+                            <optgroup label="Specialized OS - Network/Server">
+                                <option value="openmediavault_rpi" data-url="https://github.com/openmediavault/openmediavault/releases/download/7.0/openmediavault-rpi-7.0.img.xz">OpenMediaVault 7.0</option>
+                                <option value="pihole_rpi" data-url="https://github.com/pi-hole/pi-hole/releases/download/v5.0/pihole-rpi.img.xz">Pi-hole (Network-wide Ad Blocking)</option>
+                                <option value="pivpn_rpi" data-url="https://github.com/pivpn/pivpn/releases/download/v3.0/pivpn-rpi.img.xz">PiVPN (VPN Server)</option>
+                            </optgroup>
+                            <optgroup label="Lightweight Linux Distributions">
+                                <option value="dietpi_rpi" data-url="https://dietpi.com/downloads/images/DietPi_RPi-ARMv8-Bullseye.img.xz">DietPi (Lightweight Debian)</option>
+                                <option value="alpine_rpi" data-url="https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/aarch64/alpine-rpi-aarch64-3.19.0.img">Alpine Linux 3.19 (64-bit)</option>
+                                <option value="archlinux_arm_rpi" data-url="https://archlinuxarm.org/os/ArchLinuxARM-rpi-aarch64-latest.tar.gz">Arch Linux ARM (64-bit)</option>
+                            </optgroup>
+                            <optgroup label="Security & Penetration Testing">
+                                <option value="kali_rpi" data-url="https://kali.download/arm-images/kali-2024.1-raspberry-pi-arm64.img.xz">Kali Linux 2024.1 (64-bit)</option>
+                                <option value="parrot_rpi" data-url="https://deb.parrot.sh/parrot/iso/5.3/Parrot-security-rpi-aarch64-5.3.iso">Parrot Security OS (64-bit)</option>
+                            </optgroup>
+                            <optgroup label="Alternative Operating Systems">
+                                <option value="risc_os_rpi" data-url="https://www.riscosopen.org/content/downloads/raspberry-pi">RISC OS (Non-Linux)</option>
+                                <option value="freebsd_rpi" data-url="https://download.freebsd.org/ftp/releases/arm64/aarch64/ISO-IMAGES/14.0/FreeBSD-14.0-RELEASE-arm64-aarch64-RPI.img.xz">FreeBSD 14.0 (64-bit)</option>
+                                <option value="netbsd_rpi" data-url="https://cdn.netbsd.org/pub/NetBSD/NetBSD-10.0/evbarm-aarch64/binary/gzimg/NetBSD-10.0-evbarm-aarch64.img.gz">NetBSD 10.0 (64-bit)</option>
+                            </optgroup>
+                            <optgroup label="Development & Learning">
+                                <option value="scratch_rpi" data-url="https://downloads.raspberrypi.org/scratch_os/images/scratch_os-latest/">Scratch OS (Educational)</option>
+                                <option value="raspbian_old" data-url="https://downloads.raspberrypi.org/raspbian/images/raspbian-2019-09-30/">Raspbian (Legacy - 32-bit only)</option>
+                            </optgroup>
                         </select>
+                        <p style="color: #666; font-size: 0.85em; margin-top: 5px; margin-bottom: 0;">
+                            <strong>Note:</strong> Images will be downloaded from official sources. Some images may require manual URL resolution for the latest version.
+                        </p>
                     </div>
 
                     <div id="os-custom-section" style="display: none;">
                         <input type="file" id="os-custom-file" accept=".img,.zip" style="width: 100%; padding: 10px; margin-bottom: 15px;">
                     </div>
 
-                    <button id="install-os" class="btn btn-primary" style="width: 100%;">Install OS to SD Card</button>
+                    <!-- Configuration Options (Collapsible Sections) -->
+                    <div style="margin-top: 20px; border-top: 2px solid #e0e0e0; padding-top: 20px;">
+                        <h3>Configuration Options</h3>
+                        <p style="color: #666; font-size: 0.9em; margin-bottom: 15px;">Configure the OS before installation</p>
+
+                        <!-- Boot Settings -->
+                        <details style="margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
+                            <summary style="cursor: pointer; font-weight: bold; padding: 5px;">Boot Settings</summary>
+                            <div style="margin-top: 15px; padding-left: 10px;">
+                                <label style="display: block; margin-bottom: 10px;">
+                                    <input type="checkbox" id="os-enable-ssh" checked> Enable SSH
+                                </label>
+                                <label style="display: block; margin-bottom: 10px;">
+                                    <input type="checkbox" id="os-enable-serial"> Enable Serial Console
+                                </label>
+                                <label style="display: block; margin-bottom: 10px;">
+                                    <input type="checkbox" id="os-disable-overscan" checked> Disable Overscan
+                                </label>
+                                <label style="display: block; margin-bottom: 10px;">
+                                    GPU Memory (MB):
+                                    <input type="number" id="os-gpu-memory" value="64" min="16" max="512" style="width: 100px; padding: 5px; margin-left: 10px;">
+                                </label>
+                            </div>
+                        </details>
+
+                        <!-- System Settings -->
+                        <details style="margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
+                            <summary style="cursor: pointer; font-weight: bold; padding: 5px;">System Settings</summary>
+                            <div style="margin-top: 15px; padding-left: 10px;">
+                                <label style="display: block; margin-bottom: 10px;">
+                                    Hostname:
+                                    <input type="text" id="os-hostname" value="raspberrypi" style="width: 100%; padding: 8px; margin-top: 5px;">
+                                </label>
+                                <label style="display: block; margin-bottom: 10px;">
+                                    Timezone:
+                                    <select id="os-timezone" style="width: 100%; padding: 8px; margin-top: 5px;">
+                                        <option value="UTC">UTC</option>
+                                        <option value="America/New_York">America/New_York (EST)</option>
+                                        <option value="America/Chicago">America/Chicago (CST)</option>
+                                        <option value="America/Denver">America/Denver (MST)</option>
+                                        <option value="America/Los_Angeles">America/Los_Angeles (PST)</option>
+                                        <option value="Europe/London">Europe/London (GMT)</option>
+                                        <option value="Europe/Paris">Europe/Paris (CET)</option>
+                                        <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+                                    </select>
+                                </label>
+                                <label style="display: block; margin-bottom: 10px;">
+                                    Locale:
+                                    <select id="os-locale" style="width: 100%; padding: 8px; margin-top: 5px;">
+                                        <option value="en_US.UTF-8">English (US)</option>
+                                        <option value="en_GB.UTF-8">English (UK)</option>
+                                        <option value="fr_FR.UTF-8">French</option>
+                                        <option value="de_DE.UTF-8">German</option>
+                                        <option value="es_ES.UTF-8">Spanish</option>
+                                        <option value="it_IT.UTF-8">Italian</option>
+                                        <option value="ja_JP.UTF-8">Japanese</option>
+                                    </select>
+                                </label>
+                                <div style="margin-top: 10px;">
+                                    <label style="display: block; margin-bottom: 5px;">Hardware Interfaces:</label>
+                                    <label style="display: block; margin-bottom: 5px;">
+                                        <input type="checkbox" id="os-enable-camera"> Enable Camera
+                                    </label>
+                                    <label style="display: block; margin-bottom: 5px;">
+                                        <input type="checkbox" id="os-enable-spi"> Enable SPI
+                                    </label>
+                                    <label style="display: block; margin-bottom: 5px;">
+                                        <input type="checkbox" id="os-enable-i2c"> Enable I2C
+                                    </label>
+                                    <label style="display: block; margin-bottom: 5px;">
+                                        <input type="checkbox" id="os-enable-serial-hw"> Enable Serial (Hardware)
+                                    </label>
+                                </div>
+                            </div>
+                        </details>
+
+                        <!-- Network Settings -->
+                        <details style="margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
+                            <summary style="cursor: pointer; font-weight: bold; padding: 5px;">Network Settings</summary>
+                            <div style="margin-top: 15px; padding-left: 10px;">
+                                <label style="display: block; margin-bottom: 10px;">
+                                    <input type="checkbox" id="os-enable-ethernet" checked> Enable Ethernet
+                                </label>
+                                <label style="display: block; margin-bottom: 10px;">
+                                    <input type="checkbox" id="os-enable-wifi"> Enable WiFi
+                                </label>
+                                <div id="os-wifi-settings" style="display: none; margin-top: 10px; padding-left: 20px; border-left: 2px solid #ddd;">
+                                    <label style="display: block; margin-bottom: 10px;">
+                                        SSID:
+                                        <input type="text" id="os-wifi-ssid" style="width: 100%; padding: 8px; margin-top: 5px;">
+                                    </label>
+                                    <label style="display: block; margin-bottom: 10px;">
+                                        Password:
+                                        <input type="password" id="os-wifi-password" autocomplete="new-password" style="width: 100%; padding: 8px; margin-top: 5px;">
+                                    </label>
+                                    <label style="display: block; margin-bottom: 10px;">
+                                        Country Code:
+                                        <select id="os-wifi-country" style="width: 100%; padding: 8px; margin-top: 5px;">
+                                            <option value="US">US</option>
+                                            <option value="GB">GB</option>
+                                            <option value="DE">DE</option>
+                                            <option value="FR">FR</option>
+                                            <option value="JP">JP</option>
+                                        </select>
+                                    </label>
+                                </div>
+                                <label style="display: block; margin-top: 15px; margin-bottom: 10px;">
+                                    <input type="checkbox" id="os-use-static-ip"> Use Static IP
+                                </label>
+                                <div id="os-static-ip-settings" style="display: none; margin-top: 10px; padding-left: 20px; border-left: 2px solid #ddd;">
+                                    <label style="display: block; margin-bottom: 10px;">
+                                        IP Address:
+                                        <input type="text" id="os-static-ip" placeholder="192.168.1.100" style="width: 100%; padding: 8px; margin-top: 5px;">
+                                    </label>
+                                    <label style="display: block; margin-bottom: 10px;">
+                                        Gateway:
+                                        <input type="text" id="os-gateway" placeholder="192.168.1.1" style="width: 100%; padding: 8px; margin-top: 5px;">
+                                    </label>
+                                    <label style="display: block; margin-bottom: 10px;">
+                                        DNS:
+                                        <input type="text" id="os-dns" placeholder="8.8.8.8" style="width: 100%; padding: 8px; margin-top: 5px;">
+                                    </label>
+                                </div>
+                            </div>
+                        </details>
+
+                        <!-- User Settings -->
+                        <details style="margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
+                            <summary style="cursor: pointer; font-weight: bold; padding: 5px;">User Settings</summary>
+                            <div style="margin-top: 15px; padding-left: 10px;">
+                                <label style="display: block; margin-bottom: 10px;">
+                                    Default Password (for 'pi' user):
+                                    <input type="password" id="os-default-password" placeholder="Leave empty for default" autocomplete="new-password" style="width: 100%; padding: 8px; margin-top: 5px;">
+                                </label>
+                                <div id="os-users-list" style="margin-top: 15px;">
+                                    <label style="font-weight: bold; display: block; margin-bottom: 10px;">Additional Users:</label>
+                                    <div id="os-users-container"></div>
+                                    <button type="button" id="os-add-user" class="btn btn-secondary" style="margin-top: 10px;">Add User</button>
+                                </div>
+                            </div>
+                        </details>
+
+                        <!-- SSH Settings -->
+                        <details style="margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
+                            <summary style="cursor: pointer; font-weight: bold; padding: 5px;">SSH Settings</summary>
+                            <div style="margin-top: 15px; padding-left: 10px;">
+                                <label style="display: block; margin-bottom: 10px;">
+                                    SSH Port:
+                                    <input type="number" id="os-ssh-port" value="22" min="1" max="65535" style="width: 100px; padding: 5px; margin-left: 10px;">
+                                </label>
+                                <label style="display: block; margin-bottom: 10px;">
+                                    <input type="checkbox" id="os-ssh-password-auth" checked> Enable Password Authentication
+                                </label>
+                                <label style="display: block; margin-bottom: 10px;">
+                                    <input type="checkbox" id="os-ssh-disable-root" checked> Disable Root Login
+                                </label>
+                                <label style="display: block; margin-bottom: 10px;">
+                                    SSH Authorized Keys (one per line):
+                                    <textarea id="os-ssh-keys" rows="3" placeholder="ssh-rsa AAAAB3NzaC1yc2E..." style="width: 100%; padding: 8px; margin-top: 5px; font-family: monospace; font-size: 0.9em;"></textarea>
+                                </label>
+                            </div>
+                        </details>
+
+                        <!-- Package Settings -->
+                        <details style="margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
+                            <summary style="cursor: pointer; font-weight: bold; padding: 5px;">Package Settings</summary>
+                            <div style="margin-top: 15px; padding-left: 10px;">
+                                <label style="display: block; margin-bottom: 10px;">
+                                    <input type="checkbox" id="os-update-packages" checked> Update Package List on First Boot
+                                </label>
+                                <label style="display: block; margin-bottom: 10px;">
+                                    <input type="checkbox" id="os-upgrade-packages"> Upgrade All Packages on First Boot
+                                </label>
+                                <label style="display: block; margin-bottom: 10px;">
+                                    Packages to Install (comma-separated):
+                                    <input type="text" id="os-packages" placeholder="vim, git, htop, docker" style="width: 100%; padding: 8px; margin-top: 5px;">
+                                </label>
+                            </div>
+                        </details>
+
+                        <!-- Custom Scripts -->
+                        <details style="margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
+                            <summary style="cursor: pointer; font-weight: bold; padding: 5px;">Custom Scripts (Advanced)</summary>
+                            <div style="margin-top: 15px; padding-left: 10px;">
+                                <label style="display: block; margin-bottom: 10px;">
+                                    Pre-Install Scripts (file paths, one per line):
+                                    <textarea id="os-pre-scripts" rows="2" placeholder="/path/to/script1.sh" style="width: 100%; padding: 8px; margin-top: 5px; font-family: monospace; font-size: 0.9em;"></textarea>
+                                </label>
+                                <label style="display: block; margin-bottom: 10px;">
+                                    Post-Install Scripts (file paths, one per line):
+                                    <textarea id="os-post-scripts" rows="2" placeholder="/path/to/script2.sh" style="width: 100%; padding: 8px; margin-top: 5px; font-family: monospace; font-size: 0.9em;"></textarea>
+                                </label>
+                                <label style="display: block; margin-bottom: 10px;">
+                                    First Boot Scripts (file paths, one per line):
+                                    <textarea id="os-firstboot-scripts" rows="2" placeholder="/path/to/script3.sh" style="width: 100%; padding: 8px; margin-top: 5px; font-family: monospace; font-size: 0.9em;"></textarea>
+                                </label>
+                            </div>
+                        </details>
+                    </div>
+
+                    <button type="button" id="install-os" class="btn btn-primary" style="width: 100%; margin-top: 20px;">Install OS to SD Card</button>
                     <div id="os-install-progress" style="margin-top: 15px; display: none;">
                         <div style="background: #f0f0f0; border-radius: 4px; padding: 10px;">
                             <div id="os-progress-bar" style="background: #667eea; height: 20px; border-radius: 4px; width: 0%; transition: width 0.3s;"></div>
@@ -118,6 +383,7 @@
                         <p id="os-status-text" style="margin-top: 10px;"></p>
                     </div>
                 </div>
+                </form>
             </div>
 
             <!-- Settings/Configuration Tab -->
@@ -189,6 +455,80 @@
                     </select>
                     <button id="test-ssh" class="btn btn-primary">Test SSH Auth</button>
                     <div id="ssh-results" class="test-results"></div>
+                </div>
+            </div>
+
+            <!-- Remote Connection Tab -->
+            <div id="remote" class="tab-content">
+                <h2>Remote Connection</h2>
+                <div class="test-section">
+                    <h3>Connection Settings</h3>
+                    <form id="remote-connection-form" onsubmit="event.preventDefault(); return false;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                            <div>
+                                <label for="remote-pi-select" style="display: block; margin-bottom: 5px;">Select Pi:</label>
+                                <select id="remote-pi-select" style="width: 100%; padding: 10px;">
+                                    <option value="1">Raspberry Pi 1</option>
+                                    <option value="2">Raspberry Pi 2</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="remote-connection-type" style="display: block; margin-bottom: 5px;">Connection Type:</label>
+                                <select id="remote-connection-type" style="width: 100%; padding: 10px;">
+                                    <option value="ssh">SSH</option>
+                                    <option value="telnet">Telnet</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="remote-network-type" style="display: block; margin-bottom: 5px;">Network:</label>
+                                <select id="remote-network-type" style="width: 100%; padding: 10px;">
+                                    <option value="auto">Auto (Ethernet preferred)</option>
+                                    <option value="ethernet">Ethernet</option>
+                                    <option value="wifi">WiFi</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="remote-username" style="display: block; margin-bottom: 5px;">Username:</label>
+                                <input type="text" id="remote-username" value="pi" autocomplete="username" style="width: 100%; padding: 10px;">
+                            </div>
+                            <div>
+                                <label for="remote-password" style="display: block; margin-bottom: 5px;">Password (optional):</label>
+                                <input type="password" id="remote-password" placeholder="Leave empty for key auth" autocomplete="current-password" style="width: 100%; padding: 10px;">
+                            </div>
+                            <div>
+                                <label for="remote-key-path" style="display: block; margin-bottom: 5px;">SSH Key Path (optional):</label>
+                                <input type="text" id="remote-key-path" placeholder="~/.ssh/id_rsa" autocomplete="off" style="width: 100%; padding: 10px;">
+                            </div>
+                        </div>
+                        <button type="button" id="remote-connect-btn" class="btn btn-primary">Connect</button>
+                        <div id="remote-connection-status" style="margin-top: 10px; color: #666;"></div>
+                    </form>
+                </div>
+
+                <div class="test-section" style="margin-top: 20px;">
+                    <h3>Command Terminal</h3>
+                    <div id="remote-terminal" style="background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 6px; font-family: 'Courier New', monospace; min-height: 400px; max-height: 600px; overflow-y: auto; font-size: 14px; line-height: 1.5;">
+                        <div style="color: #4ec9b0;">Remote Terminal - Select Pi and click Connect to start</div>
+                    </div>
+                    <div style="margin-top: 15px; display: flex; gap: 10px;">
+                        <input type="text" id="remote-command-input" placeholder="Enter command..." style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: 'Courier New', monospace;" onkeypress="if(event.key === 'Enter') executeRemoteCommand()">
+                        <button id="remote-execute-btn" class="btn btn-primary" onclick="executeRemoteCommand()">Execute</button>
+                        <button id="remote-clear-btn" class="btn btn-secondary" onclick="clearRemoteTerminal()">Clear</button>
+                    </div>
+                </div>
+
+                <div class="test-section" style="margin-top: 20px;">
+                    <h3>Quick Commands</h3>
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                        <button class="btn btn-secondary" onclick="runQuickCommand('uname -a')">System Info</button>
+                        <button class="btn btn-secondary" onclick="runQuickCommand('df -h')">Disk Usage</button>
+                        <button class="btn btn-secondary" onclick="runQuickCommand('free -h')">Memory Info</button>
+                        <button class="btn btn-secondary" onclick="runQuickCommand('uptime')">Uptime</button>
+                        <button class="btn btn-secondary" onclick="runQuickCommand('hostname')">Hostname</button>
+                        <button class="btn btn-secondary" onclick="runQuickCommand('ifconfig')">Network Config</button>
+                        <button class="btn btn-secondary" onclick="runQuickCommand('sudo systemctl status ssh')">SSH Status</button>
+                        <button class="btn btn-secondary" onclick="runQuickCommand('sudo systemctl status inetd')">Telnet Status</button>
+                    </div>
                 </div>
             </div>
         </main>

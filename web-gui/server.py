@@ -49,6 +49,8 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
             self.test_connections()
         elif self.path.startswith("/api/test-ssh"):
             self.test_ssh_auth()
+        elif self.path.startswith("/api/get-pi-info"):
+            self.get_pi_info()
         elif self.path == "/api/sdcards":
             self.list_sdcards()
         elif self.path.startswith("/api/os-images"):
@@ -85,6 +87,10 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
             self.connect_ssh()
         elif self.path == "/api/connect-telnet":
             self.connect_telnet()
+        elif self.path == "/api/execute-remote":
+            self.execute_remote_command()
+        elif self.path == "/api/get-pi-info":
+            self.get_pi_info()
         elif self.path == "/api/format-sdcard":
             self.format_sdcard()
         elif self.path == "/api/install-os":
@@ -232,6 +238,135 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                     "message": f"To connect to Pi {pi_number} via telnet, run: python connect_telnet.py {pi_number}",
                 }
             )
+        except json.JSONDecodeError as e:
+            self.send_json({"success": False, "error": f"Invalid JSON: {str(e)}"}, 400)
+        except Exception as e:
+            self.send_json({"success": False, "error": str(e)}, 500)
+
+    def get_pi_info(self):
+        """Get Pi information for remote connection"""
+        try:
+            from urllib.parse import urlparse, parse_qs
+            parsed_url = urlparse(self.path)
+            query_params = parse_qs(parsed_url.query)
+            pi_number = query_params.get("pi", ["1"])[0]
+
+            script_path = os.path.join(os.path.dirname(__file__), "scripts", "execute_remote_command.py")
+            if not os.path.exists(script_path):
+                self.send_json({"success": False, "error": "execute_remote_command.py not found"}, 404)
+                return
+
+            # Load config to get Pi info
+            config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "pi-config.json")
+            if os.path.exists(config_path):
+                with open(config_path, "r") as f:
+                    config = json.load(f)
+                    all_pis = config.get("raspberry_pis", {})
+                    ethernet_pis = [pi for pi in all_pis.values() if pi.get("connection") == "Wired"]
+                    wifi_pis = [pi for pi in all_pis.values() if pi.get("connection") == "2.4G"]
+
+                    idx = int(pi_number) - 1
+                    pi_info = None
+                    connection_method = ""
+
+                    if ethernet_pis and 0 <= idx < len(ethernet_pis):
+                        pi_info = ethernet_pis[idx]
+                        connection_method = "Ethernet"
+                    elif wifi_pis and 0 <= idx < len(wifi_pis):
+                        pi_info = wifi_pis[idx]
+                        connection_method = "WiFi"
+
+                    if pi_info:
+                        self.send_json({
+                            "success": True,
+                            "pi": {
+                                "number": pi_number,
+                                "ip": pi_info.get("ip"),
+                                "connection": connection_method,
+                                "mac": pi_info.get("mac"),
+                            }
+                        })
+                    else:
+                        self.send_json({"success": False, "error": f"Pi {pi_number} not found"})
+            else:
+                self.send_json({"success": False, "error": "pi-config.json not found"})
+        except Exception as e:
+            self.send_json({"success": False, "error": str(e)}, 500)
+
+    def execute_remote_command(self):
+        """Execute remote command on Raspberry Pi via SSH or Telnet"""
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            if content_length == 0:
+                self.send_json({"success": False, "error": "No data provided"}, 400)
+                return
+
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode())
+
+            pi_number = data.get("pi_number", "1")
+            command = data.get("command", "")
+            connection_type = data.get("connection_type", "ssh")
+            network_type = data.get("network_type", "auto")
+            username = data.get("username", "pi")
+            password = data.get("password", None)
+            key_path = data.get("key_path", None)
+
+            if not command:
+                self.send_json({"success": False, "error": "Command is required"}, 400)
+                return
+
+            script_path = os.path.join(os.path.dirname(__file__), "scripts", "execute_remote_command.py")
+            if not os.path.exists(script_path):
+                self.send_json({"success": False, "error": "execute_remote_command.py not found"}, 404)
+                return
+
+            # Build command arguments
+            cmd_args = [
+                sys.executable,
+                script_path,
+                str(pi_number),
+                command,
+                "-u", username,
+                "-t", connection_type,
+                "-c", network_type,
+            ]
+
+            if password:
+                cmd_args.extend(["-p", password])
+            if key_path:
+                cmd_args.extend(["-k", key_path])
+
+            result = subprocess.run(
+                cmd_args,
+                capture_output=True,
+                text=True,
+                timeout=60,
+                cwd=os.path.dirname(os.path.dirname(__file__)),
+            )
+
+            if result.returncode == 0:
+                try:
+                    data = json.loads(result.stdout)
+                    self.send_json(data)
+                except json.JSONDecodeError:
+                    self.send_json({
+                        "success": False,
+                        "error": "Invalid response from script",
+                        "output": result.stdout,
+                    })
+            else:
+                try:
+                    error_data = json.loads(result.stdout)
+                    self.send_json(error_data)
+                except json.JSONDecodeError:
+                    self.send_json({
+                        "success": False,
+                        "error": result.stderr or "Command execution failed",
+                        "output": result.stdout,
+                    })
+        except subprocess.TimeoutExpired:
+            self.send_json({"success": False, "error": "Command execution timed out"}, 500)
         except json.JSONDecodeError as e:
             self.send_json({"success": False, "error": f"Invalid JSON: {str(e)}"}, 400)
         except Exception as e:
@@ -386,7 +521,7 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
         self.send_json({"success": True, "images": images})
 
     def format_sdcard(self):
-        """Format SD card"""
+        """Format SD card for Raspberry Pi"""
         try:
             content_length = int(self.headers.get("Content-Length", 0))
             if content_length == 0:
@@ -396,19 +531,71 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
             post_data = self.rfile.read(content_length)
             data = json.loads(post_data.decode())
             device_id = data.get("device_id")
+            pi_model = data.get("pi_model", "pi5")  # Default to Pi 5
 
             if not device_id:
                 self.send_json({"success": False, "error": "Device ID required"}, 400)
                 return
 
+            script_path = os.path.join(os.path.dirname(__file__), "scripts", "format_sdcard.py")
+            if not os.path.exists(script_path):
+                self.send_json(
+                    {"success": False, "error": "format_sdcard.py not found"}, 404
+                )
+                return
+
             # Note: Formatting requires admin/root privileges
-            # This is a placeholder - actual implementation would use platform-specific tools
-            self.send_json(
-                {
-                    "success": True,
-                    "message": f"SD card formatting initiated for {device_id}. Note: This requires admin privileges and should be done via desktop app or command line.",
-                }
+            # The script will handle platform-specific formatting
+            result = subprocess.run(
+                [sys.executable, script_path, device_id],
+                capture_output=True,
+                text=True,
+                timeout=180,  # Formatting can take longer
+                cwd=os.path.dirname(os.path.dirname(__file__)),  # Run from project root
             )
+
+            if result.returncode == 0:
+                try:
+                    # Try to parse JSON from stdout
+                    if result.stdout.strip():
+                        data = json.loads(result.stdout)
+                        self.send_json(data)
+                    else:
+                        self.send_json(
+                            {
+                                "success": True,
+                                "message": f"SD card {device_id} formatted successfully for Raspberry Pi {pi_model}",
+                            }
+                        )
+                except json.JSONDecodeError:
+                    # If stdout is not JSON, check stderr for errors
+                    error_msg = result.stderr or "Invalid response from script"
+                    self.send_json({"success": False, "error": error_msg}, 500)
+            else:
+                # Script returned error code
+                try:
+                    # Try to parse error JSON from stdout
+                    if result.stdout.strip():
+                        data = json.loads(result.stdout)
+                        self.send_json(data)
+                    else:
+                        self.send_json(
+                            {
+                                "success": False,
+                                "error": result.stderr or "Failed to format SD card",
+                            },
+                            500,
+                        )
+                except json.JSONDecodeError:
+                    self.send_json(
+                        {
+                            "success": False,
+                            "error": result.stderr or "Failed to format SD card",
+                        },
+                        500,
+                    )
+        except subprocess.TimeoutExpired:
+            self.send_json({"success": False, "error": "Formatting operation timed out"}, 500)
         except json.JSONDecodeError as e:
             self.send_json({"success": False, "error": f"Invalid JSON: {str(e)}"}, 400)
         except Exception as e:
