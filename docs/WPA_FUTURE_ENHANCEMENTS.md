@@ -17,6 +17,7 @@
 ## Recommended Additional Features
 
 ### 1. **OWE (Opportunistic Wireless Encryption)** 🔒
+
 **Priority: High** | **Security Impact: High**
 
 - Encrypts open networks without requiring a password
@@ -25,6 +26,7 @@
 - WPA3 standard feature
 
 **Implementation:**
+
 ```python
 # In wpa_supplicant.conf
 network={
@@ -35,6 +37,7 @@ network={
 ```
 
 **Use Cases:**
+
 - Public WiFi hotspots
 - Guest networks
 - Coffee shops, airports, hotels
@@ -42,6 +45,7 @@ network={
 ---
 
 ### 2. **802.11r (Fast BSS Transition / Fast Roaming)** 🚀
+
 **Priority: High** | **Performance Impact: High**
 
 - Enables fast handoff between access points
@@ -50,6 +54,7 @@ network={
 - Reduces authentication time from ~200ms to ~50ms
 
 **Implementation:**
+
 ```python
 network={
     ssid="CorporateNetwork"
@@ -63,6 +68,7 @@ network={
 ```
 
 **Use Cases:**
+
 - Large office buildings with multiple APs
 - Campus networks
 - IoT devices that move around
@@ -70,6 +76,7 @@ network={
 ---
 
 ### 3. **802.11k (Radio Resource Management)** 📡
+
 **Priority: Medium** | **Performance Impact: Medium**
 
 - Helps devices find better access points
@@ -78,6 +85,7 @@ network={
 - Reduces connection drops
 
 **Implementation:**
+
 ```python
 # Global setting
 ap_scan=1
@@ -91,6 +99,7 @@ network={
 ```
 
 **Use Cases:**
+
 - Multi-AP environments
 - Networks with coverage gaps
 - Performance-critical applications
@@ -98,6 +107,7 @@ network={
 ---
 
 ### 4. **802.11v (Wireless Network Management)** 🔧
+
 **Priority: Medium** | **Management Impact: High**
 
 - Network-assisted power savings
@@ -106,6 +116,7 @@ network={
 - Better network management
 
 **Implementation:**
+
 ```python
 network={
     ssid="Network"
@@ -117,6 +128,7 @@ network={
 ```
 
 **Use Cases:**
+
 - Battery-powered devices
 - IoT sensors
 - Mobile devices
@@ -124,6 +136,7 @@ network={
 ---
 
 ### 5. **Auto-Connect Settings** ⚙️
+
 **Priority: High** | **UX Impact: High**
 
 - Per-network auto-connect toggle
@@ -132,6 +145,7 @@ network={
 - Manual connection option
 
 **Implementation:**
+
 ```python
 network={
     ssid="Network"
@@ -143,6 +157,7 @@ network={
 ```
 
 **Use Cases:**
+
 - Home networks (always connect)
 - Work networks (connect when in range)
 - Guest networks (manual only)
@@ -150,6 +165,7 @@ network={
 ---
 
 ### 6. **Signal Strength Thresholds** 📶
+
 **Priority: Medium** | **Reliability Impact: Medium**
 
 - Minimum signal strength before connecting
@@ -158,6 +174,7 @@ network={
 - Improves battery life
 
 **Implementation:**
+
 ```python
 network={
     ssid="Network"
@@ -169,6 +186,7 @@ network={
 ```
 
 **Use Cases:**
+
 - Avoiding weak connections
 - Battery optimization
 - Better user experience
@@ -176,6 +194,7 @@ network={
 ---
 
 ### 7. **Network Scanning & Discovery** 🔍
+
 **Priority: High** | **UX Impact: High**
 
 - Scan for available networks
@@ -185,6 +204,7 @@ network={
 - Auto-detect country code
 
 **Implementation:**
+
 ```python
 # Use wpa_cli or iwlist to scan
 # Display results in UI
@@ -192,6 +212,7 @@ network={
 ```
 
 **Use Cases:**
+
 - Easier network setup
 - Finding available networks
 - Network troubleshooting
@@ -199,6 +220,7 @@ network={
 ---
 
 ### 8. **MAC Address Filtering** 🛡️
+
 **Priority: Low** | **Security Impact: Medium**
 
 - Whitelist/blacklist MAC addresses
@@ -207,6 +229,7 @@ network={
 - Device management
 
 **Implementation:**
+
 ```python
 network={
     ssid="Network"
@@ -217,6 +240,7 @@ network={
 ```
 
 **Use Cases:**
+
 - Additional security layer
 - Device access control
 - Network access management
@@ -224,6 +248,7 @@ network={
 ---
 
 ### 9. **Network Profiles Export/Import** 💾
+
 **Priority: Medium** | **Convenience Impact: High**
 
 - Export network configurations
@@ -233,6 +258,7 @@ network={
 - JSON/XML format support
 
 **Implementation:**
+
 ```python
 # Export to JSON
 {
@@ -248,6 +274,7 @@ network={
 ```
 
 **Use Cases:**
+
 - Setting up multiple devices
 - Backup before reset
 - Sharing with team members
@@ -256,6 +283,7 @@ network={
 ---
 
 ### 10. **Connection Timeout Settings** ⏱️
+
 **Priority: Low** | **Reliability Impact: Medium**
 
 - Connection attempt timeout
@@ -264,6 +292,7 @@ network={
 - Connection timeout per network
 
 **Implementation:**
+
 ```python
 network={
     ssid="Network"
@@ -275,6 +304,7 @@ network={
 ```
 
 **Use Cases:**
+
 - Faster failure detection
 - Better error handling
 - Improved user experience
@@ -282,6 +312,7 @@ network={
 ---
 
 ### 11. **Band Steering Preferences** 📡
+
 **Priority: Medium** | **Performance Impact: Medium**
 
 - Prefer 5GHz over 2.4GHz
@@ -290,6 +321,7 @@ network={
 - Load balancing
 
 **Implementation:**
+
 ```python
 network={
     ssid="Network"
@@ -301,6 +333,7 @@ network={
 ```
 
 **Use Cases:**
+
 - Better performance (5GHz)
 - Reduced interference (2.4GHz)
 - Optimal band selection
@@ -308,6 +341,7 @@ network={
 ---
 
 ### 12. **Hotspot 2.0 / Passpoint** 🌐
+
 **Priority: Low** | **Enterprise Impact: High**
 
 - Seamless roaming between networks
@@ -316,6 +350,7 @@ network={
 - Certificate-based authentication
 
 **Implementation:**
+
 ```python
 network={
     ssid="Network"
@@ -329,6 +364,7 @@ network={
 ```
 
 **Use Cases:**
+
 - Enterprise roaming
 - Carrier WiFi
 - Seamless connectivity
@@ -336,6 +372,7 @@ network={
 ---
 
 ### 13. **Network Connection History & Logging** 📊
+
 **Priority: Low** | **Debugging Impact: High**
 
 - Connection attempt logs
@@ -345,6 +382,7 @@ network={
 - Error messages
 
 **Implementation:**
+
 ```python
 # Log to file or database
 {
@@ -357,6 +395,7 @@ network={
 ```
 
 **Use Cases:**
+
 - Troubleshooting
 - Network analysis
 - Performance monitoring
@@ -365,6 +404,7 @@ network={
 ---
 
 ### 14. **Guest Network Isolation** 🔐
+
 **Priority: Medium** | **Security Impact: High**
 
 - Isolate guest networks
@@ -373,6 +413,7 @@ network={
 - Guest network profiles
 
 **Implementation:**
+
 ```python
 network={
     ssid="GuestNetwork"
@@ -385,6 +426,7 @@ network={
 ```
 
 **Use Cases:**
+
 - Guest WiFi
 - Public networks
 - Security isolation
@@ -393,6 +435,7 @@ network={
 ---
 
 ### 15. **WPS Support (Legacy)** ⚠️
+
 **Priority: Very Low** | **Security Impact: Negative**
 
 - Wi-Fi Protected Setup
@@ -402,6 +445,7 @@ network={
 - Document security risks
 
 **Implementation:**
+
 ```python
 # NOT RECOMMENDED - For legacy support only
 network={
@@ -413,6 +457,7 @@ network={
 ```
 
 **Use Cases:**
+
 - Legacy device support only
 - Should be avoided
 
@@ -421,12 +466,14 @@ network={
 ## Implementation Priority
 
 ### Phase 1 (High Priority - Immediate Value)
+
 1. ✅ **OWE (Opportunistic Wireless Encryption)** - Security for open networks
 2. ✅ **Auto-Connect Settings** - Better UX
 3. ✅ **Network Scanning & Discovery** - Easier setup
 4. ✅ **802.11r (Fast Roaming)** - Performance critical
 
 ### Phase 2 (Medium Priority - Enhanced Features)
+
 5. ✅ **802.11k (Radio Resource Management)** - Better roaming
 6. ✅ **802.11v (Wireless Network Management)** - Power savings
 7. ✅ **Signal Strength Thresholds** - Reliability
@@ -434,6 +481,7 @@ network={
 9. ✅ **Band Steering Preferences** - Performance
 
 ### Phase 3 (Low Priority - Nice to Have)
+
 10. ✅ **Connection Timeout Settings** - Reliability
 11. ✅ **Network Connection History** - Debugging
 12. ✅ **Guest Network Isolation** - Security
@@ -441,6 +489,7 @@ network={
 14. ✅ **Hotspot 2.0 / Passpoint** - Enterprise
 
 ### Phase 4 (Not Recommended)
+
 15. ❌ **WPS Support** - Deprecated and insecure
 
 ---
@@ -448,18 +497,21 @@ network={
 ## Technical Considerations
 
 ### wpa_supplicant Compatibility
+
 - Check wpa_supplicant version for feature support
 - Some features require wpa_supplicant 2.9+
 - Test on actual Raspberry Pi hardware
 - Verify kernel driver support
 
 ### Hardware Requirements
+
 - 802.11r/k/v require modern WiFi chipsets
 - Some features are AP-dependent
 - Check Raspberry Pi WiFi adapter capabilities
 - May require additional drivers
 
 ### Security Implications
+
 - OWE provides encryption without passwords
 - 802.11r reduces handoff time (security vs. performance)
 - MAC filtering can be bypassed (weak security)

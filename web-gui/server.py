@@ -17,6 +17,7 @@ import gzip
 import signal
 import threading
 import queue
+import socket
 from collections import defaultdict
 from datetime import datetime
 from typing import Optional, Dict, List, Tuple, Any
@@ -39,6 +40,8 @@ STATIC_CACHE_MAX_AGE = 3600  # 1 hour cache for static files
 ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:3001",  # Nuxt dev server
+    "http://127.0.0.1:3001",  # Nuxt dev server
     # Add production domains here when deploying
 ]
 
@@ -264,8 +267,19 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
 
         try:
             # Health check endpoint (no auth, no rate limit)
+            # Handle health check early to ensure it's always accessible
             if self.path == "/api/health":
-                self.send_health_check()
+                try:
+                    self.send_health_check()
+                except Exception as e:
+                    # If health check fails, return a minimal response to indicate server is running
+                    error_log(f"Health check failed, returning minimal response: {str(e)}", e, request_id=self.request_id)
+                    self.send_json({
+                        "status": "degraded",
+                        "error": "Health check failed",
+                        "server_running": True,
+                        "timestamp": datetime.now().isoformat()
+                    }, 503)
                 return
             elif self.path == "/api/metrics":
                 self.send_metrics()
@@ -273,6 +287,7 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
 
             if self.path == "/api/pis":
                 self.send_pi_list()
+                return
             elif self.path == "/api/test-connections":
                 self.test_connections()
             elif self.path.startswith("/api/test-ssh"):
@@ -315,6 +330,8 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                 origin_lower.startswith("http://10.") or
                 origin_lower.startswith("http://172.")):
                 return origin
+        # For server-side requests (no Origin header), return None (CORS not needed)
+        # This is fine - CORS only applies to browser requests
         return None
 
     def _send_cors_headers(self):
@@ -428,6 +445,9 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
             self._send_security_headers()
             self.end_headers()
             self.wfile.write(json_data)
+            # Explicitly flush to ensure response is sent immediately
+            # This is important on Windows where buffering can cause delays
+            self.wfile.flush()
             self.response_code = status
         except (BrokenPipeError, ConnectionAbortedError):
             # Client disconnected, ignore
@@ -1032,6 +1052,7 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                 warnings.append("Server shutdown in progress")
 
             # Determine overall status
+            # Note: Nuxt checks for "healthy", "ok", or "degraded" status
             if critical_issues:
                 overall_status = "unhealthy"
                 status_code = 503
@@ -1039,7 +1060,7 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                 overall_status = "degraded"
                 status_code = 200
             else:
-                overall_status = "healthy"
+                overall_status = "healthy"  # Also accepted as "ok" by Nuxt
                 status_code = 200
 
             health_status = {
@@ -2060,6 +2081,7 @@ def run_subprocess_safe(cmd_args, timeout=None, cwd=None, check_shutdown=True):
 def run_server():
     global server_start_time, _server_instance
     server_start_time = time.time()
+    startup_begin = time.time()
 
     # Register signal handlers for graceful shutdown
     if hasattr(signal, 'SIGTERM'):
@@ -2069,7 +2091,10 @@ def run_server():
 
     # Validate configuration before starting
     print("Validating configuration...")
-    if not validate_configuration():
+    config_start = time.time()
+    config_valid = validate_configuration()
+    config_time = (time.time() - config_start) * 1000
+    if not config_valid:
         warning_log("Configuration validation failed. Server will start but some features may not work.")
         print()
 
@@ -2087,10 +2112,16 @@ def run_server():
     host = os.environ.get("HOST", "0.0.0.0")
 
     # Create server with allow_reuse_address for faster restarts
-    class ReusableTCPServer(socketserver.TCPServer):
+    # Use ThreadingTCPServer to handle concurrent requests
+    # This is important when multiple clients (wait script, Nuxt, browser) connect simultaneously
+    class ReusableThreadingTCPServer(socketserver.ThreadingTCPServer):
         allow_reuse_address = True
+        # Set daemon threads so they don't prevent server shutdown
+        daemon_threads = True
 
-    with ReusableTCPServer((host, PORT), PiManagementHandler) as httpd:
+    socket_start = time.time()
+    with ReusableThreadingTCPServer((host, PORT), PiManagementHandler) as httpd:
+        socket_time = (time.time() - socket_start) * 1000
         # Store server instance for signal handler
         _server_instance = httpd
 
@@ -2110,7 +2141,6 @@ def run_server():
 
         # Get network IP addresses
         try:
-            import socket
             # Get all network IPs (excluding localhost and APIPA)
             hostname = socket.gethostname()
             all_ips = socket.gethostbyname_ex(hostname)[2]
@@ -2137,11 +2167,32 @@ def run_server():
         sys.stdout.flush()
         sys.stderr.flush()
 
-        try:
-            # Use serve_forever with poll_interval to allow periodic checks
-            # This allows the server to respond to shutdown signals more quickly
-            # Note: serve_forever() is blocking, so server is ready to accept connections when this is called
+        # Start serve_forever in a background thread so we can print "ready" after it starts
+        # The socket is already bound and listening, but serve_forever() needs to start processing
+        def start_server():
+            """Start the server in background thread"""
             httpd.serve_forever(poll_interval=0.5)
+
+        server_thread = threading.Thread(target=start_server, daemon=True)
+        server_thread.start()
+
+        # Give serve_forever() a moment to start processing connections
+        # This is critical - the server must be processing before we say it's ready
+        time.sleep(0.5)
+
+        # Calculate total startup time
+        total_startup_time = (time.time() - startup_begin) * 1000
+        if VERBOSE:
+            debug_log(f"Startup timing: config={config_time:.1f}ms, socket={socket_time:.1f}ms, total={total_startup_time:.1f}ms")
+        else:
+            # Show startup time - server is now actually processing connections
+            print(f"\n[Startup completed in {total_startup_time:.0f}ms]")
+
+        try:
+            # Keep the main thread alive while server runs in background thread
+            # This allows the server to respond to shutdown signals
+            while not shutdown_event.is_set():
+                time.sleep(0.5)
         except KeyboardInterrupt:
             # KeyboardInterrupt is raised when Ctrl+C is pressed
             # Check if we haven't already initiated shutdown via signal handler

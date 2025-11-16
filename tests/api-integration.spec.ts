@@ -103,7 +103,7 @@ test.describe('API Integration through Nuxt Proxy', () => {
   test('API requests should include CORS headers when Origin is present', async ({ request }) => {
     const result = await apiRequest(request, '/pis', {
       headers: {
-        'Origin': 'http://localhost:3001',
+        Origin: 'http://localhost:3001',
       },
       timeout: 5000,
       retries: 0,
@@ -164,7 +164,7 @@ test.describe('API Integration through Nuxt Proxy', () => {
 
     // Should complete within reasonable time (10 seconds with 5s timeout)
     expect(duration).toBeLessThan(10000);
-    
+
     // Should return some status code (even if it's a timeout)
     expect(result.status).toBeGreaterThanOrEqual(200);
     expect(result.data).toBeDefined();

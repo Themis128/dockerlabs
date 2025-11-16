@@ -112,7 +112,8 @@ test.describe('UI Functionality', () => {
     const tabs = ['Dashboard', 'Raspberry Pis', 'SD Card', 'Settings'];
 
     // Rapidly switch between tabs - use clickTab helper which handles waiting properly
-    for (let i = 0; i < 2; i++) { // Reduced from 3 to 2 iterations for faster test
+    for (let i = 0; i < 2; i++) {
+      // Reduced from 3 to 2 iterations for faster test
       for (const tab of tabs) {
         try {
           await clickTab(page, tab);

@@ -1,6 +1,7 @@
 # Starting the Python Backend Server
 
-The Nuxt frontend requires the Python backend server to be running on port 3000 to function properly. This guide shows you how to start it.
+The Nuxt frontend requires the Python backend server to be running on port 3000
+to function properly. This guide shows you how to start it.
 
 ## Quick Start
 
@@ -27,6 +28,7 @@ npm run dev:all
 ```
 
 This uses `concurrently` to run both:
+
 - Python backend on port 3000
 - Nuxt dev server on port 3001
 
@@ -60,6 +62,7 @@ API endpoints:
 ```
 
 You can test the server by visiting:
+
 - **Health Check**: http://localhost:3000/api/health
 - **Web Interface**: http://localhost:3000/
 
@@ -70,6 +73,7 @@ You can test the server by visiting:
 If you see an error that port 3000 is already in use:
 
 1. **Check what's using the port:**
+
    ```powershell
    Get-NetTCPConnection -LocalPort 3000
    ```
@@ -83,6 +87,7 @@ If you see an error that port 3000 is already in use:
 ### Python Not Found
 
 Make sure Python is installed and in your PATH:
+
 ```bash
 python --version
 ```
@@ -101,16 +106,19 @@ Should show Python 3.7 or higher.
 ### Recommended Setup
 
 **Terminal 1 - Python Backend:**
+
 ```bash
 npm run start:server
 ```
 
 **Terminal 2 - Nuxt Frontend:**
+
 ```bash
 npm run dev
 ```
 
 Or use the combined command:
+
 ```bash
 npm run dev:all
 ```
@@ -130,9 +138,11 @@ Once the server is running, these endpoints are available:
 
 ## Network Access
 
-The server binds to `0.0.0.0` by default, making it accessible from other devices on your network. You'll see network IP addresses in the startup output.
+The server binds to `0.0.0.0` by default, making it accessible from other
+devices on your network. You'll see network IP addresses in the startup output.
 
 To access from another device:
+
 1. Find your computer's IP address from the server output
 2. On the other device, navigate to `http://<your-ip>:3000`
 

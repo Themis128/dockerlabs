@@ -1,6 +1,7 @@
 # SSH Authentication Setup Guide
 
-Your Raspberry Pis are currently configured to only accept SSH key authentication. You have two options:
+Your Raspberry Pis are currently configured to only accept SSH key
+authentication. You have two options:
 
 ## Option 1: Set Up SSH Keys (Recommended - More Secure)
 
@@ -13,6 +14,7 @@ This allows passwordless SSH connections.
 ```
 
 This script will:
+
 1. Generate an SSH key pair (if you don't have one)
 2. Copy your public key to each Raspberry Pi
 3. You'll be prompted for the password once per Pi
@@ -20,13 +22,15 @@ This script will:
 ### Step 2: Test Connection
 
 After setup, you should be able to connect without a password:
+
 ```powershell
 .\connect-ssh.ps1 1
 ```
 
 ## Option 2: Enable Password Authentication
 
-If you prefer to use passwords instead of keys, you need to enable password authentication on each Pi.
+If you prefer to use passwords instead of keys, you need to enable password
+authentication on each Pi.
 
 ### Method A: If you have physical access to the Pi
 
@@ -54,7 +58,8 @@ If you prefer to use passwords instead of keys, you need to enable password auth
 
 ### Method C: Manual SSH Config Edit (if you have temporary access)
 
-If you can temporarily access the Pi (maybe via another network or method), SSH in and run:
+If you can temporarily access the Pi (maybe via another network or method), SSH
+in and run:
 
 ```bash
 sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
@@ -67,6 +72,7 @@ sudo systemctl restart ssh
 If you already have an SSH key set up:
 
 1. Check if you have a key:
+
    ```powershell
    cat $env:USERPROFILE\.ssh\id_rsa.pub
    ```
@@ -82,7 +88,8 @@ If you already have an SSH key set up:
 
 ## Quick Fix: Enable Password Auth on Pi 192.168.0.48
 
-Since you can't SSH in yet, you'll need physical access or another method. Here's what to do on the Pi:
+Since you can't SSH in yet, you'll need physical access or another method.
+Here's what to do on the Pi:
 
 ```bash
 # On the Raspberry Pi (via physical access or console):
@@ -103,6 +110,7 @@ sudo systemctl restart ssh
 ## Verify SSH Configuration
 
 After enabling password authentication, test from Windows:
+
 ```powershell
 .\connect-ssh.ps1 1
 # You should now be prompted for a password instead of getting "Permission denied"
@@ -117,13 +125,16 @@ After enabling password authentication, test from Windows:
 ## Troubleshooting
 
 ### "Permission denied (publickey)" Error
+
 - SSH is configured for key-only authentication
 - Either set up SSH keys (Option 1) or enable password auth (Option 2)
 
 ### "Connection refused" Error
+
 - SSH service may not be running on the Pi
 - Check: `sudo systemctl status ssh` on the Pi
 
 ### "Host key verification failed"
+
 - Remove old host key: `ssh-keygen -R 192.168.0.48`
 - Or accept the new key when prompted

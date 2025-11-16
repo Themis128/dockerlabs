@@ -1,6 +1,7 @@
 # Setup Without Physical Access
 
-Since you don't have physical access to the Raspberry Pis, here are your options:
+Since you don't have physical access to the Raspberry Pis, here are your
+options:
 
 ## Quick Test: Check if Password Auth Works
 
@@ -12,6 +13,7 @@ python connect_ssh.py 1
 ```
 
 If you can connect with a password, you're all set! Then you can:
+
 - Add SSH keys remotely
 - Enable telnet remotely
 - Configure everything via SSH
@@ -25,9 +27,11 @@ If you can remove the SD card from the Pi:
 1. **Remove SD card** from Pi
 2. **Insert into your computer** (use adapter if needed)
 3. **Run setup script:**
+
    ```bash
    python setup_via_sdcard.py
    ```
+
    This will show you exactly what files to create/modify
 
 4. **On SD card boot partition:**
@@ -79,6 +83,7 @@ python remote_setup_options.py
 ## Current Status
 
 All 4 Pis have:
+
 - ✅ SSH port 22 OPEN
 - ❌ Telnet port 23 CLOSED
 - ❓ Authentication method unknown (needs testing)
@@ -86,6 +91,7 @@ All 4 Pis have:
 ## Next Steps
 
 1. **Test password authentication:**
+
    ```bash
    python test_password_auth.py 1
    ```

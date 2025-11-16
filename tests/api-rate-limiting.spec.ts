@@ -6,7 +6,10 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('API Rate Limiting and Duplicate Call Prevention', () => {
-  test('should not make excessive API calls when switching tabs rapidly', async ({ page, context }) => {
+  test('should not make excessive API calls when switching tabs rapidly', async ({
+    page,
+    context,
+  }) => {
     // Track all network requests
     const apiRequests: string[] = [];
 
@@ -33,7 +36,7 @@ test.describe('API Rate Limiting and Duplicate Call Prevention', () => {
 
     for (const tab of tabs) {
       const tabButton = page.locator(`[data-tab="${tab}"]`);
-      if (await tabButton.count() > 0) {
+      if ((await tabButton.count()) > 0) {
         await tabButton.click();
         // Small delay to allow requests to be made
         await page.waitForTimeout(100);
@@ -44,8 +47,8 @@ test.describe('API Rate Limiting and Duplicate Call Prevention', () => {
     await page.waitForTimeout(1000);
 
     // Count requests per endpoint
-    const pisRequests = apiRequests.filter(url => url.includes('/api/pis')).length;
-    const sdcardsRequests = apiRequests.filter(url => url.includes('/api/sdcards')).length;
+    const pisRequests = apiRequests.filter((url) => url.includes('/api/pis')).length;
+    const sdcardsRequests = apiRequests.filter((url) => url.includes('/api/sdcards')).length;
 
     // Should not have excessive requests - with 6 tab switches, we should have at most
     // 3-4 calls per endpoint (some tabs trigger the same endpoint)
@@ -77,7 +80,7 @@ test.describe('API Rate Limiting and Duplicate Call Prevention', () => {
 
     // Click the same tab multiple times rapidly
     const dashboardTab = page.locator('[data-tab="dashboard"]');
-    if (await dashboardTab.count() > 0) {
+    if ((await dashboardTab.count()) > 0) {
       for (let i = 0; i < 10; i++) {
         await dashboardTab.click();
         await page.waitForTimeout(50); // Very rapid clicks
@@ -87,7 +90,7 @@ test.describe('API Rate Limiting and Duplicate Call Prevention', () => {
     // Wait for any debounced requests
     await page.waitForTimeout(1500);
 
-    const pisRequests = apiRequests.filter(url => url.includes('/api/pis')).length;
+    const pisRequests = apiRequests.filter((url) => url.includes('/api/pis')).length;
 
     // Should only have 1-2 requests despite 10 clicks (due to debouncing and same-tab prevention)
     expect(pisRequests).toBeLessThan(3);
@@ -117,7 +120,7 @@ test.describe('API Rate Limiting and Duplicate Call Prevention', () => {
 
     for (const tab of tabs) {
       const tabButton = page.locator(`[data-tab="${tab}"]`);
-      if (await tabButton.count() > 0) {
+      if ((await tabButton.count()) > 0) {
         await tabButton.click();
         await page.waitForTimeout(100); // Less than 500ms debounce
       }

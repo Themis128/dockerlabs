@@ -6,28 +6,34 @@
 
 :root {
     /* Windows 11 Color Palette */
-    --win11-accent: #0078D4;
-    --win11-accent-hover: #106EBE;
-    --win11-accent-pressed: #005A9E;
-    --win11-bg-primary: #FFFFFF;
-    --win11-bg-secondary: #F3F3F3;
-    --win11-bg-tertiary: #E1E1E1;
+    --win11-accent: #0078d4;
+    --win11-accent-hover: #106ebe;
+    --win11-accent-pressed: #005a9e;
+    --win11-bg-primary: #ffffff;
+    --win11-bg-secondary: #f3f3f3;
+    --win11-bg-tertiary: #e1e1e1;
     --win11-text-primary: #202020;
-    --win11-text-secondary: #6B6B6B;
-    --win11-border: #E1E1E1;
-    --win11-border-hover: #C7C7C7;
+    --win11-text-secondary: #6b6b6b;
+    --win11-border: #e1e1e1;
+    --win11-border-hover: #c7c7c7;
     --win11-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
     --win11-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.08);
     --win11-shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.12);
     --win11-shadow-xl: 0 8px 16px rgba(0, 0, 0, 0.16);
-    --win11-success: #107C10;
-    --win11-warning: #FFB900;
-    --win11-error: #D13438;
-    --win11-info: #0078D4;
+    --win11-success: #107c10;
+    --win11-warning: #ffb900;
+    --win11-error: #d13438;
+    --win11-info: #0078d4;
 }
 
 body {
-    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Segoe UI Variable', system-ui, sans-serif;
+    font-family:
+        'Segoe UI',
+        -apple-system,
+        BlinkMacSystemFont,
+        'Segoe UI Variable',
+        system-ui,
+        sans-serif;
     background: var(--win11-bg-secondary);
     min-height: 100vh;
     padding: 20px;
@@ -46,7 +52,7 @@ body {
 }
 
 header {
-    background: linear-gradient(135deg, var(--win11-accent) 0%, #005A9E 100%);
+    background: linear-gradient(135deg, var(--win11-accent) 0%, #005a9e 100%);
     color: white;
     padding: 32px;
     text-align: center;
@@ -275,9 +281,9 @@ header p {
 }
 
 .test-section select,
-.test-section input[type="text"],
-.test-section input[type="password"],
-.test-section input[type="number"],
+.test-section input[type='text'],
+.test-section input[type='password'],
+.test-section input[type='number'],
 .test-section textarea {
     padding: 10px 14px;
     border: 1px solid var(--win11-border);
@@ -386,7 +392,8 @@ footer nav ul li a {
 }
 
 @keyframes pulse {
-    0%, 100% {
+    0%,
+    100% {
         opacity: 1;
     }
     50% {
@@ -401,7 +408,7 @@ footer nav ul li a {
 }
 
 .btn-secondary.active:hover {
-    background: #0E6B0E;
+    background: #0e6b0e;
 }
 
 .stat-subtitle {
@@ -453,8 +460,8 @@ footer nav ul li a {
     cursor: pointer;
 }
 
-.radio-group input[type="radio"],
-.radio-group input[type="checkbox"] {
+.radio-group input[type='radio'],
+.radio-group input[type='checkbox'] {
     width: 18px;
     height: 18px;
     cursor: pointer;
@@ -760,8 +767,8 @@ footer nav ul li a {
 }
 
 .format-progress-log {
-    background: #1E1E1E;
-    color: #D4D4D4;
+    background: #1e1e1e;
+    color: #d4d4d4;
     border-radius: 4px;
     padding: 12px;
     max-height: 300px;
@@ -770,7 +777,7 @@ footer nav ul li a {
     font-size: 12px;
     line-height: 1.6;
     margin-top: 12px;
-    border: 1px solid #3E3E3E;
+    border: 1px solid #3e3e3e;
 }
 
 .format-progress-log-entry {
@@ -784,19 +791,19 @@ footer nav ul li a {
 }
 
 .format-progress-log-entry.info {
-    color: #4EC9B0;
+    color: #4ec9b0;
 }
 
 .format-progress-log-entry.success {
-    color: #4EC9B0;
+    color: #4ec9b0;
 }
 
 .format-progress-log-entry.error {
-    color: #F48771;
+    color: #f48771;
 }
 
 .format-progress-log-entry.warning {
-    color: #DCDCAA;
+    color: #dcdcaa;
 }
 
 .format-progress-log-timestamp {
@@ -814,21 +821,21 @@ footer nav ul li a {
 }
 
 .format-progress-status.success {
-    background: #E6F7E6;
-    color: #0E6B0E;
-    border: 1px solid #B8E6B8;
+    background: #e6f7e6;
+    color: #0e6b0e;
+    border: 1px solid #b8e6b8;
 }
 
 .format-progress-status.error {
-    background: #FEE;
-    color: #C42B1C;
-    border: 1px solid #FCC;
+    background: #fee;
+    color: #c42b1c;
+    border: 1px solid #fcc;
 }
 
 .format-progress-status.processing {
-    background: #E6F2F7;
-    color: #005A9E;
-    border: 1px solid #B8D9E6;
+    background: #e6f2f7;
+    color: #005a9e;
+    border: 1px solid #b8d9e6;
 }
 
 .settings-form {
@@ -903,8 +910,8 @@ footer nav ul li a {
 }
 
 .terminal {
-    background: #1E1E1E;
-    color: #D4D4D4;
+    background: #1e1e1e;
+    color: #d4d4d4;
     padding: 12px;
     border-radius: 4px;
     font-family: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
@@ -913,11 +920,11 @@ footer nav ul li a {
     overflow-y: auto;
     font-size: 13px;
     line-height: 1.5;
-    border: 1px solid #3E3E3E;
+    border: 1px solid #3e3e3e;
 }
 
 .terminal-prompt {
-    color: #4EC9B0;
+    color: #4ec9b0;
 }
 
 .terminal-input-group {
@@ -1059,12 +1066,16 @@ footer nav ul li a {
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 .info-box {
-    background: #E6F2F7;
+    background: #e6f2f7;
     border-left: 3px solid var(--win11-info);
     padding: 12px;
     margin: 12px 0;
@@ -1098,21 +1109,21 @@ footer nav ul li a {
 }
 
 .message-box.success {
-    background: #E6F7E6;
+    background: #e6f7e6;
     border-color: var(--win11-success);
-    color: #0E6B0E;
+    color: #0e6b0e;
 }
 
 .message-box.warning {
-    background: #FFF4E6;
+    background: #fff4e6;
     border-color: var(--win11-warning);
     color: #856404;
 }
 
 .message-box.info {
-    background: #E6F2F7;
+    background: #e6f2f7;
     border-color: var(--win11-info);
-    color: #005A9E;
+    color: #005a9e;
 }
 
 .form-input-full:invalid {
@@ -1190,8 +1201,8 @@ textarea:focus-visible {
 }
 
 /* Checkbox and radio button styling */
-input[type="checkbox"],
-input[type="radio"] {
+input[type='checkbox'],
+input[type='radio'] {
     accent-color: var(--win11-accent);
     width: 18px;
     height: 18px;
@@ -1210,7 +1221,7 @@ select {
 /* Utility classes for inline styles */
 .info-box-wifi {
     background: #e7f3ff;
-    border-left: 4px solid #2196F3;
+    border-left: 4px solid #2196f3;
     padding: 12px;
     margin-bottom: 15px;
     border-radius: 4px;

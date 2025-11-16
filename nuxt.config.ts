@@ -60,10 +60,42 @@ export default defineNuxtConfig({
   vite: {
     server: {
       watch: {
-        ignored: ['**/web-gui/**', '**/RaspberryPiManager/**', '**/playwright-report/**', '**/test-results/**', '**/__pycache__/**'],
+        ignored: [
+          '**/web-gui/**',
+          '**/RaspberryPiManager/**',
+          '**/playwright-report/**',
+          '**/test-results/**',
+          '**/__pycache__/**',
+          '**/.nuxt/**',
+          '**/.nuxt/dist/**',
+          '**/node_modules/**',
+          '**/.git/**',
+          '**/bin/**',
+          '**/obj/**',
+        ],
+        // Use polling on Windows to avoid EPERM errors
+        usePolling: process.platform === 'win32',
+        interval: 2000, // Increase interval to reduce file system pressure
       },
       // Note: Vite proxy removed - Nuxt server routes (server/api/*) handle API proxying
       // This ensures requests go through server routes which add CORS headers
     },
+  },
+
+  // Nitro configuration for file watching
+  nitro: {
+    // Ignore more directories to prevent EPERM errors on Windows
+    ignore: [
+      '**/.nuxt/**',
+      '**/.nuxt/dist/**',
+      '**/node_modules/**',
+      '**/web-gui/**',
+      '**/RaspberryPiManager/**',
+      '**/playwright-report/**',
+      '**/test-results/**',
+      '**/__pycache__/**',
+      '**/bin/**',
+      '**/obj/**',
+    ],
   },
 })

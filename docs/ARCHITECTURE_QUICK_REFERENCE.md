@@ -74,21 +74,21 @@ const result = await post('/configure-pi', { pi_number: '1', settings: {...} })
 
 ```typescript
 // server/api/example.ts
-import { callPythonApi } from '../utils/python-api'
+import { callPythonApi } from '../utils/python-api';
 
 export default defineEventHandler(async (event) => {
   // Handle CORS
   if (getMethod(event) === 'OPTIONS') {
-    return {}
+    return {};
   }
 
   const response = await callPythonApi(event, {
     endpoint: '/api/example',
     method: 'GET',
-  })
+  });
 
-  return response
-})
+  return response;
+});
 ```
 
 ### Using Pinia Store
@@ -101,28 +101,30 @@ export const useExampleStore = defineStore('example', {
   }),
   actions: {
     async fetchItems() {
-      const { get } = useApi()
-      const response = await get('/items')
+      const { get } = useApi();
+      const response = await get('/items');
       if (response.success) {
-        this.items = response.data.items
+        this.items = response.data.items;
       }
     },
   },
-})
+});
 
 // In component
-const store = useExampleStore()
-await store.fetchItems()
+const store = useExampleStore();
+await store.fetchItems();
 ```
 
 ## ⚙️ Configuration
 
 ### nuxt.config.ts
+
 - `ssr: false` - SPA mode
 - `apiBase: '/api'` - API base URL
 - `pythonServerUrl: 'http://localhost:3000'` - Python server
 
 ### Environment Variables
+
 ```bash
 API_BASE_URL=http://localhost:3000/api
 PYTHON_SERVER_URL=http://localhost:3000
@@ -130,12 +132,12 @@ PYTHON_SERVER_URL=http://localhost:3000
 
 ## 🐛 Common Issues
 
-| Issue | Solution |
-|-------|----------|
-| Python backend not responding | Check if server is running on port 3000 |
-| CORS errors | Verify CORS headers in server routes |
-| API timeout | Increase timeout in `callPythonApi` |
-| Build errors | Clear `.nuxt` and `.output`, reinstall deps |
+| Issue                         | Solution                                    |
+| ----------------------------- | ------------------------------------------- |
+| Python backend not responding | Check if server is running on port 3000     |
+| CORS errors                   | Verify CORS headers in server routes        |
+| API timeout                   | Increase timeout in `callPythonApi`         |
+| Build errors                  | Clear `.nuxt` and `.output`, reinstall deps |
 
 ## ✅ Best Practices
 

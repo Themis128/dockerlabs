@@ -1,21 +1,27 @@
 # Web GUI Scripts
 
-This directory contains utility scripts used by the web server for managing Raspberry Pi devices.
+This directory contains utility scripts used by the web server for managing
+Raspberry Pi devices.
 
 ## Scripts Overview
 
 ### Core Scripts
 
-- **`configure_pi.py`** - Configure Raspberry Pi settings (SSH, Telnet, Network, WiFi)
-- **`execute_remote_command.py`** - Execute commands on remote Pi via SSH or Telnet
-- **`format_sdcard.py`** - Format SD cards for Raspberry Pi (Windows, Linux, macOS)
-- **`generate_wpa_supplicant.py`** - Generate WiFi configuration files with WPA3 support
+- **`configure_pi.py`** - Configure Raspberry Pi settings (SSH, Telnet, Network,
+  WiFi)
+- **`execute_remote_command.py`** - Execute commands on remote Pi via SSH or
+  Telnet
+- **`format_sdcard.py`** - Format SD cards for Raspberry Pi (Windows, Linux,
+  macOS)
+- **`generate_wpa_supplicant.py`** - Generate WiFi configuration files with WPA3
+  support
 - **`list_sdcards.py`** - List available SD cards/disks
 - **`scan_wifi_networks.py`** - Scan for available WiFi networks
 
 ### OS Management
 
-- **`install_os.py`** - Install OS images to SD cards (supports Windows, Linux, macOS)
+- **`install_os.py`** - Install OS images to SD cards (supports Windows, Linux,
+  macOS)
 - **`list_os_images.py`** - List available OS images (local or static list)
 
 ### Pi Management
@@ -35,13 +41,16 @@ This directory contains utility scripts used by the web server for managing Rasp
 
 ### Utility Modules
 
-- **`utils.py`** - Common utility functions (config loading, SSH execution, validation)
-- **`constants.py`** - Shared constants (ports, timeouts, connection types, etc.)
+- **`utils.py`** - Common utility functions (config loading, SSH execution,
+  validation)
+- **`constants.py`** - Shared constants (ports, timeouts, connection types,
+  etc.)
 - **`config_loader.py`** - Configuration loading and validation utilities
 
 ## Usage
 
-All scripts are designed to be called from the web server via subprocess, but can also be used standalone from the command line.
+All scripts are designed to be called from the web server via subprocess, but
+can also be used standalone from the command line.
 
 ### Example: Reboot a Pi
 
@@ -72,6 +81,7 @@ python web-gui/scripts/backup_pi.py 1 --type config --backup-dir ./backups
 All scripts output JSON for structured responses:
 
 **Success:**
+
 ```json
 {
   "success": true,
@@ -81,6 +91,7 @@ All scripts output JSON for structured responses:
 ```
 
 **Error:**
+
 ```json
 {
   "success": false,
@@ -90,6 +101,7 @@ All scripts output JSON for structured responses:
 ```
 
 **Progress (for long-running operations):**
+
 ```json
 {
   "type": "progress",
@@ -108,11 +120,13 @@ All scripts output JSON for structured responses:
 
 ## Dependencies
 
-All scripts use Python standard library only - no external dependencies required.
+All scripts use Python standard library only - no external dependencies
+required.
 
 ## Configuration
 
-Scripts read configuration from `pi-config.json` in the project root. The configuration file should have the following structure:
+Scripts read configuration from `pi-config.json` in the project root. The
+configuration file should have the following structure:
 
 ```json
 {
@@ -129,7 +143,8 @@ Scripts read configuration from `pi-config.json` in the project root. The config
 
 ## Notes
 
-- Scripts that require root/admin privileges (like `format_sdcard.py` and `install_os.py`) will check for elevated permissions
+- Scripts that require root/admin privileges (like `format_sdcard.py` and
+  `install_os.py`) will check for elevated permissions
 - SSH-based scripts support both password and key-based authentication
 - All scripts include proper error handling and timeout management
 - Scripts are cross-platform (Windows, Linux, macOS) where applicable

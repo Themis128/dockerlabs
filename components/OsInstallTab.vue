@@ -13,10 +13,10 @@
           <option value="">-- Select SD Card --</option>
           <option
             v-for="card in sdcards"
-            :key="card.device_id"
-            :value="card.device_id"
+            :key="card.deviceId"
+            :value="card.deviceId"
           >
-            {{ card.label }} ({{ card.size_gb }} GB)
+            {{ card.name }} ({{ card.sizeFormatted || `${(card.size / (1024 * 1024 * 1024)).toFixed(2)} GB` }})
           </option>
         </select>
       </fieldset>

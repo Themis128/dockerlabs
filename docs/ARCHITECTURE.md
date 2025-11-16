@@ -2,7 +2,10 @@
 
 ## Overview
 
-This document outlines the recommended architecture for the Raspberry Pi Management application to ensure flawless operation. The application follows a **hybrid architecture** combining Nuxt.js frontend, Python backend, and .NET MAUI desktop components.
+This document outlines the recommended architecture for the Raspberry Pi
+Management application to ensure flawless operation. The application follows a
+**hybrid architecture** combining Nuxt.js frontend, Python backend, and .NET
+MAUI desktop components.
 
 ## Architecture Diagram
 
@@ -58,9 +61,9 @@ This document outlines the recommended architecture for the Raspberry Pi Managem
 
 ### 1. Frontend Layer (Nuxt.js SPA)
 
-**Location**: Root directory (Nuxt project)
-**Port**: 3001 (development), configured via `nuxt.config.ts`
-**Mode**: SPA (Single Page Application) - `ssr: false`
+**Location**: Root directory (Nuxt project) **Port**: 3001 (development),
+configured via `nuxt.config.ts` **Mode**: SPA (Single Page Application) -
+`ssr: false`
 
 #### Directory Structure
 
@@ -143,8 +146,8 @@ This document outlines the recommended architecture for the Raspberry Pi Managem
 
 ### 2. Nuxt Server API Layer
 
-**Location**: `server/api/`
-**Purpose**: Proxy layer between frontend and Python backend
+**Location**: `server/api/` **Purpose**: Proxy layer between frontend and Python
+backend
 
 #### Structure
 
@@ -198,43 +201,41 @@ server/
 
 ```typescript
 // server/api/example.ts
-import { callPythonApi } from '../utils/python-api'
+import { callPythonApi } from '../utils/python-api';
 
 export default defineEventHandler(async (event) => {
   // Handle CORS
   if (getMethod(event) === 'OPTIONS') {
     // ... CORS headers
-    return {}
+    return {};
   }
 
   try {
-    const body = await readBody(event).catch(() => ({}))
+    const body = await readBody(event).catch(() => ({}));
 
     const response = await callPythonApi(event, {
       endpoint: '/api/example',
       method: 'POST',
       body,
-    })
+    });
 
     // Set CORS headers
-    setHeader(event, 'Content-Type', 'application/json')
-    return response
+    setHeader(event, 'Content-Type', 'application/json');
+    return response;
   } catch (error: any) {
     // Error handling
     throw createError({
       statusCode: error.statusCode || 500,
       statusMessage: error.statusMessage || 'Request failed',
       data: error.data || { success: false, error: 'Request failed' },
-    })
+    });
   }
-})
+});
 ```
 
 ### 3. Python Backend Server
 
-**Location**: `web-gui/server.py`
-**Port**: 3000
-**Protocol**: HTTP/1.1
+**Location**: `web-gui/server.py` **Port**: 3000 **Protocol**: HTTP/1.1
 
 #### Responsibilities
 
@@ -290,6 +291,7 @@ All endpoints should return JSON in this format:
 #### nuxt.config.ts
 
 **Key Settings**:
+
 - `ssr: false` - SPA mode
 - `runtimeConfig.public.apiBase` - API base URL
 - `runtimeConfig.public.pythonServerUrl` - Python server URL
@@ -379,12 +381,14 @@ User sees notification toast
 ### 1. API Communication
 
 ✅ **DO**:
+
 - Always use `useApi` composable for API calls
 - Handle errors gracefully
 - Show loading states during requests
 - Cache data in Pinia stores when appropriate
 
 ❌ **DON'T**:
+
 - Call Python backend directly from components
 - Ignore error responses
 - Make duplicate API calls unnecessarily
@@ -393,12 +397,14 @@ User sees notification toast
 ### 2. Component Design
 
 ✅ **DO**:
+
 - Keep components focused and single-purpose
 - Use props for parent-to-child communication
 - Use events for child-to-parent communication
 - Extract reusable logic to composables
 
 ❌ **DON'T**:
+
 - Create overly complex components
 - Mix business logic with presentation
 - Hardcode API endpoints
@@ -407,12 +413,14 @@ User sees notification toast
 ### 3. State Management
 
 ✅ **DO**:
+
 - Use Pinia stores for global state
 - Keep local state in components when possible
 - Use computed properties for derived state
 - Clear stores when appropriate
 
 ❌ **DON'T**:
+
 - Store everything in global state
 - Mutate state directly outside stores
 - Create circular dependencies
@@ -421,12 +429,14 @@ User sees notification toast
 ### 4. Error Handling
 
 ✅ **DO**:
+
 - Provide user-friendly error messages
 - Log errors for debugging
 - Handle network errors gracefully
 - Show retry options when appropriate
 
 ❌ **DON'T**:
+
 - Expose technical error details to users
 - Swallow errors silently
 - Show generic "Something went wrong" messages
@@ -435,12 +445,14 @@ User sees notification toast
 ### 5. Performance
 
 ✅ **DO**:
+
 - Lazy load components when possible
 - Debounce search inputs
 - Cache API responses appropriately
 - Optimize images and assets
 
 ❌ **DON'T**:
+
 - Load all data at once
 - Make unnecessary API calls
 - Block UI during long operations
@@ -451,19 +463,23 @@ User sees notification toast
 ### Starting the Application
 
 1. **Start Python Backend**:
+
    ```bash
    npm run start:python
    # or
    python web-gui/server.py
    ```
+
    Server runs on `http://localhost:3000`
 
 2. **Start Nuxt Frontend**:
+
    ```bash
    npm run dev
    # or
    npm run start:nuxt
    ```
+
    Frontend runs on `http://localhost:3001`
 
 3. **Start Both** (recommended):
@@ -476,7 +492,7 @@ User sees notification toast
 
 - **Frontend**: http://localhost:3001
 - **Python Backend**: http://localhost:3000
-- **API Proxy**: http://localhost:3001/api/* (proxied to Python)
+- **API Proxy**: http://localhost:3001/api/\* (proxied to Python)
 
 ### Testing
 

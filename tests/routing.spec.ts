@@ -42,7 +42,9 @@ test.describe('Routing and Pages', () => {
     // Click on a tab - use helper for better reliability
     await page.click('.tab-button:has-text("Settings")');
     // Wait for tab to be active instead of fixed timeout
-    await expect(page.locator('.tab-button:has-text("Settings").active')).toBeVisible({ timeout: 2000 });
+    await expect(page.locator('.tab-button:has-text("Settings").active')).toBeVisible({
+      timeout: 2000,
+    });
 
     // Navigate away and back (in SPA mode, this might not trigger navigation)
     // But we can verify the app state is maintained

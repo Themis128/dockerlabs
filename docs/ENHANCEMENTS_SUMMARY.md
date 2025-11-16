@@ -116,27 +116,32 @@ web-gui/
 ## Features
 
 ### Cross-Platform Support
+
 - All scripts work on Windows, Linux, and macOS
 - Platform-specific implementations where needed
 - Consistent API across platforms
 
 ### Error Handling
+
 - Comprehensive error handling in all scripts
 - JSON error responses
 - Proper exit codes
 - Timeout management
 
 ### Progress Reporting
+
 - Real-time progress for long-running operations
 - JSON-formatted progress messages
 - Percentage completion where applicable
 
 ### Configuration Management
+
 - Centralized configuration loading
 - Configuration validation
 - Backup and restore capabilities
 
 ### Security
+
 - Input validation
 - Safe command execution
 - SSH key and password support
@@ -189,6 +194,7 @@ result = subprocess.run(
 ## Future Enhancements
 
 Potential future additions:
+
 - Update Pi software (`update_pi.py`)
 - Monitor Pi health (`monitor_pi.py`)
 - Batch operations (`batch_operations.py`)
@@ -198,6 +204,7 @@ Potential future additions:
 ## Testing
 
 All scripts:
+
 - Output JSON for easy parsing
 - Use consistent error handling
 - Support verbose/debug modes

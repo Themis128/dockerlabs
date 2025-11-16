@@ -74,7 +74,11 @@ export async function apiRequest(
       }
 
       // Handle timeout or connection errors immediately - don't retry
-      if (error.message?.includes('timeout') || error.message?.includes('ECONNREFUSED') || error.message?.includes('ETIMEDOUT')) {
+      if (
+        error.message?.includes('timeout') ||
+        error.message?.includes('ECONNREFUSED') ||
+        error.message?.includes('ETIMEDOUT')
+      ) {
         return {
           status: 504,
           data: { error: 'Request timeout or connection refused' },
@@ -84,7 +88,7 @@ export async function apiRequest(
 
       // Only retry on 5xx errors if retries are enabled
       if (attempt < maxRetries && error.response?.status >= 500) {
-        await new Promise(resolve => setTimeout(resolve, retryDelay * (attempt + 1)));
+        await new Promise((resolve) => setTimeout(resolve, retryDelay * (attempt + 1)));
         continue;
       }
 
@@ -171,10 +175,12 @@ export async function pythonApiRequest(
     };
   } catch (error: any) {
     // Handle timeout or connection errors
-    if (error.message?.includes('timeout') ||
-        error.message?.includes('ECONNREFUSED') ||
-        error.message?.includes('ECONNRESET') ||
-        error.message?.includes('ETIMEDOUT')) {
+    if (
+      error.message?.includes('timeout') ||
+      error.message?.includes('ECONNREFUSED') ||
+      error.message?.includes('ECONNRESET') ||
+      error.message?.includes('ETIMEDOUT')
+    ) {
       return {
         status: 504,
         data: { error: 'Request timeout or connection refused' },

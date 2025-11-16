@@ -1,12 +1,14 @@
 # Quick Start: SSH Access Setup
 
 ## Current Status
+
 - ✅ All 4 Raspberry Pis are reachable (ping OK)
 - ✅ SSH port 22 is open on all Pis
 - ⚠️ SSH authentication needs to be configured (keys or password)
 - ⚠️ Telnet port 23 is not enabled yet
 
 ## Your SSH Public Key
+
 ```
 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDSbHoqjC7lIXx7wrSYGT/wmJb4YjteWNFqPcOgnMFlfcF7bnVoveTKxilsCCDpNV6Oy72cVZwGmPhquVNRQmTC86zd7V9aI31c5T2tdWxuP3/qgTmKEoBqRC2gd0EXdc7V+Joo0SSjA0ANkklcWibaJiDWfso2BofiICI00g0eytE7aOySZ0BUOCIPKMNa2Hgz/H3/IKOcvOlBolN4JFym9n+FAW0I8WE1xjCre5PhD/b1xuTCDefFlQvV23GARgHXpC2V6kuaV7LqLQCW7TSbgP4V/fN8S7p1HalOFNoLcP+o/H5x5quqRFpte1nnjGMfSbhnz982sUi7zwtjc6Lh+3Q4HAKHMJL8++IK+PdzGDurkC5mJPLnxJ3t7SnSVMcokTGoEIFIdHCPtaRQyyLdjaREeGFfxslmvkpWaDnN6f9pR6LeW18rMDBj2ZJ/1GpVKTIVvuKfIYQOCtzSgvagp4YIne0I6DwVIgEH0qkHMpkFULxn/R7Vazxwvua325WZKE0QiK73PRG2v43jj9Cr7r77Rn+vk1pDWBZ9/KdTmnVfTVwT7aUQfDvcA9ZLDaPTUgZRg3T6EeNgR2bZdfSJjbA98V8WG+a+4rC1E6PVpKT99FBHe5AT1sUMymhs03RkNgaI7UkJb3qcs+HDWU7VYNHkjgX8+GpAPNUL4MQiUQ== raspberry-pi-access
 ```
@@ -37,6 +39,7 @@ sudo systemctl restart ssh
 ```
 
 Then you can connect with password:
+
 ```powershell
 .\connect-ssh.ps1 1  # Will prompt for password
 ```
@@ -58,22 +61,26 @@ Then you can connect with password:
 ## After SSH is Working
 
 ### Test Connection
+
 ```powershell
 .\connect-ssh.ps1 1  # Pi 1 via Ethernet (192.168.0.48)
 .\connect-ssh.ps1 2  # Pi 2 via Ethernet (192.168.0.16)
 ```
 
 ### Enable Telnet on All Pis
+
 ```powershell
 .\enable-telnet-remote.ps1
 ```
 
 This will automatically:
+
 - Install telnetd on each Pi
 - Enable and start the telnet service
 - Open port 23 in the firewall
 
 ### Test Telnet Connection
+
 ```powershell
 .\connect-telnet.ps1 1  # Pi 1 via Ethernet
 .\connect-telnet.ps1 2  # Pi 2 via Ethernet
@@ -82,10 +89,12 @@ This will automatically:
 ## Raspberry Pi IP Addresses
 
 ### Ethernet (Priority)
+
 - **Pi 1:** 192.168.0.48
 - **Pi 2:** 192.168.0.16
 
 ### WiFi (Fallback)
+
 - **Pi 1:** 192.168.0.17
 - **Pi 2:** 192.168.0.41
 
@@ -113,15 +122,20 @@ This will automatically:
 ## Troubleshooting
 
 ### "Permission denied (publickey)"
+
 - SSH key not added yet - use Method 1 or 2 above
 
 ### "Connection refused"
+
 - SSH service may not be running
 - On Pi: `sudo systemctl enable ssh && sudo systemctl start ssh`
 
 ### "Host key verification failed"
+
 - Run: `.\fix-ssh-connection.ps1` to clean known_hosts
 
 ### Telnet not working
+
 - Run: `.\enable-telnet-remote.ps1` after SSH is working
-- Or manually on Pi: `sudo apt-get install -y telnetd inetutils-inetd && sudo systemctl enable inetd && sudo systemctl start inetd`
+- Or manually on Pi:
+  `sudo apt-get install -y telnetd inetutils-inetd && sudo systemctl enable inetd && sudo systemctl start inetd`

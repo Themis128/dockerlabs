@@ -6,6 +6,10 @@
 import type { H3Event } from 'h3'
 import { createError } from 'h3'
 
+// Track server startup time to suppress errors during initial startup
+const serverStartTime = Date.now()
+const STARTUP_GRACE_PERIOD = 30000 // 30 seconds
+
 /**
  * Timeout constants (in milliseconds)
  * These should be slightly longer than the Python server timeouts to allow for network overhead
@@ -68,14 +72,18 @@ export async function callPythonApi(
     const responseData = error.data || error.response?._data || error.response?.data
 
     // Check for connection errors (server not running)
+    // Note: FetchError with "fetch failed" or "<no response>" without timeout indicates connection issues
     const isConnectionError = errorCode === 'ECONNREFUSED' ||
                               errorCode === 'ENOTFOUND' ||
                               errorCode === 'EAI_AGAIN' ||
+                              errorCode === 'FetchError' ||
                               errorMessage.includes('ECONNREFUSED') ||
                               errorMessage.includes('ENOTFOUND') ||
                               errorMessage.includes('getaddrinfo') ||
                               errorMessage.includes('connect ECONNREFUSED') ||
-                              errorMessage.includes('Failed to fetch')
+                              errorMessage.includes('Failed to fetch') ||
+                              (errorMessage.includes('fetch failed') && !errorMessage.includes('timeout')) ||
+                              (errorMessage.includes('<no response>') && !errorMessage.includes('TimeoutError'))
 
     // Check for timeout errors
     const isTimeout = errorMessage.includes('timeout') ||
@@ -87,18 +95,33 @@ export async function callPythonApi(
     // Check if Python server returned an error response (has status code but error occurred)
     const hasServerResponse = httpStatusCode && httpStatusCode >= 400 && httpStatusCode < 600
 
-    console.error('[Python API] Error calling Python backend:', {
-      url,
-      method: options.method || 'GET',
-      error: errorMessage,
-      errorCode,
-      statusCode: httpStatusCode,
-      timeout: `${timeoutSeconds}s`,
-      isConnectionError,
-      isTimeout,
-      hasServerResponse,
-      hasResponseData: !!responseData,
-    })
+    // Log errors in development mode
+    // Suppress only pure connection errors (ECONNREFUSED, ENOTFOUND) without HTTP status
+    // These are expected during startup if Python server isn't fully ready
+    // Also suppress timeouts during initial startup (first 30 seconds) as they're likely due to hot reload
+    const isPureConnectionError = isConnectionError && !hasServerResponse && !isTimeout
+    const timeSinceStartup = Date.now() - serverStartTime
+    const isStartupTimeout = isTimeout && process.dev && timeSinceStartup < STARTUP_GRACE_PERIOD
+    const shouldLog = process.dev && !isPureConnectionError && !isStartupTimeout
+
+    if (shouldLog) {
+      // Use warning level for timeouts, error for other issues
+      const logLevel = isTimeout ? 'warn' : 'error'
+      const logMethod = logLevel === 'warn' ? console.warn : console.error
+
+      logMethod(`[Python API] ${isTimeout ? 'Timeout' : 'Error'} calling Python backend:`, {
+        url,
+        method: options.method || 'GET',
+        error: errorMessage,
+        errorCode,
+        statusCode: httpStatusCode,
+        timeout: `${timeoutSeconds}s`,
+        isConnectionError,
+        isTimeout,
+        hasServerResponse,
+        hasResponseData: !!responseData,
+      })
+    }
 
     // Handle connection errors (server not running) - these don't have HTTP status codes
     if (isConnectionError && !httpStatusCode) {

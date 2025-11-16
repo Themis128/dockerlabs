@@ -258,6 +258,7 @@ app.vue
 ## Development vs Production
 
 ### Development
+
 ```
 Browser (localhost:3001)
     ↓
@@ -271,6 +272,7 @@ Raspberry Pi Devices
 ```
 
 ### Production
+
 ```
 Browser
     ↓

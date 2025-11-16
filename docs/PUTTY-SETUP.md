@@ -3,6 +3,7 @@
 ## Error: "No supported authentication methods available"
 
 This error means:
+
 - ✅ SSH is working on the Pi
 - ❌ Your SSH key is not added to the Pi
 - ❌ Password authentication is disabled
@@ -16,7 +17,7 @@ PuTTY uses `.ppk` format instead of OpenSSH format. Convert your key:
 1. **Open PuTTYgen** (comes with PuTTY installation)
 2. **Click "Load"**
 3. **Navigate to:** `C:\Users\<YourUsername>\.ssh\id_rsa`
-   - Change file type filter to "All Files (*.*)" to see the private key
+   - Change file type filter to "All Files (_._)" to see the private key
 4. **Click "Save private key"** and save as `id_rsa.ppk`
 5. **Close PuTTYgen**
 
@@ -63,12 +64,14 @@ You need **physical access** to the Pi to add your key.
 If you prefer password authentication:
 
 **On the Pi (physical access):**
+
 ```bash
 sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/; s/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
 sudo systemctl restart ssh
 ```
 
 Then in PuTTY:
+
 - Just enter username: `pi`
 - Enter password when prompted
 - No key file needed
@@ -76,10 +79,12 @@ Then in PuTTY:
 ## Raspberry Pi IP Addresses
 
 ### Ethernet (Priority)
+
 - **Pi 1:** 192.168.0.48
 - **Pi 2:** 192.168.0.16
 
 ### WiFi (Fallback)
+
 - **Pi 1:** 192.168.0.17
 - **Pi 2:** 192.168.0.41
 
@@ -101,14 +106,18 @@ You can also use the PowerShell scripts we created:
 ## Troubleshooting
 
 ### "Server refused our key"
+
 - Key not added to Pi yet - use `.\get-pi-command.ps1` to get the command
-- Wrong key file selected in PuTTY - make sure you're using the converted `.ppk` file
+- Wrong key file selected in PuTTY - make sure you're using the converted `.ppk`
+  file
 
 ### "Connection refused"
+
 - SSH service not running on Pi
 - On Pi: `sudo systemctl enable ssh && sudo systemctl start ssh`
 
 ### "Network error: Connection timed out"
+
 - Pi is not reachable
 - Check network connection
 - Verify IP address: `.\test-connections.ps1`

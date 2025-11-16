@@ -1,10 +1,12 @@
 # Nuxt 4 Migration Guide
 
-This guide documents the migration from vanilla JavaScript/HTML to Nuxt 4 for the Raspberry Pi Manager frontend.
+This guide documents the migration from vanilla JavaScript/HTML to Nuxt 4 for
+the Raspberry Pi Manager frontend.
 
 ## Overview
 
-The migration follows **Option 1: Nuxt as Frontend Only**, keeping the Python backend server (`server.py`) intact while modernizing the frontend with Nuxt 4.
+The migration follows **Option 1: Nuxt as Frontend Only**, keeping the Python
+backend server (`server.py`) intact while modernizing the frontend with Nuxt 4.
 
 ## Architecture
 
@@ -100,6 +102,7 @@ API_BASE_URL=http://localhost:3000/api
 **Option A: Run both servers separately**
 
 Terminal 1 (Python backend):
+
 ```bash
 npm run start:python
 # or
@@ -107,6 +110,7 @@ python web-gui/server.py
 ```
 
 Terminal 2 (Nuxt frontend):
+
 ```bash
 npm run dev
 # or
@@ -116,11 +120,13 @@ npm run start:nuxt
 **Option B: Use a process manager (recommended for production)**
 
 Install `concurrently`:
+
 ```bash
 npm install --save-dev concurrently
 ```
 
 Add to `package.json`:
+
 ```json
 {
   "scripts": {
@@ -160,6 +166,7 @@ Add to `package.json`:
 **Current:** Complex HTML form with many collapsible sections in `index.html`
 
 **Migration:**
+
 - Create `components/OsInstallTab.vue`
 - Convert form sections to Vue components:
   - `OsInstallForm.vue` - Main form
@@ -175,6 +182,7 @@ Add to `package.json`:
 **Current:** Settings form in `index.html`
 
 **Migration:**
+
 - Create `components/SettingsTab.vue`
 - Convert to Vue form components
 - Use `useApi().configurePi()` for submission
@@ -184,6 +192,7 @@ Add to `package.json`:
 **Current:** Terminal-like interface in `index.html`
 
 **Migration:**
+
 - Create `components/RemoteTab.vue`
 - Create `components/Terminal.vue` for terminal display
 - Use `useApi().executeRemoteCommand()` for commands
@@ -194,6 +203,7 @@ Add to `package.json`:
 **Current:** Server-Sent Events (SSE) for SD card formatting progress
 
 **Migration:**
+
 - Use Nuxt's `useFetch` or `$fetch` with streaming support
 - Or use native `EventSource` API in composable
 - Create `composables/useProgressStream.ts` for SSE handling
@@ -211,19 +221,19 @@ Example usage:
 
 ```vue
 <script setup lang="ts">
-const { getPis, listSdcards } = useApi()
+const { getPis, listSdcards } = useApi();
 
-const pis = ref([])
-const loading = ref(false)
+const pis = ref([]);
+const loading = ref(false);
 
 const loadPis = async () => {
-  loading.value = true
-  const response = await getPis()
+  loading.value = true;
+  const response = await getPis();
   if (response.success) {
-    pis.value = response.data.pis
+    pis.value = response.data.pis;
   }
-  loading.value = false
-}
+  loading.value = false;
+};
 </script>
 ```
 
@@ -244,6 +254,7 @@ const loadPis = async () => {
 ## Production Build
 
 1. **Build Nuxt app:**
+
    ```bash
    npm run build
    ```

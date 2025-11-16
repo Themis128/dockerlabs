@@ -1,6 +1,7 @@
 # Web GUI - Raspberry Pi Management Interface
 
-A Python-based web server providing a browser interface for managing Raspberry Pi devices.
+A Python-based web server providing a browser interface for managing Raspberry
+Pi devices.
 
 ## Structure
 
@@ -29,25 +30,30 @@ web-gui/
 ## Running the Server
 
 ### From project root:
+
 ```bash
 python web-gui/server.py
 ```
 
 ### Using npm script:
+
 ```bash
 npm run start:server
 ```
 
 ### Using PowerShell:
+
 ```powershell
 .\start-web-gui.ps1
 ```
 
-The server will start on port 3000 by default (configurable via `PORT` environment variable).
+The server will start on port 3000 by default (configurable via `PORT`
+environment variable).
 
 ## Configuration
 
-The server requires a `pi-config.json` file in the project root with Raspberry Pi device information:
+The server requires a `pi-config.json` file in the project root with Raspberry
+Pi device information:
 
 ```json
 {
@@ -65,6 +71,7 @@ The server requires a `pi-config.json` file in the project root with Raspberry P
 ## API Endpoints
 
 ### GET Endpoints
+
 - `/api/pis` - List all Raspberry Pi devices
 - `/api/test-connections` - Test connectivity to all Pis
 - `/api/test-ssh-auth?pi=N` - Test SSH authentication for Pi N
@@ -73,6 +80,7 @@ The server requires a `pi-config.json` file in the project root with Raspberry P
 - `/api/scan-wifi` - Scan for available WiFi networks
 
 ### POST Endpoints
+
 - `/api/connect-ssh` - Connect via SSH (returns connection info)
 - `/api/connect-telnet` - Connect via Telnet (returns connection info)
 - `/api/execute-remote` - Execute command on remote Pi
@@ -82,7 +90,9 @@ The server requires a `pi-config.json` file in the project root with Raspberry P
 
 ## Scripts
 
-All scripts in the `scripts/` directory are called by the server via subprocess. They:
+All scripts in the `scripts/` directory are called by the server via subprocess.
+They:
+
 - Accept command-line arguments
 - Output JSON for structured responses
 - Use exit codes to indicate success/failure
@@ -90,11 +100,14 @@ All scripts in the `scripts/` directory are called by the server via subprocess.
 
 ## Development
 
-The server uses Python's built-in `http.server` module with custom request handling. It serves static files from `public/` and handles API requests via the `PiManagementHandler` class.
+The server uses Python's built-in `http.server` module with custom request
+handling. It serves static files from `public/` and handles API requests via the
+`PiManagementHandler` class.
 
 ### Test Files
 
-- `test_progress_frontend.html` - Standalone test page for format progress component (development/testing only)
+- `test_progress_frontend.html` - Standalone test page for format progress
+  component (development/testing only)
 
 ## Security Notes
 

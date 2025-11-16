@@ -114,7 +114,7 @@ export async function clickTab(
   }
 
   // Wait for tab to become active with polling
-  const maxRetries = 5;
+  const maxRetries = 10; // Increased from 5 to 10
   let isActive = false;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -122,9 +122,9 @@ export async function clickTab(
     if (isActive) {
       break;
     }
-    // Wait before next attempt (except on last attempt) - reduced retry delay
+    // Wait before next attempt (except on last attempt) - respect retryDelay parameter
     if (attempt < maxRetries - 1) {
-      await page.waitForTimeout(Math.min(retryDelay, 200)); // Cap at 200ms
+      await page.waitForTimeout(retryDelay);
     }
   }
 
@@ -132,7 +132,7 @@ export async function clickTab(
     const currentActiveTab = await getActiveTab(page);
     throw new Error(
       `Tab "${tabLabel}" did not become active after clicking (checked ${maxRetries} times). ` +
-      `Current active tab: ${currentActiveTab || 'none'}`
+        `Current active tab: ${currentActiveTab || 'none'}`
     );
   }
 

@@ -58,11 +58,7 @@ export async function clickAndWait(
 /**
  * Fill form field safely
  */
-export async function fillField(
-  page: Page,
-  selector: string,
-  value: string
-): Promise<void> {
+export async function fillField(page: Page, selector: string, value: string): Promise<void> {
   const field = page.locator(selector);
   await field.waitFor({ state: 'visible', timeout: 5000 });
   await field.fill(value);

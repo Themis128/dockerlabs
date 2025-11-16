@@ -43,6 +43,8 @@
     "lint:html:json": "htmlhint web-gui/public/**/*.html --format json",
     "lint:html:compact": "htmlhint web-gui/public/**/*.html --format compact",
     "lint:html:validate": "html-validate web-gui/public/**/*.html",
+    "review": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/run-review.ps1",
+    "review:quick": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/run-review.ps1 -quick",
     "prepare": "husky"
   },
   "dependencies": {

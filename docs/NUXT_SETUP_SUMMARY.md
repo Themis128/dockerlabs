@@ -3,6 +3,7 @@
 ## ✅ What Has Been Created
 
 ### Project Structure
+
 - ✅ `nuxt.config.ts` - Nuxt 4 configuration with API proxy setup
 - ✅ `app.vue` - Root Vue component using NuxtLayout
 - ✅ `pages/index.vue` - Main page (simplified, layout handles navigation)
@@ -18,6 +19,7 @@
 - ✅ `.gitignore` - Updated with Nuxt-specific ignores
 
 ### Components Created
+
 - ✅ `components/DashboardTab.vue` - Dashboard with stats
 - ✅ `components/PisTab.vue` - Raspberry Pi device list
 - ✅ `components/SdcardTab.vue` - SD card management
@@ -27,6 +29,7 @@
 - ✅ `components/RemoteTab.vue` - Placeholder (needs migration)
 
 ### Composables
+
 - ✅ `composables/useApi.ts` - Complete API integration composable with:
   - Generic `get()` and `post()` methods
   - Specific methods for all API endpoints
@@ -34,29 +37,35 @@
   - Error handling
 
 ### Server-Side Features
+
 - ✅ `server/api/health.ts` - Health check endpoint
 - ✅ `server/api/proxy.ts` - Proxy endpoint helper
 - ✅ `server/utils/python-api.ts` - Python backend API utilities
 
 ### Utilities
+
 - ✅ `utils/format.ts` - Formatting utilities (bytes, dates, IP addresses)
 - ✅ `utils/validation.ts` - Form validation helpers
 - ✅ `utils/constants.ts` - Application constants
 
 ### Type Definitions
+
 - ✅ `types/api.ts` - API request/response types
 - ✅ `types/pi.ts` - Raspberry Pi related types
 - ✅ `types/sdcard.ts` - SD card related types
 - ✅ `types/index.ts` - Central type exports
 
 ### Styles
+
 - ✅ `assets/css/main.css` - Global CSS with Windows 11 design tokens
 
 ### Documentation
+
 - ✅ `docs/NUXT_MIGRATION_GUIDE.md` - Complete migration guide
 - ✅ `README_NUXT.md` - Quick start guide
 
 ### Package Configuration
+
 - ✅ Updated `package.json` with:
   - Nuxt 4 dependency
   - New npm scripts
@@ -65,6 +74,7 @@
 ## 🎯 How It Works
 
 ### Architecture
+
 ```
 ┌─────────────────┐
 │   Nuxt 4 App   │  Port 3001 (Frontend)
@@ -80,6 +90,7 @@
 ```
 
 ### API Integration
+
 - All API calls go through `useApi()` composable
 - Vite proxy forwards `/api/*` requests to Python server
 - TypeScript types for better development experience
@@ -88,16 +99,19 @@
 ## 🚀 Getting Started
 
 ### 1. Install Dependencies
+
 ```bash
 npm install
 ```
 
 ### 2. Set Up Environment
+
 ```bash
 cp .env.example .env
 ```
 
 ### 3. Start Development
+
 ```bash
 # Option A: Both servers together
 npm run dev:all
@@ -108,12 +122,14 @@ npm run dev            # Terminal 2
 ```
 
 ### 4. Access Application
+
 - Frontend: http://localhost:3001
 - Backend API: http://localhost:3000/api
 
 ## 📋 Migration Checklist
 
 ### Completed ✅
+
 - [x] Project setup
 - [x] Basic routing
 - [x] API composable
@@ -123,6 +139,7 @@ npm run dev            # Terminal 2
 - [x] Connection testing component
 
 ### Remaining 🚧
+
 - [ ] OS Installation tab (complex form)
 - [ ] Settings/Configuration tab
 - [ ] Remote Connection tab (terminal)
@@ -136,12 +153,14 @@ npm run dev            # Terminal 2
 ## 🔧 Configuration Details
 
 ### Nuxt Config (`nuxt.config.ts`)
+
 - **Mode:** SPA (Single Page Application)
 - **SSR:** Disabled (works with Python backend)
 - **Proxy:** `/api` → `http://localhost:3000`
 - **TypeScript:** Enabled with strict mode
 
 ### API Composable (`useApi.ts`)
+
 - Base URL from runtime config
 - Automatic error handling
 - TypeScript types

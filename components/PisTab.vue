@@ -8,13 +8,13 @@
       <p class="empty">No Raspberry Pis found</p>
     </div>
     <div class="pi-list" v-else>
-      <div v-for="pi in pis" :key="pi.id" class="pi-card">
-        <h3>{{ pi.name }}</h3>
+      <div v-for="pi in pis" :key="pi.number" class="pi-card">
+        <h3>{{ pi.hostname || `Pi ${pi.number}` }}</h3>
         <div class="pi-details">
-          <p><strong>IP:</strong> {{ pi.ip }}</p>
-          <p><strong>MAC:</strong> {{ pi.mac }}</p>
-          <p><strong>Connection:</strong> {{ pi.connection }}</p>
-          <p v-if="pi.description"><strong>Description:</strong> {{ pi.description }}</p>
+          <p><strong>IP:</strong> {{ pi.ip || 'N/A' }}</p>
+          <p><strong>MAC:</strong> {{ pi.mac || 'N/A' }}</p>
+          <p><strong>Status:</strong> {{ pi.status || 'unknown' }}</p>
+          <p v-if="pi.model"><strong>Model:</strong> {{ pi.model }}</p>
         </div>
       </div>
     </div>

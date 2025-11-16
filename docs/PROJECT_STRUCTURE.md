@@ -1,6 +1,7 @@
 # Nuxt 4 Project Structure
 
-This document describes the complete project structure for the Nuxt 4 application.
+This document describes the complete project structure for the Nuxt 4
+application.
 
 ## Directory Structure
 
@@ -74,43 +75,65 @@ dockerlabs/
 ## Key Directories
 
 ### `layouts/`
-Layout components that wrap pages. The `default.vue` layout provides the main structure with header, navigation, and footer.
+
+Layout components that wrap pages. The `default.vue` layout provides the main
+structure with header, navigation, and footer.
 
 ### `pages/`
-File-based routing. Each `.vue` file in this directory becomes a route. The `index.vue` file is the home page.
+
+File-based routing. Each `.vue` file in this directory becomes a route. The
+`index.vue` file is the home page.
 
 ### `components/`
-Vue components that are automatically imported and can be used anywhere without explicit imports.
+
+Vue components that are automatically imported and can be used anywhere without
+explicit imports.
 
 ### `composables/`
+
 Reusable composition functions (like `useApi`) that are automatically imported.
 
 ### `middleware/`
-Route middleware that runs before navigation. Can be used for authentication, API error handling, etc.
+
+Route middleware that runs before navigation. Can be used for authentication,
+API error handling, etc.
 
 ### `plugins/`
-Nuxt plugins that run when the app initializes. Client-side plugins run only in the browser.
+
+Nuxt plugins that run when the app initializes. Client-side plugins run only in
+the browser.
 
 ### `server/`
+
 Server-side code that runs on the Node.js server:
+
 - `server/api/` - API routes (e.g., `/api/health`)
 - `server/utils/` - Server-side utilities
 
 ### `utils/`
-Shared utility functions that are automatically imported. Use for formatting, validation, constants, etc.
+
+Shared utility functions that are automatically imported. Use for formatting,
+validation, constants, etc.
 
 ### `types/`
-TypeScript type definitions. Centralized types for better type safety across the application.
+
+TypeScript type definitions. Centralized types for better type safety across the
+application.
 
 ### `assets/`
-Assets that are processed by Vite (CSS, images, etc.). These are optimized and bundled.
+
+Assets that are processed by Vite (CSS, images, etc.). These are optimized and
+bundled.
 
 ### `public/`
-Static files served as-is. Files here are accessible at the root URL (e.g., `/favicon.svg`).
+
+Static files served as-is. Files here are accessible at the root URL (e.g.,
+`/favicon.svg`).
 
 ## Auto-Imports
 
 Nuxt automatically imports:
+
 - Components from `components/`
 - Composables from `composables/`
 - Utilities from `utils/`
@@ -121,31 +144,35 @@ This means you can use them without explicit imports:
 ```vue
 <script setup lang="ts">
 // No import needed - auto-imported
-const { getPis } = useApi()
-const formatted = formatBytes(1024)
+const { getPis } = useApi();
+const formatted = formatBytes(1024);
 </script>
 ```
 
 ## Type Safety
 
-All types are defined in the `types/` directory and exported from `types/index.ts`. Import types like this:
+All types are defined in the `types/` directory and exported from
+`types/index.ts`. Import types like this:
 
 ```typescript
-import type { RaspberryPi, ApiResponse } from '~/types'
+import type { RaspberryPi, ApiResponse } from '~/types';
 ```
 
 ## Server-Side Code
 
 Server-side code in `server/` runs on the Node.js server:
+
 - API routes are accessible at `/api/*`
 - Server utilities can call external APIs, access databases, etc.
-- Use `server/utils/python-api.ts` to call the Python backend from server-side code
+- Use `server/utils/python-api.ts` to call the Python backend from server-side
+  code
 
 ## Environment Variables
 
 - `.env.example` - Template for environment variables
 - `.env.local.example` - Template for local development
-- Copy these files to `.env` and `.env.local` (gitignored) for your configuration
+- Copy these files to `.env` and `.env.local` (gitignored) for your
+  configuration
 
 ## Configuration Files
 
@@ -159,9 +186,11 @@ Server-side code in `server/` runs on the Node.js server:
 2. **Composables**: Extract reusable logic into composables
 3. **Types**: Define types in `types/` for better type safety
 4. **Utils**: Use `utils/` for pure functions (no Vue reactivity)
-5. **Server**: Use `server/` for server-only code (API routes, database access, etc.)
+5. **Server**: Use `server/` for server-only code (API routes, database access,
+   etc.)
 6. **Layouts**: Use layouts for shared page structure
-7. **Middleware**: Use middleware for cross-cutting concerns (auth, error handling)
+7. **Middleware**: Use middleware for cross-cutting concerns (auth, error
+   handling)
 
 ## File Naming Conventions
 

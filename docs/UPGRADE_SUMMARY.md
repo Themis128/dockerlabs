@@ -3,11 +3,14 @@
 ## ✅ Completed Upgrades
 
 ### 1. Framework Upgrades
+
 - **.NET MAUI**: Upgraded from .NET 8.0 to .NET 9.0
 - **Playwright**: Already at latest stable version (1.56.1)
-- **Cross-platform support**: Enabled for Android, iOS, macOS, Windows, and Linux
+- **Cross-platform support**: Enabled for Android, iOS, macOS, Windows, and
+  Linux
 
 ### 2. Package Updates
+
 - `Microsoft.Maui.Controls`: 8.0.100 → 9.0.111
 - `CommunityToolkit.Maui`: 9.0.2 (compatible with .NET 9)
 - `CommunityToolkit.Mvvm`: 8.3.2 → 8.4.0
@@ -17,12 +20,14 @@
 - `System.Management`: 9.0.0 (Windows only)
 
 ### 3. Test Suite Fixes
+
 - Fixed server connection abort error handling
 - Fixed URL mismatch between config and tests
 - Improved test timeout and retry logic
 - All 81 Playwright tests now passing
 
 ### 4. Build Status
+
 - ✅ .NET MAUI Windows build: **Success** (0 warnings, 0 errors)
 - ✅ Playwright tests: **All passing** (81/81 tests)
 - ✅ No linter errors
@@ -30,6 +35,7 @@
 ## 📋 Current Project Status
 
 ### Frameworks
+
 - **.NET SDK**: 9.0.300
 - **.NET MAUI**: 9.0.111
 - **Playwright**: 1.56.1
@@ -37,6 +43,7 @@
 - **Node.js**: v20.19.0
 
 ### Target Frameworks
+
 - `net9.0-android`
 - `net9.0-ios`
 - `net9.0-maccatalyst`
@@ -48,6 +55,7 @@
 ### Recommended Actions
 
 1. **Test Cross-Platform Builds** (if needed)
+
    ```bash
    # Android (requires Android SDK)
    dotnet build -f net9.0-android
@@ -57,11 +65,13 @@
    ```
 
 2. **Run Full Test Suite**
+
    ```bash
    npm test
    ```
 
 3. **Build Release Version**
+
    ```bash
    cd RaspberryPiManager
    dotnet build -c Release -f net9.0-windows10.0.19041.0

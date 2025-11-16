@@ -1,9 +1,12 @@
 # Fix Authentication Error - Step by Step
 
 ## The Problem
-You're seeing: **"No supported authentication methods available (server sent: publickey)"**
+
+You're seeing: **"No supported authentication methods available (server sent:
+publickey)"**
 
 This means:
+
 - ✅ SSH is working on the Pi
 - ❌ Your SSH key is NOT on the Pi yet
 - ❌ Password authentication is disabled
@@ -15,7 +18,9 @@ This means:
 ## Method 1: Add SSH Key (Recommended - Most Secure)
 
 ### Step 1: Get the Command
+
 On Windows, run:
+
 ```powershell
 .\get-pi-command.ps1
 ```
@@ -23,6 +28,7 @@ On Windows, run:
 This will show you a long command starting with `mkdir -p ~/.ssh...`
 
 ### Step 2: Run on Raspberry Pi
+
 **You need physical access to the Pi (keyboard + monitor):**
 
 1. Connect keyboard and monitor to Raspberry Pi (192.168.0.48)
@@ -33,7 +39,9 @@ This will show you a long command starting with `mkdir -p ~/.ssh...`
 6. You should see: `SSH key added successfully!`
 
 ### Step 3: Test
+
 On Windows:
+
 ```powershell
 .\test-ssh-auth.ps1 1
 ```
@@ -41,7 +49,9 @@ On Windows:
 You should see: `✓ SSH key authentication WORKS!`
 
 ### Step 4: Connect
+
 Now you can connect:
+
 ```powershell
 .\connect-ssh.ps1 1
 ```
@@ -65,6 +75,7 @@ echo "Password authentication enabled!"
 ```
 
 ### Test on Windows:
+
 ```powershell
 .\test-ssh-auth.ps1 1
 ```
@@ -72,12 +83,14 @@ echo "Password authentication enabled!"
 You should see: `✓ Password authentication is ENABLED`
 
 ### Connect:
+
 ```powershell
 .\connect-ssh.ps1 1
 # Will prompt for password
 ```
 
 Or in PuTTY:
+
 - Just enter username: `pi`
 - Enter password when prompted
 - No key file needed
@@ -87,7 +100,9 @@ Or in PuTTY:
 ## Method 3: Use USB Drive
 
 ### Step 1: Copy Key to USB
+
 On Windows:
+
 ```powershell
 .\copy-key-to-usb.ps1
 ```
@@ -95,6 +110,7 @@ On Windows:
 Follow the prompts to select your USB drive.
 
 ### Step 2: On Raspberry Pi
+
 1. Insert USB drive into Pi
 2. Log in to Pi (physical access)
 3. Run:
@@ -113,6 +129,7 @@ chmod 600 ~/.ssh/authorized_keys
 ```
 
 ### Step 3: Test
+
 ```powershell
 .\test-ssh-auth.ps1 1
 ```
@@ -127,7 +144,7 @@ chmod 600 ~/.ssh/authorized_keys
    - Open PuTTYgen (`C:\Program Files\PuTTY\puttygen.exe`)
    - Click "Load"
    - Navigate to: `C:\Users\baltz\.ssh\id_rsa`
-     - Change file filter to "All Files (*.*)"
+     - Change file filter to "All Files (_._)"
    - Click "Save private key" → Save as `id_rsa.ppk`
 
 2. **Configure PuTTY:**
@@ -161,15 +178,18 @@ chmod 600 ~/.ssh/authorized_keys
 ## Troubleshooting
 
 ### "Permission denied" after adding key
+
 - Make sure you copied the ENTIRE command (it's very long)
 - Check permissions on Pi: `ls -la ~/.ssh/authorized_keys`
 - Should show: `-rw-------` (600 permissions)
 
 ### "Connection refused"
+
 - SSH service may not be running
 - On Pi: `sudo systemctl enable ssh && sudo systemctl start ssh`
 
 ### PuTTY still shows error
+
 - Make sure you converted the key to `.ppk` format
 - Make sure you selected the `.ppk` file in PuTTY (not the `.ssh` folder)
 - Try removing old host key: `.\fix-ssh-connection.ps1`
@@ -199,4 +219,3 @@ Once you can connect:
 **The command:** Get it with `.\get-pi-command.ps1` and run it on the Pi.
 
 That's it! Once the key is added, everything will work.
-

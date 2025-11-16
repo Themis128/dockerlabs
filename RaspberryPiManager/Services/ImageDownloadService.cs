@@ -14,12 +14,12 @@ public interface IImageDownloadService
 
 public class ImageDownloadService : IImageDownloadService
 {
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly HttpClient _httpClient;
     private readonly ILogger<ImageDownloadService> _logger;
 
-    public ImageDownloadService(IHttpClientFactory httpClientFactory, ILogger<ImageDownloadService> logger)
+    public ImageDownloadService(HttpClient httpClient, ILogger<ImageDownloadService> logger)
     {
-        _httpClientFactory = httpClientFactory;
+        _httpClient = httpClient;
         _logger = logger;
     }
 
@@ -62,13 +62,11 @@ public class ImageDownloadService : IImageDownloadService
 
     public async Task<bool> DownloadImageAsync(OSImage image, string destinationPath, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
     {
-        using var httpClient = _httpClientFactory.CreateClient(nameof(ImageDownloadService));
-
         try
         {
             _logger.LogInformation("Downloading image: {ImageName} to {DestinationPath}", image.Name, destinationPath);
 
-            using var response = await httpClient.GetAsync(image.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+            using var response = await _httpClient.GetAsync(image.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
 
             var totalBytes = response.Content.Headers.ContentLength ?? 0;

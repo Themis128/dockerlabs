@@ -23,7 +23,8 @@
    - `web-gui/scripts/list_sdcards.py` - Fixed duplicate imports
 
 3. **Subprocess Without Check** - Fixed 20+ instances:
-   - `web-gui/server.py` - Added `check=False` to all `subprocess.run()` calls (6+ instances)
+   - `web-gui/server.py` - Added `check=False` to all `subprocess.run()` calls
+     (6+ instances)
    - `connect_ssh.py` - Added `check=False`
    - `test_connections.py` - Added `check=False`
    - `connect_telnet.py` - Added `check=False`
@@ -38,11 +39,13 @@
    - `web-gui/scripts/list_sdcards.py` - Removed duplicate `json` imports
 
 6. **Unused Variables** - Fixed:
-   - `web-gui/server.py` - Removed unused `script_path`, `os_version`, `custom_image`
+   - `web-gui/server.py` - Removed unused `script_path`, `os_version`,
+     `custom_image`
    - Fixed `format` parameter name to `format_str`
 
 7. **Exception Order** - Fixed:
-   - `web-gui/server.py` - Fixed exception order (PermissionError before IOError)
+   - `web-gui/server.py` - Fixed exception order (PermissionError before
+     IOError)
 
 8. **F-strings Without Interpolation** - Fixed:
    - `test_connections.py` - Removed unnecessary f-strings
@@ -98,4 +101,6 @@
 
 ### ⚠️ Note
 
-Some issues like "too many nested blocks" and "too many return statements" are design choices that may require significant refactoring. These don't affect functionality but impact code maintainability scores.
+Some issues like "too many nested blocks" and "too many return statements" are
+design choices that may require significant refactoring. These don't affect
+functionality but impact code maintainability scores.

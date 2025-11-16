@@ -7,6 +7,7 @@ All Phase 1 features have been successfully implemented and tested.
 ## Features Implemented
 
 ### 1. **OWE (Opportunistic Wireless Encryption)** 🔒
+
 **Status: ✅ Complete**
 
 - Added OWE security type to enum
@@ -17,6 +18,7 @@ All Phase 1 features have been successfully implemented and tested.
 - Automatically enables PMF (Protected Management Frames)
 
 **Files Modified:**
+
 - `RaspberryPiManager/Models/PiSettings.cs` - Added OWE enum value
 - `web-gui/scripts/generate_wpa_supplicant.py` - OWE configuration
 - `RaspberryPiManager/Services/ConfigFileGenerator.cs` - OWE support
@@ -24,6 +26,7 @@ All Phase 1 features have been successfully implemented and tested.
 - `web-gui/public/app.js` - OWE handling in form submission
 
 **Test Coverage:**
+
 - ✅ OWE selection works
 - ✅ Password section hidden for OWE
 - ✅ Form submission includes OWE
@@ -31,6 +34,7 @@ All Phase 1 features have been successfully implemented and tested.
 ---
 
 ### 2. **Auto-Connect Settings** ⚙️
+
 **Status: ✅ Complete**
 
 - Per-network auto-connect toggle
@@ -39,6 +43,7 @@ All Phase 1 features have been successfully implemented and tested.
 - Minimum signal strength in dBm
 
 **Implementation:**
+
 ```python
 # Auto-connect disabled
 disabled=1
@@ -48,13 +53,16 @@ signal_threshold=-70
 ```
 
 **Files Modified:**
-- `RaspberryPiManager/Models/PiSettings.cs` - Added AutoConnect and MinSignalStrength
+
+- `RaspberryPiManager/Models/PiSettings.cs` - Added AutoConnect and
+  MinSignalStrength
 - `web-gui/scripts/generate_wpa_supplicant.py` - Auto-connect logic
 - `RaspberryPiManager/Services/ConfigFileGenerator.cs` - Auto-connect support
 - `web-gui/public/index.html` - Auto-connect UI
 - `web-gui/public/app.js` - Form data collection
 
 **Test Coverage:**
+
 - ✅ Auto-connect checkbox works
 - ✅ Signal strength threshold input works
 - ✅ Form submission includes both fields
@@ -62,6 +70,7 @@ signal_threshold=-70
 ---
 
 ### 3. **802.11r Fast Roaming** 🚀
+
 **Status: ✅ Complete**
 
 - Fast BSS Transition support
@@ -71,6 +80,7 @@ signal_threshold=-70
 - Reduces handoff time from ~200ms to ~50ms
 
 **Implementation:**
+
 ```python
 # Fast roaming configuration
 mobility_domain=1234
@@ -79,6 +89,7 @@ ft_eap_method=FT-EAP  # For enterprise networks
 ```
 
 **Files Modified:**
+
 - `RaspberryPiManager/Models/PiSettings.cs` - Fast roaming properties
 - `web-gui/scripts/generate_wpa_supplicant.py` - 802.11r configuration
 - `RaspberryPiManager/Services/ConfigFileGenerator.cs` - Fast roaming support
@@ -86,6 +97,7 @@ ft_eap_method=FT-EAP  # For enterprise networks
 - `web-gui/public/app.js` - Fast roaming toggle and form handling
 
 **Test Coverage:**
+
 - ✅ Fast roaming toggle works
 - ✅ Mobility domain configuration works
 - ✅ FT-PSK checkbox works
@@ -95,6 +107,7 @@ ft_eap_method=FT-EAP  # For enterprise networks
 ---
 
 ### 4. **Network Scanning & Discovery** 🔍
+
 **Status: ✅ Complete**
 
 - WiFi network scanning functionality
@@ -104,20 +117,24 @@ ft_eap_method=FT-EAP  # For enterprise networks
 - Backend API endpoint for scanning
 
 **Implementation:**
+
 - Python script: `web-gui/scripts/scan_wifi_networks.py`
 - Backend endpoint: `/api/scan-wifi`
 - Frontend UI: Scan button and results display
 - Uses `iwlist` or `nmcli` for scanning
 
 **Files Created:**
+
 - `web-gui/scripts/scan_wifi_networks.py` - Network scanning script
 
 **Files Modified:**
+
 - `web-gui/server.py` - Added `/api/scan-wifi` endpoint
 - `web-gui/public/index.html` - Scan button and results area
 - `web-gui/public/app.js` - Scan functionality and network selection
 
 **Test Coverage:**
+
 - ✅ Scan button exists and is visible
 - ✅ Scan results area exists
 - ✅ Scan button click triggers scan
@@ -130,12 +147,14 @@ ft_eap_method=FT-EAP  # For enterprise networks
 ### All Tests Passing ✅
 
 **Total Phase 1 Tests:** 9 new tests
+
 - OWE Support: 1 test ✅
 - Auto-Connect: 2 tests ✅
 - Fast Roaming: 3 tests ✅
 - Network Scanning: 3 tests ✅
 
 **Total WPA Tests:** 31 tests (all passing)
+
 - Backward Compatibility: 3 tests ✅
 - Advanced Options: 5 tests ✅
 - Password Validation: 2 tests ✅
@@ -150,6 +169,7 @@ ft_eap_method=FT-EAP  # For enterprise networks
 ## Configuration Examples
 
 ### OWE Network
+
 ```ini
 network={
     ssid="PublicWiFi"
@@ -162,6 +182,7 @@ network={
 ```
 
 ### Auto-Connect Disabled with Signal Threshold
+
 ```ini
 network={
     ssid="HomeNetwork"
@@ -173,6 +194,7 @@ network={
 ```
 
 ### Fast Roaming Enabled
+
 ```ini
 network={
     ssid="CorporateNetwork"
@@ -188,6 +210,7 @@ network={
 ## Backward Compatibility
 
 ✅ **All existing functionality preserved**
+
 - Single network mode still works
 - Default values maintained
 - Legacy security types supported
@@ -198,6 +221,7 @@ network={
 ## Next Steps (Phase 2)
 
 Ready to implement:
+
 - 802.11k (Radio Resource Management)
 - 802.11v (Wireless Network Management)
 - Network Profiles Export/Import
@@ -208,21 +232,26 @@ Ready to implement:
 ## Files Summary
 
 ### Models
+
 - `RaspberryPiManager/Models/PiSettings.cs` - Added Phase 1 properties
 
 ### Generators
+
 - `web-gui/scripts/generate_wpa_supplicant.py` - Phase 1 features
 - `RaspberryPiManager/Services/ConfigFileGenerator.cs` - Phase 1 support
 
 ### Backend
+
 - `web-gui/server.py` - WiFi scanning endpoint
 - `web-gui/scripts/scan_wifi_networks.py` - Network scanner
 
 ### Frontend
+
 - `web-gui/public/index.html` - Phase 1 UI elements
 - `web-gui/public/app.js` - Phase 1 JavaScript handlers
 
 ### Tests
+
 - `tests/wpa.spec.ts` - Phase 1 test coverage
 
 ---
@@ -230,12 +259,14 @@ Ready to implement:
 ## Usage Examples
 
 ### Using OWE for Public WiFi
+
 1. Select "OWE" security type
 2. Enter SSID
 3. No password required
 4. Network will be encrypted automatically
 
 ### Setting Up Fast Roaming
+
 1. Enable WiFi
 2. Show Advanced Options
 3. Enable "802.11r Fast Roaming"
@@ -243,6 +274,7 @@ Ready to implement:
 5. Select FT-PSK (personal) or FT-EAP (enterprise)
 
 ### Scanning for Networks
+
 1. Click "🔍 Scan" button next to SSID field
 2. Wait for scan to complete
 3. Click on a network from the results
