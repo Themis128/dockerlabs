@@ -210,8 +210,8 @@ const statusMessage = ref('')
 const statusType = ref<'success' | 'error' | ''>('')
 const wifiNetworks = ref<Array<{ ssid: string; signal: number; security: string }>>([])
 
-// Settings state
-const settings = ref<PiSettings>({
+// Settings state - ensure wifi is always defined
+const settings = ref<PiSettings & { wifi: WiFiConfig }>({
   hostname: 'raspberrypi',
   sshEnabled: true,
   timezone: 'UTC',
@@ -248,7 +248,7 @@ const loadPiSettings = async () => {
           country: piInfo.settings.wifi?.country || 'US',
           hidden: piInfo.settings.wifi?.hidden || false,
         },
-      }
+      } as PiSettings & { wifi: WiFiConfig }
     } else {
       // Use defaults if no settings found
       resetSettings()
@@ -275,7 +275,7 @@ const resetSettings = () => {
       country: 'US',
       hidden: false,
     },
-  }
+  } as PiSettings & { wifi: WiFiConfig }
   statusMessage.value = ''
   statusType.value = ''
 }

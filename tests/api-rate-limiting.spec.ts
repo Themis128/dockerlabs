@@ -129,9 +129,13 @@ test.describe('API Rate Limiting and Duplicate Call Prevention', () => {
     // Check time between requests
     if (apiRequests.length > 1) {
       for (let i = 1; i < apiRequests.length; i++) {
-        const timeDiff = apiRequests[i].time - apiRequests[i - 1].time;
-        // Should respect 500ms debounce (allow some tolerance)
-        expect(timeDiff).toBeGreaterThan(400);
+        const current = apiRequests[i];
+        const previous = apiRequests[i - 1];
+        if (current && previous) {
+          const timeDiff = current.time - previous.time;
+          // Should respect 500ms debounce (allow some tolerance)
+          expect(timeDiff).toBeGreaterThan(400);
+        }
       }
     }
 
@@ -139,7 +143,11 @@ test.describe('API Rate Limiting and Duplicate Call Prevention', () => {
     if (apiRequests.length > 1) {
       const timeDiffs = [];
       for (let i = 1; i < apiRequests.length; i++) {
-        timeDiffs.push(apiRequests[i].time - apiRequests[i - 1].time);
+        const current = apiRequests[i];
+        const previous = apiRequests[i - 1];
+        if (current && previous) {
+          timeDiffs.push(current.time - previous.time);
+        }
       }
       console.log(`Time differences between requests: ${timeDiffs.join(', ')}ms`);
     }

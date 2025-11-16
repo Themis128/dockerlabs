@@ -3,6 +3,7 @@
  * Proxies POST requests to Python backend
  */
 
+import { getHeader, setHeader, createError } from 'h3'
 import { callPythonApi, API_TIMEOUTS } from '../utils/python-api'
 
 export default defineEventHandler(async (event) => {

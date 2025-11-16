@@ -393,7 +393,7 @@ const selectedDeviceId = ref('')
 const osSource = ref<'download' | 'custom'>('download')
 const selectedOSVersion = ref('')
 const osDescription = ref('')
-const customFile = ref<File | null>(null)
+const customFile = ref<File | undefined>(undefined)
 const customFileInput = ref<HTMLInputElement | null>(null)
 const loading = ref(false)
 const scanningWifi = ref(false)
@@ -453,7 +453,7 @@ const canInstall = computed(() => {
     selectedDeviceId.value &&
     (osSource.value === 'download'
       ? selectedOSVersion.value
-      : customFile.value !== null)
+      : customFile.value !== undefined)
   )
 })
 
@@ -463,7 +463,7 @@ const handleSourceChange = () => {
     selectedOSVersion.value = ''
     osDescription.value = ''
   } else {
-    customFile.value = null
+    customFile.value = undefined
     if (customFileInput.value) {
       customFileInput.value.value = ''
     }
@@ -488,7 +488,7 @@ const handleCustomFileChange = (event: Event) => {
   if (target.files && target.files.length > 0) {
     customFile.value = target.files[0]
   } else {
-    customFile.value = null
+    customFile.value = undefined
   }
 }
 
@@ -545,7 +545,7 @@ const handleInstall = async () => {
       device_id: selectedDeviceId.value,
       os_version: osVersion,
       download_url: downloadUrl,
-      custom_image: osSource.value === 'custom' && customFile.value ? customFile.value.name : null,
+      custom_image: osSource.value === 'custom' && customFile.value ? customFile.value.name : (undefined as string | undefined),
       configuration: config.value,
     }
 

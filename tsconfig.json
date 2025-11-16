@@ -21,12 +21,11 @@
     "**/*.ts",
     "**/*.tsx",
     "**/*.vue",
-    ".nuxt/**/*"
+    ".nuxt/**/*.d.ts"
   ],
   "exclude": [
     "node_modules",
     "dist",
-    ".nuxt",
     ".output"
   ]
 }

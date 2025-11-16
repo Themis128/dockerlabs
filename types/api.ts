@@ -12,6 +12,8 @@ export interface ApiResponse<T = any> {
 
 export interface FetchOptions extends RequestInit {
   logResponse?: boolean
+  force?: boolean
+  params?: Record<string, any>
 }
 
 export interface ApiError {

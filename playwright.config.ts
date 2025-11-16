@@ -29,10 +29,6 @@ export default defineConfig({
     actionTimeout: 30000,
     /* Increase navigation timeout to handle slow server startup */
     navigationTimeout: 60000,
-    /* Increase test timeout */
-    testIdTimeout: 30000,
-    /* Increase test timeout to handle slow server responses */
-    testIdleTimeout: 60000,
   },
 
   /* Global test timeout */
@@ -76,8 +72,6 @@ export default defineConfig({
       timeout: 120 * 1000,
       stdout: 'pipe',
       stderr: 'pipe',
-      // Wait for server to be ready
-      commandTimeout: 120 * 1000,
     },
     {
       command: 'npx nuxt dev --port 3001',
@@ -86,8 +80,6 @@ export default defineConfig({
       timeout: 120 * 1000,
       stdout: 'pipe',
       stderr: 'pipe',
-      // Wait for server to be ready
-      commandTimeout: 120 * 1000,
     },
   ],
 });

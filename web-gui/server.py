@@ -2132,9 +2132,15 @@ def run_server():
             print("\nNote: Could not detect network IPs automatically")
             print(f"Server is accessible on all network interfaces on port {PORT}")
 
+        # Flush output to ensure messages are visible before blocking serve_forever
+        import sys
+        sys.stdout.flush()
+        sys.stderr.flush()
+
         try:
             # Use serve_forever with poll_interval to allow periodic checks
             # This allows the server to respond to shutdown signals more quickly
+            # Note: serve_forever() is blocking, so server is ready to accept connections when this is called
             httpd.serve_forever(poll_interval=0.5)
         except KeyboardInterrupt:
             # KeyboardInterrupt is raised when Ctrl+C is pressed

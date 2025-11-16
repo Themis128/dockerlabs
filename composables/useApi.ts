@@ -37,10 +37,12 @@ export const useApi = () => {
     // Create the request promise
     const requestPromise = (async () => {
       try {
+        const { force, logResponse, method, params, ...fetchOptions } = options || {}
         const response = await $fetch<ApiResponse<T>>(`${apiBase}${endpoint}`, {
           method: 'GET',
-          ...options,
-        });
+          params,
+          ...fetchOptions,
+        } as Parameters<typeof $fetch>[1]);
 
         if (options?.logResponse) {
           console.log(`[API GET] ${endpoint}:`, response);
@@ -101,7 +103,7 @@ export const useApi = () => {
     const requestKey = `POST:${endpoint}:${dataHash}`;
 
     // Check if there's already a pending request for this endpoint with same data
-    if (pendingRequests.has(requestKey) && !options?.force) {
+    if (pendingRequests.has(requestKey) && !(options as FetchOptions)?.force) {
       // Return the existing promise instead of making a new request
       return pendingRequests.get(requestKey) as Promise<ApiResponse<T>>;
     }
@@ -109,11 +111,12 @@ export const useApi = () => {
     // Create the request promise
     const requestPromise = (async () => {
       try {
+        const { force, logResponse, method, ...fetchOptions } = options || {}
         const response = await $fetch<ApiResponse<T>>(`${apiBase}${endpoint}`, {
           method: 'POST',
           body: data,
-          ...options,
-        });
+          ...fetchOptions,
+        } as Parameters<typeof $fetch>[1]);
 
         if (options?.logResponse) {
           console.log(`[API POST] ${endpoint}:`, response);

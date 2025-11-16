@@ -3,6 +3,7 @@
  * Proxies requests to Python backend for network scanning
  */
 
+import { getHeader, setHeader, setResponseStatus } from 'h3'
 import { callPythonApi, API_TIMEOUTS } from '../utils/python-api'
 
 export default defineEventHandler(async (event) => {

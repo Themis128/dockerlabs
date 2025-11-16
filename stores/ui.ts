@@ -46,7 +46,12 @@ export const useUIStore = defineStore('ui', {
      * Check if there are unread notifications
      */
     hasUnreadNotifications: (state) => {
-      return state.activeNotifications.length > 0
+      const active = state.notifications.filter((n) => {
+        const age = Date.now() - n.timestamp.getTime()
+        const duration = n.duration || 5000
+        return age < duration
+      })
+      return active.length > 0
     },
   },
 

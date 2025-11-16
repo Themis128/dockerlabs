@@ -3,6 +3,8 @@
  * Returns 404 for any unmatched API routes
  */
 
+import { getHeader, setHeader, createError } from 'h3'
+
 export default defineEventHandler(async (event) => {
   // Handle CORS preflight
   if (getMethod(event) === 'OPTIONS') {

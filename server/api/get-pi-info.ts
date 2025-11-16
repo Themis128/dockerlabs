@@ -3,6 +3,7 @@
  * Proxies GET and POST requests to Python backend
  */
 
+import { getHeader, setHeader, setResponseStatus } from 'h3'
 import { callPythonApi } from '../utils/python-api'
 
 export default defineEventHandler(async (event) => {

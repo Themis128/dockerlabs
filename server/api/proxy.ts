@@ -7,6 +7,7 @@
  * during development. This endpoint is for server-side proxying scenarios.
  */
 
+import { getHeader, setHeader, createError } from 'h3'
 import { callPythonApi } from '../utils/python-api'
 
 export default defineEventHandler(async (event) => {

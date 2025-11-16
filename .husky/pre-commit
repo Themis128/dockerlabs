@@ -2,12 +2,17 @@ echo "🔍 Running pre-commit checks..."
 
 # Generate Nuxt types first (required for auto-imports)
 echo "Generating Nuxt types..."
-npx nuxi prepare --skip-build || {
-  echo "⚠️  Warning: Failed to generate Nuxt types, skipping TypeScript check"
+npx nuxi prepare || {
+  echo "⚠️  Warning: Failed to generate Nuxt types"
+  echo "💡 Attempting alternative method..."
+  npm run build --dry-run 2>/dev/null || npx nuxt prepare || {
+    echo "⚠️  Could not generate Nuxt types, skipping TypeScript check"
+    echo "💡 Tip: Run 'npm run dev' once to generate Nuxt types"
+  }
 }
 
-# Check TypeScript syntax (only if Nuxt types are available)
-if [ -d ".nuxt" ]; then
+# Check if .nuxt/tsconfig.json exists (required for TypeScript to find auto-imports)
+if [ -f ".nuxt/tsconfig.json" ]; then
   echo "Checking TypeScript..."
   npx tsc --noEmit --skipLibCheck || {
     echo "❌ TypeScript check failed"
@@ -15,8 +20,9 @@ if [ -d ".nuxt" ]; then
     exit 1
   }
 else
-  echo "⚠️  Skipping TypeScript check (Nuxt types not generated)"
+  echo "⚠️  Skipping TypeScript check (.nuxt/tsconfig.json not found)"
   echo "💡 Tip: Run 'npm run dev' once to generate Nuxt types"
+  echo "💡 This is normal if you haven't run the dev server yet"
 fi
 
 # Check Python syntax
