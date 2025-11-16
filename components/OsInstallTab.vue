@@ -317,6 +317,7 @@
                   minlength="1"
                   maxlength="63"
                   placeholder="raspberrypi"
+                  autocomplete="off"
                 />
                 <small class="form-hint">Valid characters: letters, numbers, and hyphens (1-63 characters)</small>
               </label>
@@ -429,6 +430,7 @@
                       id="os-wifi-ssid"
                       class="form-input-full"
                       placeholder="Your WiFi network name"
+                      autocomplete="off"
                     />
                     <button
                       type="button"
@@ -439,6 +441,79 @@
                       {{ scanningWifi ? '⏳ Scanning...' : '🔍 Scan' }}
                     </button>
                   </div>
+                  <div v-if="wifiNetworks.length > 0" class="wifi-networks-list">
+                    <p class="form-hint">Select a network:</p>
+                    <div class="wifi-network-item" v-for="network in wifiNetworks" :key="network.ssid">
+                      <button
+                        type="button"
+                        @click="selectWifiNetwork(network)"
+                        class="wifi-network-btn"
+                      >
+                        <span class="wifi-ssid">{{ network.ssid }}</span>
+                        <span class="wifi-info">
+                          <span v-if="network.signal !== undefined" class="wifi-signal">Signal: {{ network.signal }}%</span>
+                          <span v-if="network.security" class="wifi-security">{{ network.security }}</span>
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                </label>
+                <label class="form-label-block">
+                  <span class="label-text">Password:</span>
+                  <input
+                    type="password"
+                    v-model="config.network.wifi_password"
+                    id="os-wifi-password"
+                    class="form-input-full"
+                    placeholder="WiFi password"
+                    autocomplete="new-password"
+                  />
+                </label>
+                <label class="form-label-block">
+                  <span class="label-text">Country Code:</span>
+                  <select v-model="config.network.wifi_country" id="os-wifi-country" class="form-input-full">
+                    <option value="US">US - United States</option>
+                    <option value="GB">GB - United Kingdom</option>
+                    <option value="DE">DE - Germany</option>
+                    <option value="FR">FR - France</option>
+                    <option value="ES">ES - Spain</option>
+                    <option value="IT">IT - Italy</option>
+                    <option value="JP">JP - Japan</option>
+                    <option value="CA">CA - Canada</option>
+                    <option value="AU">AU - Australia</option>
+                    <option value="GR">GR - Greece</option>
+                  </select>
+                </label>
+                <label class="form-label-block">
+                  <span class="label-text">Security Type:</span>
+                  <select v-model="config.network.wifi_security_type" id="os-wifi-security" class="form-input-full">
+                    <option value="WPA3_Personal">WPA3-Personal (SAE) - Recommended</option>
+                    <option value="WPA2_Personal">WPA2-Personal (PSK)</option>
+                    <option value="WPA3_Enterprise">WPA3-Enterprise</option>
+                    <option value="WPA2_Enterprise">WPA2-Enterprise</option>
+                    <option value="OWE">OWE (Opportunistic Wireless Encryption)</option>
+                    <option value="Open">Open (No Security)</option>
+                  </select>
+                </label>
+                <label class="checkbox-label">
+                  <input
+                    type="checkbox"
+                    v-model="config.network.wifi_transition_mode"
+                    id="os-wifi-transition"
+                    class="checkbox-input"
+                  />
+                  <span class="checkbox-custom"></span>
+                  <span class="checkbox-text">WPA2/WPA3 Transition Mode (Best Compatibility)</span>
+                </label>
+                <label class="checkbox-label">
+                  <input
+                    type="checkbox"
+                    v-model="config.network.wifi_hidden"
+                    id="os-wifi-hidden"
+                    class="checkbox-input"
+                  />
+                  <span class="checkbox-custom"></span>
+                  <span class="checkbox-text">Hidden Network</span>
                 </label>
               </div>
             </div>
@@ -495,6 +570,7 @@ import { useApi } from '~/composables/useApi'
 import { useSdcards } from '~/composables/useSdcards'
 import { useProgress } from '~/composables/useProgress'
 import { useNotifications } from '~/composables/useNotifications'
+import { useUIStore } from '~/stores/ui'
 
 const { installOS, scanWifi: scanWifiApi } = useApi()
 const { sdcards, loadSdcards } = useSdcards()
@@ -512,8 +588,57 @@ const loading = ref(false)
 const scanningWifi = ref(false)
 const showErrors = ref(false)
 
+// Configuration state type
+interface OSInstallConfig {
+  boot: {
+    enable_ssh: boolean
+    enable_serial: boolean
+    disable_overscan: boolean
+    gpu_memory: number
+  }
+  system: {
+    hostname: string
+    timezone: string
+    locale: string
+    enable_camera: boolean
+    enable_spi: boolean
+    enable_i2c: boolean
+    enable_serial_hw: boolean
+  }
+  network: {
+    enable_ethernet: boolean
+    enable_wifi: boolean
+    wifi_ssid: string
+    wifi_password: string
+    wifi_country: string
+    wifi_security_type: string
+    wifi_transition_mode: boolean
+    wifi_hidden: boolean
+  }
+  users: {
+    default_password: string
+    additional_users: any[]
+  }
+  ssh: {
+    port: number
+    enable_password_auth: boolean
+    disable_root_login: boolean
+    authorized_keys: string[]
+  }
+  packages: {
+    update_package_list: boolean
+    upgrade_packages: boolean
+    packages_to_install: string[]
+  }
+  scripts: {
+    pre_install: string[]
+    post_install: string[]
+    first_boot: string[]
+  }
+}
+
 // Configuration state
-const config = ref({
+const config = ref<OSInstallConfig>({
   boot: {
     enable_ssh: true,
     enable_serial: false,
@@ -537,26 +662,27 @@ const config = ref({
     wifi_country: 'US',
     wifi_security_type: 'WPA3_Personal',
     wifi_transition_mode: true,
+    wifi_hidden: false,
   },
   users: {
     default_password: '',
-    additional_users: [] as any[],
+    additional_users: [],
   },
   ssh: {
     port: 22,
     enable_password_auth: true,
     disable_root_login: true,
-    authorized_keys: [] as string[],
+    authorized_keys: [],
   },
   packages: {
     update_package_list: true,
     upgrade_packages: false,
-    packages_to_install: [] as string[],
+    packages_to_install: [],
   },
   scripts: {
-    pre_install: [] as string[],
-    post_install: [] as string[],
-    first_boot: [] as string[],
+    pre_install: [],
+    post_install: [],
+    first_boot: [],
   },
 })
 
@@ -609,20 +735,150 @@ const handleWifiToggle = () => {
   // WiFi settings visibility is handled by v-show
 }
 
+const wifiNetworks = ref<Array<{ ssid: string; signal?: number; security?: string }>>([])
+
+// Convert dBm to percentage (approximate)
+const dbmToPercentage = (dbm: number): number => {
+  // dBm range: -100 (weakest) to -30 (strongest)
+  // Convert to percentage: 0% = -100 dBm, 100% = -30 dBm
+  if (dbm >= -30) return 100
+  if (dbm <= -100) return 0
+  // Linear conversion: percentage = ((dbm + 100) / 70) * 100
+  return Math.round(((dbm + 100) / 70) * 100)
+}
+
 const scanWifiNetworks = async () => {
   scanningWifi.value = true
+  wifiNetworks.value = []
   try {
     const response = await scanWifiApi()
-    if (response.success && response.data?.networks) {
-      notifications.success(`Found ${response.data.networks.length} networks`)
+    // Handle both response.networks (direct) and response.data.networks (wrapped) formats
+    const networks = response.networks || response.data?.networks || []
+    if (response.success && networks.length > 0) {
+      wifiNetworks.value = networks.map((net: any) => {
+        let signalPercent = 0
+        const signalValue = net.signal_strength || net.signal || 0
+
+        // If signal is negative, it's in dBm - convert to percentage
+        if (signalValue < 0) {
+          signalPercent = dbmToPercentage(signalValue)
+        } else if (signalValue > 0 && signalValue <= 100) {
+          // Already a percentage
+          signalPercent = signalValue
+        }
+
+        return {
+          ssid: net.ssid || '',
+          signal: signalPercent,
+          security: net.security || 'Unknown',
+        }
+      })
+      notifications.success(`Found ${wifiNetworks.value.length} WiFi networks`)
     } else {
-      notifications.error(response.error || 'Failed to scan WiFi networks')
+      const errorMsg = response.error || 'Failed to scan WiFi networks'
+      notifications.error(errorMsg)
+      console.error('[WiFi Scan] Error:', response)
     }
   } catch (error: any) {
-    notifications.error(`WiFi scan error: ${error.message}`)
+    const errorMsg = error.message || 'WiFi scan error'
+    notifications.error(errorMsg)
+    console.error('[WiFi Scan] Exception:', error)
   } finally {
     scanningWifi.value = false
   }
+}
+
+const selectWifiNetwork = (network: { ssid: string; signal?: number; security?: string }) => {
+  config.value.network.wifi_ssid = network.ssid
+  notifications.success(`Selected network: ${network.ssid}`)
+}
+
+// Helper function to format SD card with streaming
+const formatSdcardWithStreaming = async (deviceId: string, piModel: string = 'pi5'): Promise<boolean> => {
+  const runtimeConfig = useRuntimeConfig()
+  const apiBase = runtimeConfig.public.apiBase || '/api'
+
+  update(0, 'Formatting SD card...')
+
+  const response = await fetch(`${apiBase}/format-sdcard`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'text/event-stream',
+    },
+    body: JSON.stringify({
+      device_id: deviceId,
+      pi_model: piModel,
+      stream: true,
+    }),
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: 'Formatting request failed' }))
+    fail(errorData.error || 'Formatting failed', 'Formatting failed')
+    notifications.error(errorData.error || 'Formatting failed')
+    return false
+  }
+
+  // Handle streaming response
+  const reader = response.body?.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+
+  if (!reader) {
+    throw new Error('Response body is not readable')
+  }
+
+  while (true) {
+    const { done, value } = await reader.read()
+
+    if (done) {
+      break
+    }
+
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split('\n')
+    buffer = lines.pop() || '' // Keep incomplete line in buffer
+
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        try {
+          const jsonStr = line.substring(6).trim()
+          if (!jsonStr) continue // Skip empty data lines
+          const data = JSON.parse(jsonStr)
+
+          if (data.type === 'progress') {
+            // Update progress from backend (scale to 0-50% for formatting phase)
+            const percent = data.percent !== null && data.percent !== undefined ? data.percent : null
+            const message = data.message || ''
+            if (percent !== null) {
+              // Formatting takes first 50% of total progress
+              update(Math.floor(percent * 0.5), `Formatting: ${message}`)
+            } else if (message) {
+              update(progress.value.percent || 0, `Formatting: ${message}`)
+            }
+          } else if (data.success !== undefined) {
+            // Final result
+            if (data.success) {
+              update(50, 'SD card formatted successfully')
+              return true
+            } else {
+              fail(data.error || 'Formatting failed', 'Formatting failed')
+              notifications.error(data.error || 'Formatting failed')
+              return false
+            }
+          }
+        } catch (parseError) {
+          console.error('[Format] Failed to parse progress data:', parseError, line)
+        }
+      }
+    }
+  }
+
+  // If we get here without a final result, something went wrong
+  fail('Formatting ended without completion status', 'Formatting error')
+  notifications.error('Formatting ended unexpectedly')
+  return false
 }
 
 const handleInstall = async () => {
@@ -639,9 +895,22 @@ const handleInstall = async () => {
   }
 
   loading.value = true
-  start('Starting OS installation...')
+  start('Preparing installation...')
 
   try {
+    // Step 1: Format the SD card first
+    update(0, 'Step 1: Formatting SD card to correct format...')
+    const formatSuccess = await formatSdcardWithStreaming(selectedDeviceId.value, 'pi5')
+
+    if (!formatSuccess) {
+      // Formatting failed, stop here
+      loading.value = false
+      return
+    }
+
+    // Step 2: Proceed with OS installation
+    update(50, 'Step 2: Starting OS installation...')
+
     // Get selected OS version and download URL
     let osVersion: string | undefined
     let downloadUrl: string | undefined
@@ -661,19 +930,90 @@ const handleInstall = async () => {
       download_url: downloadUrl,
       custom_image: osSource.value === 'custom' && customFile.value ? customFile.value.name : (undefined as string | undefined),
       configuration: config.value,
+      stream: true, // Request streaming progress
     }
 
-    update(10, 'Sending installation request...')
-    const response = await installOS(requestData)
+    // Use streaming installation with SSE
+    const runtimeConfig = useRuntimeConfig()
+    const apiBase = runtimeConfig.public.apiBase || '/api'
 
-    if (response.success) {
-      update(100, response.data?.message || 'OS installation completed!')
-      complete(response.data?.message || 'OS installation completed!')
-      notifications.success('OS installation completed successfully')
-      showErrors.value = false
-    } else {
-      fail(response.error || 'Installation failed', 'Installation failed')
-      notifications.error(response.error || 'Installation failed')
+    const response = await fetch(`${apiBase}/install-os`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+      },
+      body: JSON.stringify(requestData),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Installation request failed' }))
+      fail(errorData.error || 'Installation failed', 'Installation failed')
+      notifications.error(errorData.error || 'Installation failed')
+      return
+    }
+
+    // Handle streaming response
+    const reader = response.body?.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    if (!reader) {
+      throw new Error('Response body is not readable')
+    }
+
+    while (true) {
+      const { done, value } = await reader.read()
+
+      if (done) {
+        break
+      }
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || '' // Keep incomplete line in buffer
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const jsonStr = line.substring(6).trim()
+            if (!jsonStr) continue // Skip empty data lines
+            const data = JSON.parse(jsonStr)
+
+            if (data.type === 'progress') {
+              // Update progress from backend (scale to 50-100% for installation phase)
+              const percent = data.percent !== null && data.percent !== undefined ? data.percent : null
+              const message = data.message || ''
+              if (percent !== null) {
+                // Installation takes last 50% of total progress (50-100%)
+                update(50 + Math.floor(percent * 0.5), `Installing: ${message}`)
+              } else if (message) {
+                update(progress.value.percent || 50, `Installing: ${message}`)
+              }
+            } else if (data.success !== undefined) {
+              // Final result
+              if (data.success) {
+                complete(data.message || 'OS installation completed!')
+                notifications.success(data.message || 'OS installation completed successfully')
+                showErrors.value = false
+              } else {
+                fail(data.error || 'Installation failed', 'Installation failed')
+                notifications.error(data.error || 'Installation failed')
+              }
+              loading.value = false
+              return
+            }
+          } catch (parseError) {
+            console.error('[Install] Failed to parse progress data:', parseError, line)
+          }
+        }
+      }
+    }
+
+    // If we get here without a final result, something went wrong
+    if (progress.value.status === 'running') {
+      fail('Installation ended without completion status', 'Installation error')
+      notifications.error('Installation ended unexpectedly')
     }
   } catch (error: any) {
     fail(error.message || 'Unknown error', 'Installation error')
@@ -1174,6 +1514,63 @@ onMounted(async () => {
 .btn-scan:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.wifi-networks-list {
+  margin: 16px 0;
+  padding: 12px;
+  background: var(--win11-bg-primary, #fff);
+  border-radius: 4px;
+  border: 1px solid var(--win11-border, #ddd);
+}
+
+.wifi-network-item {
+  margin-bottom: 8px;
+}
+
+.wifi-network-item:last-child {
+  margin-bottom: 0;
+}
+
+.wifi-network-btn {
+  width: 100%;
+  padding: 12px;
+  text-align: left;
+  background: var(--win11-bg-secondary, #f9f9f9);
+  border: 1px solid var(--win11-border, #ddd);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.wifi-network-btn:hover {
+  background: var(--win11-bg-tertiary, #f0f0f0);
+}
+
+.wifi-ssid {
+  font-weight: 500;
+  color: var(--win11-text-primary, #333);
+}
+
+.wifi-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+
+.wifi-signal {
+  color: var(--win11-text-secondary, #666);
+}
+
+.wifi-security {
+  color: var(--win11-text-secondary, #666);
+  font-size: 0.8rem;
 }
 
 .warning-box {

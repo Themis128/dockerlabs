@@ -144,6 +144,7 @@
             <option value="ES">ES - Spain</option>
             <option value="IT">IT - Italy</option>
             <option value="JP">JP - Japan</option>
+            <option value="GR">GR - Greece</option>
           </select>
         </div>
 
@@ -287,8 +288,10 @@ const scanWifiNetworks = async () => {
 
   try {
     const response = await scanWifi()
-    if (response.success && response.data?.networks) {
-      wifiNetworks.value = response.data.networks.map((net: any) => ({
+    // Handle both response.networks (direct) and response.data.networks (wrapped) formats
+    const networks = response.networks || response.data?.networks || []
+    if (response.success && networks.length > 0) {
+      wifiNetworks.value = networks.map((net: any) => ({
         ssid: net.ssid || '',
         signal: net.signal || 0,
         security: net.security || 'Unknown',

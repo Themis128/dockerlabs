@@ -1680,7 +1680,7 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
             self.send_json({"success": False, "error": str(e)}, 500)
 
     def install_os(self):
-        """Install OS to SD card"""
+        """Install OS to SD card with progress streaming"""
         try:
             content_length = int(self.headers.get("Content-Length", 0))
             if content_length == 0:
@@ -1699,20 +1699,318 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                 return
 
             device_id = data.get("device_id")
+            os_version = data.get("os_version")
+            download_url = data.get("download_url")
+            custom_image = data.get("custom_image")
+            configuration = data.get("configuration")
 
             if not device_id:
                 self.send_json({"success": False, "error": "Device ID required"}, 400)
                 return
 
-            # Note: OS installation requires admin/root privileges and direct disk access
-            # This is a placeholder - actual implementation would use dd (Linux) or similar tools
-            msg = (
-                f"OS installation initiated for {device_id}. "
-                f"Note: This requires admin privileges and should be done via "
-                f"desktop app (RaspberryPiManager) or command line tools like "
-                f"Raspberry Pi Imager."
+            # Determine image path
+            # Note: For now, we'll need the image path to be provided or downloaded
+            # This is a simplified version - full implementation would handle downloads/uploads
+            image_path = None
+
+            # Check if client wants progress streaming (SSE) - check this before validating image_path
+            accept_header = self.headers.get("Accept", "")
+            stream_progress = "text/event-stream" in accept_header or data.get("stream", False)
+
+            # For now, we'll use a placeholder path or require it to be provided
+            # In a full implementation, this would:
+            # 1. Download from download_url if provided
+            # 2. Handle custom_image file upload
+            # 3. Use a cached/pre-downloaded image path
+            if custom_image:
+                # For custom images, we'd need to handle file upload first
+                # This is a placeholder - actual implementation would save uploaded file
+                error_msg = "Custom image upload not yet implemented. Please use a pre-downloaded image path."
+                if stream_progress:
+                    self.send_response(501)
+                    self.send_header("Content-Type", "text/event-stream")
+                    self._send_cors_headers()
+                    self.end_headers()
+                    error_data = json.dumps({"success": False, "error": error_msg})
+                    self.wfile.write(f"data: {error_data}\n\n".encode())
+                    self.wfile.flush()
+                else:
+                    self.send_json({"success": False, "error": error_msg}, 501)
+                return
+            elif download_url:
+                # Download the image first (this would need to be implemented)
+                error_msg = "Image download not yet implemented. Please use a pre-downloaded image path."
+                if stream_progress:
+                    self.send_response(501)
+                    self.send_header("Content-Type", "text/event-stream")
+                    self._send_cors_headers()
+                    self.end_headers()
+                    error_data = json.dumps({"success": False, "error": error_msg})
+                    self.wfile.write(f"data: {error_data}\n\n".encode())
+                    self.wfile.flush()
+                else:
+                    self.send_json({"success": False, "error": error_msg}, 501)
+                return
+            else:
+                # For now, require image_path to be provided directly in the request
+                # In production, this would be determined from download_url or custom_image
+                image_path = data.get("image_path")
+                if not image_path:
+                    error_msg = "OS image path, download URL, or custom image required"
+                    if stream_progress:
+                        self.send_response(400)
+                        self.send_header("Content-Type", "text/event-stream")
+                        self._send_cors_headers()
+                        self.end_headers()
+                        error_data = json.dumps({"success": False, "error": error_msg})
+                        self.wfile.write(f"data: {error_data}\n\n".encode())
+                        self.wfile.flush()
+                    else:
+                        self.send_json({"success": False, "error": error_msg}, 400)
+                    return
+
+            script_path = os.path.join(os.path.dirname(__file__), "scripts", "install_os.py")
+            if not os.path.exists(script_path):
+                error_msg = "install_os.py not found"
+                if stream_progress:
+                    self.send_response(404)
+                    self.send_header("Content-Type", "text/event-stream")
+                    self._send_cors_headers()
+                    self.end_headers()
+                    error_data = json.dumps({"success": False, "error": error_msg})
+                    self.wfile.write(f"data: {error_data}\n\n".encode())
+                    self.wfile.flush()
+                else:
+                    self.send_json({"success": False, "error": error_msg}, 404)
+                return
+
+            if stream_progress:
+                # Stream progress via Server-Sent Events
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream")
+                self.send_header("Cache-Control", "no-cache")
+                self.send_header("Connection", "keep-alive")
+                self._send_cors_headers()
+                self.end_headers()
+
+                try:
+                    # Check for shutdown before starting
+                    if shutdown_event.is_set():
+                        error_data = json.dumps({"success": False, "error": "Server is shutting down"})
+                        self.wfile.write(f"data: {error_data}\n\n".encode())
+                        self.wfile.flush()
+                        return
+
+                    # Run script and capture output line by line
+                    process = subprocess.Popen(
+                        [sys.executable, script_path, image_path, device_id],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True,
+                        bufsize=1,
+                        cwd=os.path.dirname(os.path.dirname(__file__)),
+                    )
+
+                    final_result = None
+                    progress_messages = []
+                    last_output_time = time.time()
+                    max_silence_timeout = 1800  # 30 minutes max silence before timeout
+                    read_timeout = 1.0  # Check every second for shutdown/timeout
+
+                    # Read stdout line by line with timeout protection
+                    # Use a queue-based approach for non-blocking reads
+                    output_queue = queue.Queue()
+                    read_thread_running = True
+
+                    def read_output():
+                        """Thread to read process output"""
+                        try:
+                            for line in iter(process.stdout.readline, ''):
+                                if not read_thread_running:
+                                    break
+                                output_queue.put(('stdout', line))
+                            output_queue.put(('stdout', None))  # EOF marker
+                        except Exception as e:
+                            output_queue.put(('error', str(e)))
+
+                    import threading
+                    read_thread = threading.Thread(target=read_output, daemon=True)
+                    read_thread.start()
+
+                    # Read from queue with timeout
+                    while True:
+                        # Check for shutdown during processing
+                        if shutdown_event.is_set():
+                            read_thread_running = False
+                            try:
+                                process.terminate()
+                                process.wait(timeout=5)
+                            except (subprocess.TimeoutExpired, OSError):
+                                try:
+                                    process.kill()
+                                except OSError:
+                                    pass
+                            error_data = json.dumps({"success": False, "error": "Server is shutting down"})
+                            self.wfile.write(f"data: {error_data}\n\n".encode())
+                            self.wfile.flush()
+                            return
+
+                        # Check if process has died
+                        if process.poll() is not None:
+                            # Process finished, drain remaining output
+                            break
+
+                        # Check for timeout (no output for too long)
+                        if time.time() - last_output_time > max_silence_timeout:
+                            read_thread_running = False
+                            warning_log(f"OS installation operation timed out (no output for {max_silence_timeout}s)", self.request_id)
+                            try:
+                                process.terminate()
+                                process.wait(timeout=5)
+                            except (subprocess.TimeoutExpired, OSError):
+                                try:
+                                    process.kill()
+                                except OSError:
+                                    pass
+                            error_data = json.dumps({"success": False, "error": f"Operation timed out after {max_silence_timeout} seconds of silence"})
+                            self.wfile.write(f"data: {error_data}\n\n".encode())
+                            self.wfile.flush()
+                            return
+
+                        # Try to get output from queue (non-blocking)
+                        try:
+                            source, line = output_queue.get(timeout=read_timeout)
+                            if source == 'error':
+                                raise Exception(f"Error reading output: {line}")
+                            if line is None:  # EOF
+                                break
+
+                            last_output_time = time.time()  # Reset timeout on output
+
+                            line = line.strip()
+                            if not line:
+                                continue
+
+                            try:
+                                # Try to parse as JSON progress message
+                                progress_data = json.loads(line)
+                                if progress_data.get("type") == "progress":
+                                    # Send progress update via SSE
+                                    sse_data = json.dumps(progress_data)
+                                    self.wfile.write(f"data: {sse_data}\n\n".encode())
+                                    self.wfile.flush()
+                                    progress_messages.append(progress_data)
+                                elif progress_data.get("success") is not None:
+                                    # This is the final result
+                                    final_result = progress_data
+                            except json.JSONDecodeError:
+                                # Not a JSON progress message, might be final result
+                                if "{" in line and "}" in line:
+                                    try:
+                                        parsed = json.loads(line)
+                                        if parsed.get("success") is not None:
+                                            final_result = parsed
+                                    except (json.JSONDecodeError, ValueError):
+                                        pass
+                        except queue.Empty:
+                            # Timeout waiting for output - continue loop to check shutdown/timeout
+                            continue
+
+                    # Stop the read thread
+                    read_thread_running = False
+
+                    # Wait for process to complete and get any remaining output
+                    try:
+                        remaining_stdout, stderr = process.communicate(timeout=10)
+                        if remaining_stdout:
+                            for line in remaining_stdout.strip().split('\n'):
+                                if line.strip():
+                                    try:
+                                        data = json.loads(line)
+                                        if data.get("type") == "progress":
+                                            sse_data = json.dumps(data)
+                                            self.wfile.write(f"data: {sse_data}\n\n".encode())
+                                            self.wfile.flush()
+                                        elif data.get("success") is not None:
+                                            final_result = data
+                                    except (json.JSONDecodeError, ValueError):
+                                        pass
+
+                        # Send final result
+                        if final_result:
+                            sse_data = json.dumps(final_result)
+                            self.wfile.write(f"data: {sse_data}\n\n".encode())
+                        else:
+                            # Check return code
+                            if process.returncode == 0:
+                                final_result = {
+                                    "success": True,
+                                    "message": f"OS installed successfully to {device_id}"
+                                }
+                            else:
+                                error_msg = stderr or "Installation failed"
+                                final_result = {"success": False, "error": error_msg}
+                            sse_data = json.dumps(final_result)
+                            self.wfile.write(f"data: {sse_data}\n\n".encode())
+
+                        self.wfile.flush()
+                    except (BrokenPipeError, ConnectionAbortedError, OSError) as e:
+                        # Client disconnected during streaming
+                        if VERBOSE:
+                            debug_log(f"Client disconnected during OS installation: {e}", self.request_id)
+                        # Ensure process is terminated
+                        try:
+                            if process.poll() is None:
+                                process.terminate()
+                                process.wait(timeout=5)
+                        except (subprocess.TimeoutExpired, OSError):
+                            try:
+                                process.kill()
+                            except OSError:
+                                pass
+                        return
+                    finally:
+                        # Ensure process is cleaned up
+                        if process.poll() is None:
+                            try:
+                                process.terminate()
+                                process.wait(timeout=5)
+                            except (subprocess.TimeoutExpired, OSError):
+                                try:
+                                    process.kill()
+                                except OSError:
+                                    pass
+                    return
+
+                except (OSError, subprocess.SubprocessError, json.JSONDecodeError) as e:
+                    error_log(f"Error in streaming install_os: {str(e)}", e, request_id=self.request_id)
+                    try:
+                        error_data = json.dumps({"success": False, "error": str(e)})
+                        self.wfile.write(f"data: {error_data}\n\n".encode())
+                        self.wfile.flush()
+                    except (BrokenPipeError, ConnectionAbortedError, OSError):
+                        # Client already disconnected
+                        pass
+                    return
+
+            # Non-streaming mode (fallback)
+            # Check for shutdown before starting
+            if shutdown_event.is_set():
+                self.send_json({"success": False, "error": "Server is shutting down"}, 503)
+                return
+
+            result = run_subprocess_safe(
+                [sys.executable, script_path, image_path, device_id],
+                timeout=1800,  # 30 minutes timeout for installation
+                cwd=os.path.dirname(os.path.dirname(__file__)),
+                check_shutdown=True
             )
-            self.send_json({"success": True, "message": msg})
+
+            if result["success"]:
+                self.send_json({"success": True, "message": result.get("message", "OS installed successfully")})
+            else:
+                self.send_json({"success": False, "error": result.get("error", "Installation failed")})
+
         except json.JSONDecodeError as e:
             error_log(f"Invalid JSON in install_os request: {str(e)}", e, request_id=self.request_id)
             self.send_json({"success": False, "error": f"Invalid JSON: {str(e)}"}, 400)

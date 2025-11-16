@@ -6,13 +6,14 @@ param(
     [string]$Language = "auto",
     [switch]$Quick,
     [switch]$Detailed,
-    [string]$Model = "qwen2.5-coder:14b",
+    [string]$Model = "qwen2.5-coder:7b",
     [int]$Timeout = 300,
     [switch]$Stream,
     [int]$MaxRetries = 3,
     [switch]$Verbose,
     [int]$ChunkSize = 0,
-    [string]$LogFile = ""
+    [string]$LogFile = "",
+    [switch]$PreloadModel
 )
 
 $ErrorActionPreference = "Stop"
@@ -81,9 +82,61 @@ function Write-ColorOutput {
     Write-Host $Message -ForegroundColor $Color
 }
 
+# Check Ollama server status and get running models
+function Get-OllamaStatus {
+    try {
+        $response = Invoke-RestMethod -Uri "http://127.0.0.1:11434/api/ps" -Method Get -ErrorAction Stop -TimeoutSec 5
+        return $response
+    } catch {
+        return $null
+    }
+}
+
+# Pre-load model into memory
+function Invoke-PreloadModel {
+    param([string]$Model)
+
+    Write-VerboseLog "Checking if model '$Model' is already loaded..." "Gray"
+
+    $status = Get-OllamaStatus
+    if ($status -and $status.models) {
+        $loadedModels = $status.models | ForEach-Object { $_.name }
+        if ($loadedModels -contains $Model) {
+            Write-VerboseLog "Model '$Model' is already loaded in memory" "Green"
+            return $true
+        }
+    }
+
+    Write-Log "Pre-loading model '$Model' into memory..." "INFO" "Cyan"
+    Write-VerboseLog "This may take a moment on first use..." "Gray"
+
+    try {
+        # Use the /api/generate endpoint with a minimal prompt to load the model
+        $preloadBody = @{
+            model = $Model
+            prompt = "test"
+            stream = $false
+            options = @{
+                num_predict = 1
+            }
+        } | ConvertTo-Json
+
+        $preloadStart = Get-Date
+        $preloadResponse = Invoke-RestMethod -Uri "http://127.0.0.1:11434/api/generate" -Method Post -Body $preloadBody -ContentType "application/json" -TimeoutSec 120
+
+        $preloadTime = ((Get-Date) - $preloadStart).TotalSeconds
+        Write-VerboseLog "Model loaded in $([math]::Round($preloadTime, 2)) seconds" "Green"
+        return $true
+    } catch {
+        Write-Log "Warning: Could not pre-load model: $_" "WARN" "Yellow"
+        Write-VerboseLog "Analysis will continue, but may be slower on first request" "Gray"
+        return $false
+    }
+}
+
 # Check if Ollama is running and verify model availability
 function Test-OllamaConnection {
-    param([string]$Model)
+    param([string]$Model, [switch]$PreloadModel)
 
     Write-DebugLog "Testing Ollama connection..."
     Write-VerboseLog "Checking Ollama server at http://127.0.0.1:11434/api/tags"
@@ -110,6 +163,12 @@ function Test-OllamaConnection {
         }
 
         Write-VerboseLog "Model '$Model' is available" "Green"
+
+        # Pre-load model if requested
+        if ($PreloadModel -and $Model) {
+            Invoke-PreloadModel -Model $Model | Out-Null
+        }
+
         return $true
     } catch {
         Write-Log "Ollama server connection failed: $_" "ERROR" "Red"
@@ -122,7 +181,7 @@ function Test-OllamaConnection {
 # Calculate optimal chunk size based on file size
 function Get-OptimalChunkSize {
     param([int]$FileSize)
-    
+
     # Dynamic chunk sizing based on file size
     if ($FileSize -le 500) {
         # Very small files: no chunking needed
@@ -157,7 +216,7 @@ function Split-CodeIntoChunks {
 
     # Use strongly-typed List to avoid PowerShell string enumeration issues
     $chunks = New-Object 'System.Collections.Generic.List[string]'
-    
+
     if ($Code.Length -le $MaxChunkSize) {
         Write-VerboseLog "Code is small enough, no splitting needed" "Gray"
         Write-DebugLog "Returning single chunk with length: $($Code.Length) characters"
@@ -174,7 +233,7 @@ function Split-CodeIntoChunks {
     foreach ($line in $lines) {
         $lineWithNewline = $line + "`n"
         $potentialSize = $currentChunk.Length + $lineWithNewline.Length
-        
+
         if ($potentialSize -gt $MaxChunkSize -and $currentChunk.Length -gt 0) {
             Write-DebugLog "Creating chunk $chunkNumber (size: $($currentChunk.Length) chars)"
             $chunks.Add($currentChunk)
@@ -209,7 +268,7 @@ function Invoke-ChunkAnalysis {
     Write-DebugLog "Received chunk type: $($CodeChunk.GetType().Name)"
     Write-DebugLog "Received chunk actual length: $($CodeChunk.Length) characters"
     Write-VerboseLog "Chunk size: $($CodeChunk.Length) characters" "Gray"
-    
+
     if ($CodeChunk.Length -eq 0) {
         Write-Log "Error: Received empty chunk!" "ERROR" "Red"
         return $null
@@ -285,8 +344,22 @@ $CodeChunk
 Provide a thorough, structured analysis with clear sections and actionable recommendations.
 "@
     } else {
+        # Build language-specific context hints
+        $contextHints = ""
+        if ($Language -eq "Vue") {
+            $contextHints = "This is a Vue.js component. Pay attention to: template structure, script setup patterns, reactivity, component composition, and Vue 3 best practices."
+        } elseif ($Language -match "TypeScript|JavaScript") {
+            $contextHints = "This is $Language code. Pay attention to: type safety (if TypeScript), ES6+ features, module patterns, async/await usage, and modern JavaScript best practices."
+        } elseif ($Language -eq "Python") {
+            $contextHints = "This is Python code. Pay attention to: PEP 8 style, type hints, error handling, and Pythonic patterns."
+        }
+        
         $prompt = @"
-Analyze the following $Language code${chunkInfo} and provide a comprehensive code review focusing on:
+Analyze the following $Language code${chunkInfo} and provide a comprehensive code review.
+
+**Context:** $contextHints
+
+**Focus Areas:**
 
 1. **Code Quality Issues:**
    - Code smells and anti-patterns
@@ -309,12 +382,12 @@ Analyze the following $Language code${chunkInfo} and provide a comprehensive cod
    - Overall code quality score (1-10)
    - Priority issues to address first
 
-Code to analyze:
+**Code to analyze:**
 ```$Language
 $CodeChunk
 ```
 
-Provide a structured analysis with clear sections and actionable recommendations.
+Provide a structured analysis with clear sections and actionable recommendations. Be specific about line numbers or code sections when identifying issues.
 "@
     }
 
@@ -349,7 +422,28 @@ Provide a structured analysis with clear sections and actionable recommendations
             $requestStart = Get-Date
             Write-VerboseLog "Attempt $($attempt + 1)/$MaxRetries - Sending request..." "Yellow"
 
-            $response = Invoke-RestMethod -Uri "http://127.0.0.1:11434/api/generate" -Method Post -Body $bodyJson -ContentType "application/json" -TimeoutSec $Timeout
+            # Use WebRequest for better timeout and error handling
+            $request = [System.Net.HttpWebRequest]::Create("http://127.0.0.1:11434/api/generate")
+            $request.Method = "POST"
+            $request.ContentType = "application/json"
+            $request.Timeout = $Timeout * 1000  # Convert to milliseconds
+
+            $requestStream = $request.GetRequestStream()
+            $bytes = [System.Text.Encoding]::UTF8.GetBytes($bodyJson)
+            $requestStream.Write($bytes, 0, $bytes.Length)
+            $requestStream.Close()
+
+            try {
+                $responseStream = $request.GetResponse().GetResponseStream()
+                $reader = New-Object System.IO.StreamReader($responseStream)
+                $responseJson = $reader.ReadToEnd()
+                $reader.Close()
+                $responseStream.Close()
+
+                $response = $responseJson | ConvertFrom-Json
+            } catch {
+                throw "Request failed: $($_.Exception.Message)"
+            }
 
             $requestTime = ((Get-Date) - $requestStart).TotalSeconds
             Write-VerboseLog "Request completed in $([math]::Round($requestTime, 2)) seconds" "Green"
@@ -427,7 +521,7 @@ function Invoke-CodeAnalysis {
     } else {
         Write-VerboseLog "Using custom chunk size: $ChunkSize characters" "Gray"
     }
-    
+
     # Split code into chunks if needed
     Write-Log "Preparing code for analysis..." "INFO" "Cyan"
     $chunks = Split-CodeIntoChunks -Code $Code -MaxChunkSize $ChunkSize
@@ -435,17 +529,46 @@ function Invoke-CodeAnalysis {
 
     Write-Log "Analyzing $totalChunks chunk(s)..." "INFO" "Cyan"
 
+    # Debug: Check what's actually in the chunks list
+    Write-DebugLog "Chunks list type: $($chunks.GetType().FullName)"
+    for ($j = 0; $j -lt $chunks.Count; $j++) {
+        $testChunk = if ($chunks -is [System.Collections.Generic.List[string]]) {
+            $chunks.Item($j)
+        } else {
+            $chunks[$j]
+        }
+        Write-DebugLog "Chunk $($j + 1) in list: type=$($testChunk.GetType().Name), length=$($testChunk.Length)"
+    }
+
     $allResults = @()
 
     for ($i = 0; $i -lt $chunks.Count; $i++) {
         $chunkStart = Get-Date
         Write-Log "Processing chunk $($i + 1)/$totalChunks..." "INFO" "Cyan"
-        
-        # Get chunk content - List[string] ensures proper string retrieval
-        $currentChunk = $chunks[$i]
-        
+
+        # Get chunk content - ensure we get the full string, not enumerated
+        if ($chunks -is [System.Collections.Generic.List[string]]) {
+            # Use ToArray() to get a proper array, then access by index
+            $chunkArray = $chunks.ToArray()
+            $currentChunk = $chunkArray[$i]
+        } elseif ($chunks -is [string]) {
+            # If somehow it's a string, use it directly
+            $currentChunk = $chunks
+        } else {
+            # For arrays, get the element
+            $currentChunk = $chunks[$i]
+        }
+
+        # Ensure it's a string and not a single character
+        if ($currentChunk -is [char]) {
+            Write-Log "Error: Chunk retrieved as character instead of string!" "ERROR" "Red"
+            continue
+        }
+
+        $currentChunk = [string]$currentChunk
+
         Write-DebugLog "Retrieved chunk $($i + 1), type: $($currentChunk.GetType().Name), length: $($currentChunk.Length) characters"
-        
+
         if ($null -eq $currentChunk -or $currentChunk.Length -eq 0) {
             Write-Log "Warning: Chunk $($i + 1) is empty!" "WARN" "Yellow"
             continue
@@ -511,7 +634,7 @@ Write-VerboseLog "  Mode: $(if ($Quick) { 'Quick' } elseif ($Detailed) { 'Detail
 
 # Check Ollama connection and model availability
 Write-Log "Checking Ollama connection..." "INFO" "Cyan"
-if (-not (Test-OllamaConnection -Model $Model)) {
+if (-not (Test-OllamaConnection -Model $Model -PreloadModel:$PreloadModel)) {
     Write-Log "Connection check failed" "ERROR" "Red"
     exit 1
 }
@@ -527,13 +650,14 @@ if ([string]::IsNullOrEmpty($FilePath)) {
     Write-ColorOutput '  -Language <lang>   Language (auto, TypeScript, Python, etc.)' "White"
     Write-ColorOutput "  -Quick              Quick analysis mode (faster, less detailed)" "White"
     Write-ColorOutput "  -Detailed           Detailed analysis mode (comprehensive)" "White"
-    Write-ColorOutput '  -Model <model>     Ollama model to use (default: qwen2.5-coder:14b)' "White"
+    Write-ColorOutput '  -Model <model>     Ollama model to use (default: qwen2.5-coder:7b)' "White"
     Write-ColorOutput '  -Timeout <seconds> Request timeout in seconds (default: 300)' "White"
     Write-ColorOutput "  -Stream             Enable streaming responses" "White"
     Write-ColorOutput '  -MaxRetries <num>   Maximum retry attempts (default: 3)' "White"
     Write-ColorOutput "  -Verbose            Enable verbose logging and debugging" "White"
     Write-ColorOutput '  -ChunkSize <size>   Maximum chunk size in characters (default: auto, based on file size)' "White"
     Write-ColorOutput '  -LogFile <path>    Custom log file path (default: temp directory)' "White"
+    Write-ColorOutput "  -PreloadModel       Pre-load model into memory before analysis (faster first request)" "White"
     exit 1
 }
 

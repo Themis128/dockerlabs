@@ -12,7 +12,7 @@ Enhanced Ollama Autocoder settings:
 
 ```json
 {
-  "ollama-autocoder.model": "qwen2.5-coder:14b",
+  "ollama-autocoder.model": "qwen2.5-coder:7b",
   "ollama-autocoder.endpoint": "http://127.0.0.1:11434/api/generate",
   "ollama-autocoder.contextLength": 16384,
   "ollama-autocoder.maxTokens": 8192,
@@ -74,7 +74,7 @@ npm run analyze:ollama:detailed -- -FilePath "composables/useApi.ts"
 # Custom model and timeout
 powershell -ExecutionPolicy Bypass -File ./scripts/powershell/analyze-code-with-ollama.ps1 `
   -FilePath "app.vue" `
-  -Model "qwen2.5-coder:7b" `
+  -Model "qwen2.5:1.5b" `
   -Timeout 600 `
   -MaxRetries 5
 
@@ -108,13 +108,16 @@ powershell -ExecutionPolicy Bypass -File ./scripts/powershell/analyze-code-with-
 ## Model Configuration
 
 ### Primary Model
-- **qwen2.5-coder:14b**: Best for comprehensive analysis
+- **qwen2.5-coder:7b**: Fast and efficient (default)
   - Context: 16384 tokens
-  - Best for: Production code reviews, detailed analysis
+  - Best for: Quick feedback, regular code reviews, rapid iteration
+  - Speed: ~2-3x faster than 14b model
 
-### Fallback Models
-- **qwen2.5-coder:7b**: Faster, lighter option
-  - Best for: Quick feedback, rapid iteration
+### Alternative Models
+- **qwen2.5-coder:14b**: More comprehensive analysis
+  - Best for: Production code reviews, detailed analysis when speed is not critical
+- **qwen2.5:1.5b**: Very fast, lightweight
+  - Best for: Quick checks, very large codebases
 - **codellama:latest**: Code-specific model
   - Best for: Code generation and refactoring
 - **mistral:7b**: General purpose

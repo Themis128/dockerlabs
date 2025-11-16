@@ -70,16 +70,25 @@ def configure_network(ip, username, settings):
         commands.append(f"sudo hostnamectl set-hostname {hostname}")
         commands.append(f"echo '{hostname}' | sudo tee /etc/hostname")
 
-    if "wifi_enable" in settings and settings["wifi_enable"]:
-        if "wifi_ssid" in settings:
+    # Check if WiFi is enabled (support both field names for compatibility)
+    wifi_enabled = settings.get("enable_wifi") or settings.get("wifi_enable")
+    if wifi_enabled:
+        wifi_ssid = settings.get("wifi_ssid") or settings.get("ssid")
+        if wifi_ssid:
             # Generate wpa_supplicant.conf with WPA3 support
             import os
             script_dir = os.path.dirname(os.path.abspath(__file__))
             wpa_script = os.path.join(script_dir, "generate_wpa_supplicant.py")
 
             if os.path.exists(wpa_script):
+                # Normalize settings to match what generate_wpa_supplicant expects
+                # Ensure enable_wifi is set for the generator
+                normalized_settings = settings.copy()
+                if "wifi_enable" in normalized_settings and "enable_wifi" not in normalized_settings:
+                    normalized_settings["enable_wifi"] = normalized_settings["wifi_enable"]
+
                 # Generate wpa_supplicant.conf
-                network_config = json.dumps({"network": settings})
+                network_config = json.dumps({"network": normalized_settings})
                 result = subprocess.run(
                     ["python3", wpa_script, "--settings", network_config],
                     capture_output=True,
@@ -101,9 +110,9 @@ def configure_network(ip, username, settings):
                     commands.append("sudo systemctl restart wpa_supplicant 2>/dev/null || true")
             else:
                 # Fallback: basic wpa_supplicant config
-                ssid = settings.get("wifi_ssid", "")
-                password = settings.get("wifi_password", "")
-                country = settings.get("wifi_country", "US")
+                ssid = settings.get("wifi_ssid") or settings.get("ssid", "")
+                password = settings.get("wifi_password") or settings.get("password", "")
+                country = settings.get("wifi_country") or settings.get("country", "US")
 
                 wpa_config = f"""ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
 update_config=1

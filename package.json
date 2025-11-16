@@ -54,6 +54,12 @@
     "analyze:ollama:quick": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/analyze-code-with-ollama.ps1 -Quick",
     "analyze:ollama:detailed": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/analyze-code-with-ollama.ps1 -Detailed",
     "analyze:ollama:verbose": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/analyze-code-with-ollama.ps1 -Verbose",
+    "analyze:ollama:preload": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/analyze-code-with-ollama.ps1 -PreloadModel",
+    "analyze:ollama:prepare": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/prepare-and-analyze.ps1",
+    "analyze:ollama:smart": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/prepare-and-analyze.ps1 -PreprocessCode",
+    "analyze:ollama:auto": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/prepare-and-analyze.ps1 -PreprocessCode",
+    "ollama:status": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/check-ollama-status.ps1",
+    "ollama:status:detailed": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/check-ollama-status.ps1 -Detailed -CheckModels",
     "analyze:codebase": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/review-codebase-with-ollama.ps1",
     "analyze:quick": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/review-codebase-with-ollama.ps1 -Quick -MaxFiles 5",
     "prepare": "husky"

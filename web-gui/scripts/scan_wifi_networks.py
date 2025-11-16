@@ -77,37 +77,95 @@ def scan_networks():
         except (OSError, subprocess.SubprocessError) as e:
             raise Exception(f"Error running netsh command: {str(e)}")
     else:
-        # Linux/Unix: Try iwlist first, then nmcli
+        # Linux/Unix: Try nmcli first (more reliable, doesn't need root), then iwlist
+        networks = []
+        error_messages = []
+
+        # First, try nmcli (doesn't require root, more reliable)
         try:
-            # Try using iwlist (common on Raspberry Pi)
             result = subprocess.run(
-                ['iwlist', 'scan'],
+                ['nmcli', '-t', '-f', 'SSID,SIGNAL,SECURITY,FREQ', 'device', 'wifi', 'list'],
                 capture_output=True,
                 text=True,
                 timeout=30,
                 check=False,
             )
 
-            if result.returncode == 0:
-                networks = parse_iwlist_output(result.stdout)
-            else:
-                # Try nmcli as fallback
+            if result.returncode == 0 and result.stdout.strip():
+                networks = parse_nmcli_output(result.stdout)
+                if networks:
+                    return networks
+            elif result.returncode != 0:
+                error_messages.append(f"nmcli failed: {result.stderr.strip() if result.stderr else 'Unknown error'}")
+        except FileNotFoundError:
+            error_messages.append("nmcli not found")
+        except subprocess.TimeoutExpired:
+            error_messages.append("nmcli timed out")
+        except (OSError, subprocess.SubprocessError) as e:
+            error_messages.append(f"nmcli error: {str(e)}")
+
+        # Fallback to iwlist (requires root or proper permissions)
+        try:
+            # Try to find wireless interface
+            interface = None
+            try:
+                # Try common interface names
+                for iface in ['wlan0', 'wlan1', 'wlp2s0', 'wlp3s0']:
+                    check_result = subprocess.run(
+                        ['iw', 'dev', iface, 'info'],
+                        capture_output=True,
+                        text=True,
+                        timeout=5,
+                        check=False,
+                    )
+                    if check_result.returncode == 0:
+                        interface = iface
+                        break
+            except:
+                pass
+
+            # If no interface found, try iwlist scan without interface (may work)
+            if interface:
                 result = subprocess.run(
-                    ['nmcli', '-t', '-f', 'SSID,SIGNAL,SECURITY,FREQ', 'device', 'wifi', 'list'],
+                    ['iwlist', interface, 'scan'],
                     capture_output=True,
                     text=True,
                     timeout=30,
                     check=False,
                 )
-                if result.returncode == 0:
-                    networks = parse_nmcli_output(result.stdout)
+            else:
+                # Try without interface name (may work on some systems)
+                result = subprocess.run(
+                    ['iwlist', 'scanning'],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                    check=False,
+                )
+
+            if result.returncode == 0 and result.stdout.strip():
+                networks = parse_iwlist_output(result.stdout)
+                if networks:
+                    return networks
+            elif result.returncode != 0:
+                error_msg = result.stderr.strip() if result.stderr else 'Unknown error'
+                if 'Operation not permitted' in error_msg or 'Permission denied' in error_msg:
+                    error_messages.append("iwlist requires root permissions. Try: sudo iwlist scan")
+                else:
+                    error_messages.append(f"iwlist failed: {error_msg}")
         except FileNotFoundError:
-            # Neither tool available
-            raise Exception("WiFi scanning tools (iwlist/nmcli) not found. Install wireless-tools or NetworkManager")
+            error_messages.append("iwlist not found")
         except subprocess.TimeoutExpired:
-            raise Exception("WiFi scan timed out after 30 seconds")
+            error_messages.append("iwlist timed out")
         except (OSError, subprocess.SubprocessError) as e:
-            raise Exception(f"Error running WiFi scan command: {str(e)}")
+            error_messages.append(f"iwlist error: {str(e)}")
+
+        # If we got here, both methods failed
+        if not networks:
+            if error_messages:
+                raise Exception(f"WiFi scan failed. {'; '.join(error_messages)}. Install NetworkManager (nmcli) or wireless-tools (iwlist).")
+            else:
+                raise Exception("WiFi scanning tools (iwlist/nmcli) not found. Install wireless-tools or NetworkManager")
 
     return networks
 
@@ -178,15 +236,40 @@ def parse_nmcli_output(output):
 
         parts = line.split(':')
         if len(parts) >= 4:
+            ssid = parts[0].strip() if parts[0] else None
+            signal_str = parts[1].strip() if len(parts) > 1 else ''
+            security = parts[2].strip() if len(parts) > 2 else 'Open'
+            freq_str = parts[3].strip() if len(parts) > 3 else ''
+
+            # Skip empty SSIDs
+            if not ssid or ssid == '--':
+                continue
+
             network = {
-                'ssid': parts[0] if parts[0] else None,
-                'signal_strength': int(parts[1]) if parts[1].isdigit() else None,
-                'security': parts[2] if parts[2] else 'Open',
-                'band': '5GHz' if float(parts[3]) > 5000 else '2.4GHz' if parts[3] else None
+                'ssid': ssid,
+                'security': security if security and security != '--' else 'Unknown',
             }
 
-            if network['ssid']:
-                networks.append(network)
+            # Parse signal strength (nmcli returns percentage 0-100)
+            if signal_str and signal_str.isdigit():
+                signal_val = int(signal_str)
+                # nmcli already returns percentage, but we'll store as signal_strength
+                network['signal_strength'] = signal_val
+                # Also add signal for compatibility
+                network['signal'] = signal_val
+
+            # Parse frequency to determine band
+            if freq_str:
+                try:
+                    freq = float(freq_str)
+                    if freq > 5000:
+                        network['band'] = '5GHz'
+                    else:
+                        network['band'] = '2.4GHz'
+                except ValueError:
+                    pass
+
+            networks.append(network)
 
     return networks
 
