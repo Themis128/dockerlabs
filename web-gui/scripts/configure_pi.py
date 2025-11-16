@@ -92,10 +92,16 @@ def execute_commands(ip, username, commands):
 def main():
     parser = argparse.ArgumentParser(description='Configure Raspberry Pi settings')
     parser.add_argument('pi_number', type=int, choices=[1, 2], help='Pi number (1 or 2)')
-    parser.add_argument('--settings', type=str, required=True, help='JSON settings string')
+    parser.add_argument('--settings', type=str, help='JSON settings string (deprecated, use --settings-file)')
+    parser.add_argument('--settings-file', type=str, help='Path to JSON settings file (preferred)')
     parser.add_argument('-u', '--username', default='pi', help='SSH username')
     
     args = parser.parse_args()
+    
+    # Validate that at least one settings option is provided
+    if not args.settings and not args.settings_file:
+        print(json.dumps({'success': False, 'error': 'Either --settings or --settings-file must be provided'}))
+        sys.exit(1)
     
     # Load config to get IP
     try:
@@ -116,11 +122,17 @@ def main():
     selected_pi = ethernet_pis[args.pi_number - 1]
     ip = selected_pi['ip']
     
-    # Parse settings
+    # Parse settings - prefer file over string
     try:
-        settings = json.loads(args.settings)
-    except json.JSONDecodeError:
-        print(json.dumps({'success': False, 'error': 'Invalid JSON settings'}))
+        if args.settings_file:
+            # Read from file (preferred method)
+            with open(args.settings_file, 'r') as f:
+                settings = json.load(f)
+        else:
+            # Fall back to string (for backward compatibility)
+            settings = json.loads(args.settings)
+    except (json.JSONDecodeError, FileNotFoundError, OSError) as e:
+        print(json.dumps({'success': False, 'error': f'Invalid settings: {str(e)}'}))
         sys.exit(1)
     
     # Build commands

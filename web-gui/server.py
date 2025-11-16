@@ -9,14 +9,37 @@ import subprocess
 import sys
 import os
 from urllib.parse import urlparse, parse_qs
-import threading
+import tempfile
 
-PORT = 3000
+# Constants
+DEFAULT_PORT = 3000
+SSH_PORT = 22
+TELNET_PORT = 23
+DEFAULT_TIMEOUT = 30
+REQUEST_TIMEOUT = 30
+SUBPROCESS_TIMEOUT = 30
+CONFIG_TIMEOUT = 120
+
+# Allowed CORS origins (for production, restrict this list)
+ALLOWED_ORIGINS = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    # Add production domains here when deploying
+]
+
+PORT = int(os.environ.get('PORT', DEFAULT_PORT))
 
 class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
+    timeout = REQUEST_TIMEOUT
+    
     def __init__(self, *args, **kwargs):
         self.public_dir = os.path.join(os.path.dirname(__file__), 'public')
         super().__init__(*args, **kwargs)
+    
+    def handle(self):
+        """Override handle to set timeout"""
+        self.timeout = REQUEST_TIMEOUT
+        super().handle()
 
     def do_GET(self):
         if self.path == '/api/pis':
@@ -32,12 +55,28 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
         else:
             self.serve_static_file()
 
+    def _get_allowed_origin(self):
+        """Get allowed origin for CORS, or None if not allowed"""
+        origin = self.headers.get('Origin')
+        if origin and origin in ALLOWED_ORIGINS:
+            return origin
+        # For development, allow localhost origins
+        if origin and ('localhost' in origin or '127.0.0.1' in origin):
+            return origin
+        return None
+    
+    def _send_cors_headers(self):
+        """Send CORS headers if origin is allowed"""
+        origin = self._get_allowed_origin()
+        if origin:
+            self.send_header('Access-Control-Allow-Origin', origin)
+            self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+            self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+    
     def do_OPTIONS(self):
         """Handle CORS preflight requests"""
         self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self._send_cors_headers()
         self.end_headers()
 
     def do_POST(self):
@@ -58,9 +97,7 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
         try:
             self.send_response(status)
             self.send_header('Content-Type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-            self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+            self._send_cors_headers()
             self.end_headers()
             self.wfile.write(json.dumps(data).encode())
         except (BrokenPipeError, ConnectionAbortedError):
@@ -98,7 +135,7 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                 [sys.executable, script_path],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=SUBPROCESS_TIMEOUT
             )
             self.send_json({
                 'success': result.returncode == 0,
@@ -106,7 +143,7 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                 'error': result.stderr or ''
             })
         except subprocess.TimeoutExpired:
-            self.send_json({'success': False, 'error': 'Test timed out after 30 seconds'}, 500)
+            self.send_json({'success': False, 'error': f'Test timed out after {SUBPROCESS_TIMEOUT} seconds'}, 500)
         except Exception as e:
             self.send_json({'success': False, 'error': str(e)}, 500)
 
@@ -128,7 +165,7 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                 [sys.executable, script_path, pi_number],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=SUBPROCESS_TIMEOUT
             )
             self.send_json({
                 'success': result.returncode == 0,
@@ -136,7 +173,7 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                 'error': result.stderr or ''
             })
         except subprocess.TimeoutExpired:
-            self.send_json({'success': False, 'error': 'Test timed out after 30 seconds'}, 500)
+            self.send_json({'success': False, 'error': f'Test timed out after {SUBPROCESS_TIMEOUT} seconds'}, 500)
         except Exception as e:
             self.send_json({'success': False, 'error': str(e)}, 500)
 
@@ -188,12 +225,25 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
 
         # Normalize path to prevent directory traversal
         path = self.path.lstrip('/')
-        # Remove any path traversal attempts
-        path = path.replace('..', '').replace('//', '/')
-        file_path = os.path.join(self.public_dir, path)
-
-        # Ensure the file is within the public directory
-        if not os.path.abspath(file_path).startswith(os.path.abspath(self.public_dir)):
+        
+        # Use os.path for proper path normalization
+        normalized = os.path.normpath(path)
+        
+        # Check for path traversal attempts
+        if '..' in normalized or normalized.startswith('/') or os.path.isabs(normalized):
+            self.send_error(403, "Forbidden")
+            return
+        
+        file_path = os.path.join(self.public_dir, normalized)
+        
+        # Ensure the file is within the public directory (final security check)
+        try:
+            abs_file_path = os.path.abspath(file_path)
+            abs_public_dir = os.path.abspath(self.public_dir)
+            if not abs_file_path.startswith(abs_public_dir):
+                self.send_error(403, "Forbidden")
+                return
+        except (OSError, ValueError):
             self.send_error(403, "Forbidden")
             return
 
@@ -248,7 +298,7 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                 [sys.executable, script_path],
                 capture_output=True,
                 text=True,
-                timeout=15,
+                timeout=SUBPROCESS_TIMEOUT,
                 cwd=os.path.dirname(os.path.dirname(__file__))  # Run from project root
             )
 
@@ -373,8 +423,27 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
             pi_number = data.get('pi_number')
             settings = data.get('settings')
 
-            if not pi_number or not settings:
-                self.send_json({'success': False, 'error': 'Pi number and settings required'}, 400)
+            # Validate pi_number
+            if not pi_number:
+                self.send_json({'success': False, 'error': 'Pi number required'}, 400)
+                return
+            
+            try:
+                pi_number = int(pi_number)
+                if pi_number not in [1, 2]:
+                    self.send_json({'success': False, 'error': 'Invalid pi number. Must be 1 or 2'}, 400)
+                    return
+            except (ValueError, TypeError):
+                self.send_json({'success': False, 'error': 'Invalid pi number format'}, 400)
+                return
+
+            if not settings:
+                self.send_json({'success': False, 'error': 'Settings required'}, 400)
+                return
+            
+            # Validate settings is a dictionary
+            if not isinstance(settings, dict):
+                self.send_json({'success': False, 'error': 'Settings must be a dictionary'}, 400)
                 return
 
             script_path = os.path.join(os.path.dirname(__file__), 'scripts', 'configure_pi.py')
@@ -382,13 +451,25 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_json({'success': False, 'error': 'configure_pi.py not found'}, 404)
                 return
 
-            settings_json = json.dumps(settings)
-            result = subprocess.run(
-                [sys.executable, script_path, str(pi_number), '--settings', settings_json],
-                capture_output=True,
-                text=True,
-                timeout=120
-            )
+            # Write settings to temporary file instead of command-line argument
+            # This prevents command injection
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as tmp_file:
+                json.dump(settings, tmp_file)
+                tmp_file_path = tmp_file.name
+            
+            try:
+                result = subprocess.run(
+                    [sys.executable, script_path, str(pi_number), '--settings-file', tmp_file_path],
+                    capture_output=True,
+                    text=True,
+                    timeout=CONFIG_TIMEOUT
+                )
+            finally:
+                # Clean up temporary file
+                try:
+                    os.unlink(tmp_file_path)
+                except OSError:
+                    pass
 
             if result.returncode == 0:
                 response_data = json.loads(result.stdout)

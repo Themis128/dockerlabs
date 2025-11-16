@@ -40,7 +40,7 @@
                             </Grid.ColumnDefinitions>
                             <Label Grid.Column="0" Text="{Binding .}" />
                             <Button Grid.Column="1" Text="Remove"
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:SettingsViewModel}}, Path=RemovePackageCommand}"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.RemovePackageCommand}"
                                     CommandParameter="{Binding .}" />
                         </Grid>
                     </DataTemplate>

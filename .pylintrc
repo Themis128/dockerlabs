@@ -1,0 +1,19 @@
+[MASTER]
+ignore=node_modules,.venv,venv,build,dist,*.egg-info
+
+[MESSAGES CONTROL]
+disable=
+    missing-docstring,
+    too-few-public-methods,
+    invalid-name,
+    too-many-arguments,
+    too-many-locals,
+    too-many-branches,
+    too-many-statements
+
+[FORMAT]
+max-line-length=100
+
+[TYPECHECK]
+ignored-modules=http.server,socketserver
+

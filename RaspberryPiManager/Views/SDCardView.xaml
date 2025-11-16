@@ -22,9 +22,9 @@
                         <Label Grid.Row="1" Text="{Binding DeviceId}" FontSize="14" />
                         <Label Grid.Row="2" Text="{Binding TotalSizeBytes, StringFormat='Size: {0:N0} bytes'}" FontSize="12" />
                         <StackLayout Grid.Row="3" Orientation="Horizontal" Spacing="10">
-                            <Button Text="Format" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:SDCardViewModel}}, Path=FormatSDCardCommand}"
+                            <Button Text="Format" Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.FormatSDCardCommand}"
                                     CommandParameter="{Binding .}" />
-                            <Button Text="Eject" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:SDCardViewModel}}, Path=EjectSDCardCommand}"
+                            <Button Text="Eject" Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EjectSDCardCommand}"
                                     CommandParameter="{Binding .}" />
                         </StackLayout>
                     </Grid>

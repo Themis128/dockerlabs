@@ -13,3 +13,10 @@
 
 # No external dependencies required
 # Python 3.7+ recommended
+
+# Optional development dependencies (for code quality)
+# Install with: pip install -r requirements-dev.txt
+# black>=23.0.0
+# pylint>=2.17.0
+# mypy>=1.0.0
+# flake8>=6.0.0
