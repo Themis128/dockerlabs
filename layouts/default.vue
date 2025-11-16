@@ -29,6 +29,7 @@
       <SettingsTab v-show="activeTab === 'settings'" />
       <ConnectionsTab v-show="activeTab === 'connections'" />
       <RemoteTab v-show="activeTab === 'remote'" />
+      <OllamaTab v-show="activeTab === 'ollama'" />
 
       <!-- Page content slot (for future use) -->
       <slot />
@@ -52,6 +53,7 @@ const tabs = [
   { id: 'settings', label: 'Settings' },
   { id: 'connections', label: 'Test Connections' },
   { id: 'remote', label: 'Remote Connection' },
+  { id: 'ollama', label: 'Ollama AI' },
 ]
 
 const activeTab = computed({

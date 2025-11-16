@@ -51,6 +51,9 @@
     "review": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/run-review.ps1",
     "review:quick": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/run-review.ps1 -quick",
     "analyze:ollama": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/analyze-code-with-ollama.ps1",
+    "analyze:ollama:quick": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/analyze-code-with-ollama.ps1 -Quick",
+    "analyze:ollama:detailed": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/analyze-code-with-ollama.ps1 -Detailed",
+    "analyze:ollama:verbose": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/analyze-code-with-ollama.ps1 -Verbose",
     "analyze:codebase": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/review-codebase-with-ollama.ps1",
     "analyze:quick": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/review-codebase-with-ollama.ps1 -Quick -MaxFiles 5",
     "prepare": "husky"

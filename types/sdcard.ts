@@ -3,14 +3,22 @@
  */
 
 export interface SDCard {
-  deviceId: string;
-  name: string;
-  size: number;
+  // CamelCase properties (preferred)
+  deviceId?: string;
+  name?: string;
+  size?: number;
   sizeFormatted?: string;
   mountPoint?: string;
   fileSystem?: string;
   available?: boolean;
   removable?: boolean;
+  label?: string;
+
+  // Snake_case properties (from Python backend)
+  device_id?: string;
+  size_gb?: number;
+  filesystem?: string;
+  mount_point?: string;
 }
 
 export interface SDCardFormatOptions {

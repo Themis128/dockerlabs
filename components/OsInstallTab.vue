@@ -30,7 +30,7 @@
                 :key="card.deviceId"
                 :value="card.deviceId"
               >
-                💾 {{ card.name }} ({{ card.sizeFormatted || `${(card.size / (1024 * 1024 * 1024)).toFixed(2)} GB` }})
+                💾 {{ card.name }} ({{ card.sizeFormatted || (card.size ? `${(card.size / (1024 * 1024 * 1024)).toFixed(2)} GB` : 'Unknown size') }})
               </option>
             </select>
             <div v-if="!selectedDeviceId && showErrors" class="error-message">

@@ -13,6 +13,16 @@ $ErrorActionPreference = "Stop"
 
 function Write-ColorOutput {
     param([string]$Message, [string]$Color = "White")
+
+    # Validate color parameter
+    $validColors = @("Black", "DarkBlue", "DarkGreen", "DarkCyan", "DarkRed", "DarkMagenta",
+                     "DarkYellow", "Gray", "DarkGray", "Blue", "Green", "Cyan", "Red",
+                     "Magenta", "Yellow", "White")
+
+    if ($Color -notin $validColors) {
+        $Color = "White"
+    }
+
     Write-Host $Message -ForegroundColor $Color
 }
 
@@ -126,8 +136,8 @@ foreach ($file in $files) {
 Write-ColorOutput "`n[GEN] Generating summary report..." "Yellow"
 
 # Build summary prompt
-$reviewText = $results | ForEach-Object { 
-    "File: $($_.File)`n$($_.Analysis)`n---`n" 
+$reviewText = $results | ForEach-Object {
+    "File: $($_.File)`n$($_.Analysis)`n---`n"
 } | Out-String
 
 $summaryPrompt = "Based on the following code reviews, provide a comprehensive summary:`n`n$reviewText`nProvide:`n1. Common issues across files`n2. Priority improvements`n3. Code quality trends`n4. Actionable recommendations"
@@ -150,10 +160,10 @@ try {
 
     # Save report
     $reportFile = "ollama-codebase-review-$(Get-Date -Format 'yyyyMMdd-HHmmss').md"
-    $detailedAnalysis = $results | ForEach-Object { 
-        "### $($_.File)`n$($_.Analysis)`n" 
+    $detailedAnalysis = $results | ForEach-Object {
+        "### $($_.File)`n$($_.Analysis)`n"
     } | Out-String
-    
+
     $report = "# Codebase Review Report`nGenerated: $(Get-Date)`n`n## Summary`n$($summary.response)`n`n## Detailed Analysis`n`n$detailedAnalysis"
 
     $report | Out-File -FilePath $reportFile -Encoding UTF8

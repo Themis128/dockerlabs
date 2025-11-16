@@ -58,7 +58,9 @@ export const useSdcardsStore = defineStore('sdcards', {
     largestCard: (state) => {
       if (state.sdcards.length === 0) return null;
       return state.sdcards.reduce((largest, card) => {
-        return card.size > (largest?.size || 0) ? card : largest;
+        const cardSize = card.size || 0;
+        const largestSize = largest?.size || 0;
+        return cardSize > largestSize ? card : largest;
       }, state.sdcards[0]);
     },
   },

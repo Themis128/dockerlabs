@@ -1,8 +1,17 @@
 /**
  * Pinia store for application settings
+ * Manages user preferences and application configuration
  */
 
 import { defineStore } from 'pinia';
+import {
+  DEFAULT_API_BASE,
+  DEFAULT_PYTHON_SERVER_URL,
+  DEFAULT_REFRESH_INTERVAL,
+  DEFAULT_USERNAME,
+  DEFAULT_SSH_PORT,
+  DEFAULT_TELNET_PORT,
+} from '~/utils/constants';
 
 export interface AppSettings {
   theme: 'light' | 'dark' | 'auto';
@@ -27,13 +36,18 @@ export interface SettingsState {
 const defaultSettings: AppSettings = {
   theme: 'auto',
   language: 'en',
-  apiBaseUrl: '/api', // Use relative path to go through Nuxt proxy
-  pythonServerUrl: 'http://localhost:3000',
+  // Use relative path to go through Nuxt proxy/server routes (which handle CORS)
+  // In production, this should be set via environment variable and use HTTPS
+  apiBaseUrl: DEFAULT_API_BASE,
+  // Python backend server URL - defaults to localhost for development
+  // In production, this should be set via PYTHON_SERVER_URL environment variable
+  // and should use HTTPS to secure data transmission
+  pythonServerUrl: DEFAULT_PYTHON_SERVER_URL,
   autoRefresh: true,
-  refreshInterval: 30000, // 30 seconds
-  defaultUsername: 'pi',
-  defaultSshPort: 22,
-  defaultTelnetPort: 23,
+  refreshInterval: DEFAULT_REFRESH_INTERVAL,
+  defaultUsername: DEFAULT_USERNAME,
+  defaultSshPort: DEFAULT_SSH_PORT,
+  defaultTelnetPort: DEFAULT_TELNET_PORT,
   notificationsEnabled: true,
   soundEnabled: false,
 };

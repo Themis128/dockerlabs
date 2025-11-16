@@ -30,22 +30,33 @@ export default defineNuxtConfig({
   },
 
   // Runtime config for API base URL
+  // These values are exposed to the client and should be safe to expose
   runtimeConfig: {
     public: {
-      // Use relative path so requests go through Nuxt proxy/server routes (which handle CORS)
+      // API base URL - use relative path so requests go through Nuxt proxy/server routes (which handle CORS)
       // Only use absolute URL if explicitly set via environment variable
+      // In production, ensure this uses HTTPS for secure data transmission
       apiBase: process.env.API_BASE_URL || '/api',
+      // Python backend server URL - defaults to localhost for development
+      // In production, this should be set via PYTHON_SERVER_URL environment variable
+      // and should use HTTPS to secure data transmission
       pythonServerUrl: process.env.PYTHON_SERVER_URL || 'http://localhost:3000',
+      // Ollama server URL - defaults to localhost for development
+      // In production, this should be set via OLLAMA_URL environment variable
+      ollamaUrl: process.env.OLLAMA_URL || 'http://localhost:11434',
     },
   },
 
   // CSS configuration
+  // Main application stylesheet
   css: ['~/assets/css/main.css'],
 
   // TypeScript configuration
   typescript: {
     strict: true,
-    typeCheck: false, // Disable type checking during dev to avoid vue-tsc dependency issues
+    // Enable type checking during development to catch type-related errors early
+    // Note: This requires vue-tsc to be installed. If you encounter issues, you can temporarily disable it.
+    typeCheck: true,
   },
 
   // Auto-imports configuration

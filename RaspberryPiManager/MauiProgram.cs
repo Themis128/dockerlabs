@@ -1,4 +1,5 @@
 using CommunityToolkit.Maui;
+using Microsoft.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using RaspberryPiManager.Services;
 using RaspberryPiManager.Utilities;
@@ -54,11 +55,22 @@ public static class MauiProgram
 
         // Use IHttpClientFactory for better HttpClient management (2025 best practice)
         builder.Services.AddHttpClient();
-        builder.Services.AddHttpClient<IImageDownloadService>(client =>
+        // Configure HttpClient for ImageDownloadService with custom settings
+        builder.Services.AddHttpClient(nameof(ImageDownloadService), client =>
         {
             client.Timeout = TimeSpan.FromMinutes(30); // Long timeout for large downloads
             client.DefaultRequestHeaders.Add("User-Agent", "RaspberryPiManager/1.0");
         });
+        // Register ImageDownloadService as singleton with configured HttpClient
+        builder.Services.AddSingleton<ImageDownloadService>(sp =>
+        {
+            var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+            var httpClient = httpClientFactory.CreateClient(nameof(ImageDownloadService));
+            var logger = sp.GetRequiredService<ILogger<ImageDownloadService>>();
+            return new ImageDownloadService(httpClient, logger);
+        });
+        // Map interface to the implementation
+        builder.Services.AddSingleton<IImageDownloadService>(sp => sp.GetRequiredService<ImageDownloadService>());
 
         // Platform-specific services
 #if WINDOWS
@@ -82,7 +94,6 @@ public static class MauiProgram
         builder.Services.AddSingleton<IBackupService, BackupService>();
         builder.Services.AddSingleton<IRestoreService, RestoreService>();
         builder.Services.AddSingleton<IProfileService, ProfileService>();
-        builder.Services.AddSingleton<IImageDownloadService, ImageDownloadService>();
 
         // Register ViewModels
         builder.Services.AddTransient<SDCardViewModel>();

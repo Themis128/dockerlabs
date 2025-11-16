@@ -45,3 +45,14 @@ export const API_ENDPOINTS = {
   CONFIGURE_PI: '/configure-pi',
   EXECUTE_REMOTE: '/execute-remote',
 } as const;
+
+// API configuration constants
+export const DEFAULT_API_BASE = '/api';
+export const DEFAULT_PYTHON_SERVER_URL = 'http://localhost:3000';
+
+// Settings constants
+export const DEFAULT_REFRESH_INTERVAL = 30000; // 30 seconds in milliseconds
+export const DEFAULT_USERNAME = 'pi';
+
+// CSS paths
+export const MAIN_CSS_PATH = '~/assets/css/main.css';

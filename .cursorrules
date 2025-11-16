@@ -1,0 +1,35 @@
+# Cursor Rules for Ollama Integration
+
+## Ollama Configuration
+- Default model: qwen2.5-coder:14b
+- Endpoint: http://127.0.0.1:11434/api/generate
+- Context length: 16384 tokens
+- Max tokens: 8192 tokens
+- Temperature: 0.3 (for consistent, focused responses)
+- Top P: 0.9 (for diverse but relevant completions)
+
+## Code Analysis Preferences
+- Always use comprehensive analysis mode for production code
+- Use quick mode for rapid feedback during development
+- Include security, performance, and best practices checks
+- Provide actionable suggestions with code examples
+
+## Model Selection
+- Primary: qwen2.5-coder:14b (best for comprehensive analysis)
+- Fallback: qwen2.5-coder:7b (faster, lighter)
+- Alternative: codellama:latest (code-specific)
+- Alternative: mistral:7b (general purpose)
+
+## Analysis Workflow
+1. Check Ollama connection before analysis
+2. Verify model availability
+3. Use retry logic (3 attempts with exponential backoff)
+4. Save analysis results to markdown files
+5. Provide clear, structured feedback
+
+## Best Practices
+- Always analyze code before committing
+- Use detailed mode for code reviews
+- Use quick mode for rapid iteration
+- Combine with traditional linting tools
+- Review generated markdown reports
