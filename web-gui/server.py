@@ -1944,21 +1944,46 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                 }, 503)
                 return
 
-            if result.returncode == 0:
-                try:
-                    data = json.loads(result.stdout)
-                    self.send_json(data)
-                except json.JSONDecodeError:
+            # Try to parse JSON response regardless of return code
+            # The script now always outputs valid JSON
+            try:
+                # Check for Python errors in stderr first
+                if result.stderr and ("Traceback" in result.stderr or "Error" in result.stderr or "SyntaxError" in result.stderr):
+                    error_log(f"Python error in WiFi scanner script: {result.stderr[:500]}", request_id=self.request_id)
                     self.send_json({
                         "success": False,
-                        "error": "Invalid response from scanner",
+                        "error": f"Script execution error: {result.stderr[:200]}",
                         "networks": []
                     }, 500)
-            else:
+                    return
+
+                if result.stdout:
+                    data = json.loads(result.stdout)
+                    # Check if the JSON indicates success or failure
+                    if data.get('success', False):
+                        self.send_json(data)
+                    else:
+                        # Script returned error in JSON format
+                        self.send_json(data, 500)
+                else:
+                    # No output, try to get error from stderr
+                    error_msg = result.stderr.strip() if result.stderr else "Scan failed with no output"
+                    self.send_json({
+                        "success": False,
+                        "error": error_msg,
+                        "networks": []
+                    }, 500)
+            except json.JSONDecodeError as e:
+                # Invalid JSON - include both stdout and stderr for debugging
+                error_log(f"Invalid JSON from WiFi scanner. stdout: {result.stdout[:200]}, stderr: {result.stderr[:200]}", request_id=self.request_id)
                 self.send_json({
                     "success": False,
-                    "error": result.stderr or "Scan failed",
-                    "networks": []
+                    "error": f"Invalid response from scanner: {str(e)}",
+                    "networks": [],
+                    "debug": {
+                        "stdout_preview": result.stdout[:200] if result.stdout else None,
+                        "stderr_preview": result.stderr[:200] if result.stderr else None
+                    }
                 }, 500)
         except subprocess.TimeoutExpired:
             error_msg = f"WiFi scan timed out after {SUBPROCESS_TIMEOUT} seconds"
@@ -1973,6 +1998,14 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
             self.send_json({
                 "success": False,
                 "error": str(e),
+                "networks": []
+            }, 500)
+        except Exception as e:
+            # Catch any other unexpected errors
+            error_log(f"Unexpected error scanning WiFi networks: {str(e)}", e, include_traceback=True, request_id=self.request_id)
+            self.send_json({
+                "success": False,
+                "error": f"Unexpected error: {str(e)}",
                 "networks": []
             }, 500)
 

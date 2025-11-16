@@ -106,6 +106,8 @@ export async function callPythonApi(event: H3Event, options: PythonApiOptions): 
 
     // Network scan errors (500s) are often due to permissions or network issues - treat as warnings
     const isNetworkScanError = options.endpoint === '/api/scan-network' && httpStatusCode === 500;
+    // WiFi scan errors (500s) are also often due to permissions or missing WiFi adapter - treat as warnings
+    const isWifiScanError = options.endpoint === '/api/scan-wifi' && httpStatusCode === 500;
 
     // Rate limit repeated errors from the same endpoint to avoid spam
     const errorKey = `api_error_${options.endpoint}_${httpStatusCode || 'unknown'}`;
@@ -117,12 +119,12 @@ export async function callPythonApi(event: H3Event, options: PythonApiOptions): 
     const shouldLog = process.dev && !isPureConnectionError && !isStartupTimeout && !isRateLimitError && !shouldRateLimitError;
 
     if (shouldLog) {
-      // Use warning level for timeouts, network scan errors, and rate limits
+      // Use warning level for timeouts, network scan errors, WiFi scan errors, and rate limits
       // Use error level for other unexpected issues
-      const logLevel = isTimeout || isNetworkScanError ? 'warn' : 'error';
+      const logLevel = isTimeout || isNetworkScanError || isWifiScanError ? 'warn' : 'error';
       const logMethod = logLevel === 'warn' ? console.warn : console.error;
 
-      const errorType = isTimeout ? 'Timeout' : isNetworkScanError ? 'Network scan error (expected)' : 'Error';
+      const errorType = isTimeout ? 'Timeout' : isNetworkScanError ? 'Network scan error (expected)' : isWifiScanError ? 'WiFi scan error (expected)' : 'Error';
 
       logMethod(`[Python API] ${errorType} calling Python backend:`, {
         url,
@@ -135,6 +137,8 @@ export async function callPythonApi(event: H3Event, options: PythonApiOptions): 
         isTimeout,
         hasServerResponse,
         hasResponseData: !!responseData,
+        // Include the actual error message from Python backend if available
+        pythonError: responseData?.error || responseData?.message || undefined,
       });
 
       // Track when we last logged this error

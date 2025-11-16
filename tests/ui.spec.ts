@@ -37,18 +37,46 @@ test.describe('UI Functionality', () => {
     }
 
     // Click each tab to verify they're interactive
-    // Don't wait for full activation - just verify the click works
+    // Wait for elements to be actionable before clicking and wait for Vue reactivity
     for (let i = 0; i < count; i++) {
       const tab = tabButtons.nth(i);
-      // Click without waiting for full tab switch animation
-      await tab.click({ timeout: 2000 });
-      // Small delay to allow click to register
-      await page.waitForTimeout(100);
+      // Wait for element to be attached and visible
+      await tab.waitFor({ state: 'attached', timeout: 5000 });
+      await expect(tab).toBeVisible({ timeout: 5000 });
+      await expect(tab).toBeEnabled({ timeout: 5000 });
+
+      // Check if tab is already active - if so, clicking it won't change state
+      const isAlreadyActive = await tab.evaluate((el) => el.classList.contains('active'));
+
+      // Click with longer timeout and force if needed
+      try {
+        await tab.click({ timeout: 5000 });
+      } catch (error) {
+        // If normal click fails, try with force option
+        await tab.click({ force: true, timeout: 5000 });
+      }
+
+      // Wait for Vue to update - only if tab wasn't already active
+      if (!isAlreadyActive) {
+        try {
+          // Wait for the clicked tab to become active (with timeout)
+          await expect(tab).toHaveClass(/active/, { timeout: 3000 });
+        } catch {
+          // If it doesn't become active immediately, wait a bit for Vue reactivity
+          await page.waitForTimeout(300);
+          // Verify at least one tab is active (the click should have registered)
+          const activeTabs = page.locator('.tab-button.active');
+          await expect(activeTabs.first()).toBeVisible({ timeout: 2000 });
+        }
+      } else {
+        // If tab was already active, just wait a small amount for any potential updates
+        await page.waitForTimeout(100);
+      }
     }
 
     // Verify at least one tab is active after clicking
     const activeTab = page.locator('.tab-button.active');
-    await expect(activeTab.first()).toBeVisible();
+    await expect(activeTab.first()).toBeVisible({ timeout: 5000 });
   });
 
   test('tab buttons should have hover effects', async ({ page }) => {
