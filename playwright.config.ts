@@ -77,7 +77,7 @@ export default defineConfig({
       command: 'npx nuxt dev --port 3001',
       url: 'http://localhost:3001',
       reuseExistingServer: true,
-      timeout: 120 * 1000,
+      timeout: 180 * 1000, // Increased to 3 minutes for Nuxt 4 startup
       stdout: 'pipe',
       stderr: 'pipe',
     },

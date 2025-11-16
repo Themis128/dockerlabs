@@ -13,7 +13,11 @@ export default defineNuxtConfig({
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1.0, viewport-fit=cover' },
-        { name: 'description', content: 'Comprehensive web-based management system for Raspberry Pi devices. Configure, monitor, and manage multiple Raspberry Pi devices from a single interface.' },
+        {
+          name: 'description',
+          content:
+            'Comprehensive web-based management system for Raspberry Pi devices. Configure, monitor, and manage multiple Raspberry Pi devices from a single interface.',
+        },
         { name: 'theme-color', content: '#0078D4' },
         { name: 'color-scheme', content: 'light dark' },
       ],
@@ -46,15 +50,17 @@ export default defineNuxtConfig({
 
   // Auto-imports configuration
   imports: {
-    dirs: [
-      'composables',
-      'utils',
-      'types',
-    ],
+    dirs: ['composables', 'utils', 'types'],
   },
 
   // Module configuration
   modules: ['@pinia/nuxt'],
+
+  // Dev server configuration - bind to all interfaces for Playwright
+  devServer: {
+    host: '0.0.0.0',
+    port: 3001,
+  },
 
   // Vite configuration
   vite: {
@@ -98,4 +104,4 @@ export default defineNuxtConfig({
       '**/obj/**',
     ],
   },
-})
+});
