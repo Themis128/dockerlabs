@@ -60,6 +60,48 @@ public class NetworkSettings
 
     // Multiple networks support
     public List<WiFiNetwork> Networks { get; set; } = new();
+
+    // Phase 1 Enhancements
+    // Auto-connect settings
+    public bool AutoConnect { get; set; } = true; // Auto-connect to this network
+    public int? MinSignalStrength { get; set; } // Minimum signal strength in dBm (e.g., -70)
+
+    // 802.11r Fast Roaming
+    public bool EnableFastRoaming { get; set; } = false; // 802.11r Fast BSS Transition
+    public int? MobilityDomain { get; set; } // Mobility domain ID (1-65535)
+    public bool UseFTEAP { get; set; } = false; // Use FT-EAP for enterprise
+    public bool UseFTPSK { get; set; } = false; // Use FT-PSK for personal
+
+    // Phase 2 Enhancements
+    // 802.11k (Radio Resource Management)
+    public bool EnableRRM { get; set; } = false; // Enable 802.11k Radio Resource Management
+    public bool RRMNeighborReport { get; set; } = false; // Enable neighbor report requests
+
+    // 802.11v (Wireless Network Management)
+    public bool EnableWNM { get; set; } = false; // Enable 802.11v Wireless Network Management
+    public bool BSSTransition { get; set; } = false; // Enable BSS transition management
+    public bool WNMSleepMode { get; set; } = false; // Enable WNM sleep mode for power savings
+
+    // Phase 3 Enhancements
+    // Connection Timeout Settings
+    public int? ConnectionTimeout { get; set; } // Connection attempt timeout in seconds
+    public int? MaxRetries { get; set; } // Maximum retry attempts
+
+    // Guest Network Isolation
+    public bool IsGuestNetwork { get; set; } = false; // Mark as guest network
+    public bool EnableIsolation { get; set; } = false; // Enable client isolation
+    public int? VLANId { get; set; } // VLAN ID for network segmentation (1-4094)
+
+    // MAC Address Filtering
+    public bool EnableMACFiltering { get; set; } = false; // Enable MAC address filtering
+    public List<string> AllowedMACAddresses { get; set; } = new(); // Whitelist of allowed MAC addresses
+    public List<string> BlockedMACAddresses { get; set; } = new(); // Blacklist of blocked MAC addresses
+
+    // Hotspot 2.0 / Passpoint
+    public bool EnableHotspot20 { get; set; } = false; // Enable Hotspot 2.0 / Passpoint
+    public bool Interworking { get; set; } = false; // Enable interworking
+    public bool HS20 { get; set; } = false; // Enable HS2.0
+    public string? DomainName { get; set; } // Domain name for Passpoint
 }
 
 public class WiFiNetwork
@@ -87,6 +129,48 @@ public class WiFiNetwork
     public string? AnonymousIdentity { get; set; }
     public string? Phase2Auth { get; set; }
     public string? EAPPassword { get; set; }
+
+    // Phase 1 Enhancements
+    // Auto-connect settings
+    public bool AutoConnect { get; set; } = true;
+    public int? MinSignalStrength { get; set; }
+
+    // 802.11r Fast Roaming
+    public bool EnableFastRoaming { get; set; } = false;
+    public int? MobilityDomain { get; set; }
+    public bool UseFTEAP { get; set; } = false;
+    public bool UseFTPSK { get; set; } = false;
+
+    // Phase 2 Enhancements
+    // 802.11k (Radio Resource Management)
+    public bool EnableRRM { get; set; } = false; // Enable 802.11k Radio Resource Management
+    public bool RRMNeighborReport { get; set; } = false; // Enable neighbor report requests
+
+    // 802.11v (Wireless Network Management)
+    public bool EnableWNM { get; set; } = false; // Enable 802.11v Wireless Network Management
+    public bool BSSTransition { get; set; } = false; // Enable BSS transition management
+    public bool WNMSleepMode { get; set; } = false; // Enable WNM sleep mode for power savings
+
+    // Phase 3 Enhancements
+    // Connection Timeout Settings
+    public int? ConnectionTimeout { get; set; } // Connection attempt timeout in seconds
+    public int? MaxRetries { get; set; } // Maximum retry attempts
+
+    // Guest Network Isolation
+    public bool IsGuestNetwork { get; set; } = false; // Mark as guest network
+    public bool EnableIsolation { get; set; } = false; // Enable client isolation
+    public int? VLANId { get; set; } // VLAN ID for network segmentation (1-4094)
+
+    // MAC Address Filtering
+    public bool EnableMACFiltering { get; set; } = false; // Enable MAC address filtering
+    public List<string> AllowedMACAddresses { get; set; } = new(); // Whitelist of allowed MAC addresses
+    public List<string> BlockedMACAddresses { get; set; } = new(); // Blacklist of blocked MAC addresses
+
+    // Hotspot 2.0 / Passpoint
+    public bool EnableHotspot20 { get; set; } = false; // Enable Hotspot 2.0 / Passpoint
+    public bool Interworking { get; set; } = false; // Enable interworking
+    public bool HS20 { get; set; } = false; // Enable HS2.0
+    public string? DomainName { get; set; } // Domain name for Passpoint
 }
 
 public enum WPASecurityType
@@ -95,6 +179,7 @@ public enum WPASecurityType
     WPA2_Personal,      // WPA-PSK (legacy support)
     WPA3_Enterprise,    // WPA-EAP-SUITE-B-192 (requires certificates)
     WPA2_Enterprise,    // WPA-EAP (legacy enterprise)
+    OWE,                // Opportunistic Wireless Encryption (encrypted open networks)
     Open                // No security (not recommended)
 }
 

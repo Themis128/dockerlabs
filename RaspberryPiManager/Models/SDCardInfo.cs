@@ -12,7 +12,7 @@ public class SDCardInfo
     public bool IsRemovable { get; set; }
     public bool IsFormatted { get; set; }
     public bool IsMounted { get; set; }
-    public List<PartitionInfo> Partitions { get; set; } = new();
+    public List<PartitionInfo> Partitions { get; set; } = []; // Collection expression (C# 12)
     public SDCardStatus Status { get; set; } = SDCardStatus.Unknown;
 }
 

@@ -15,7 +15,7 @@ def load_config():
     """Load Raspberry Pi configuration"""
     config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "pi-config.json")
     if os.path.exists(config_path):
-        with open(config_path, "r") as f:
+        with open(config_path, "r", encoding='utf-8') as f:
             return json.load(f)
     return {"raspberry_pis": {}}
 
@@ -83,6 +83,7 @@ def execute_ssh_command(ip, username, command, password=None, key_path=None):
                     capture_output=True,
                     text=True,
                     timeout=30,
+                    check=False,
                 )
             except FileNotFoundError:
                 # sshpass not available, try without password (will use key or fail)
@@ -91,6 +92,7 @@ def execute_ssh_command(ip, username, command, password=None, key_path=None):
                     capture_output=True,
                     text=True,
                     timeout=30,
+                    check=False,
                 )
         else:
             result = subprocess.run(
@@ -98,6 +100,7 @@ def execute_ssh_command(ip, username, command, password=None, key_path=None):
                 capture_output=True,
                 text=True,
                 timeout=30,
+                check=False,
             )
 
         return {
@@ -113,7 +116,7 @@ def execute_ssh_command(ip, username, command, password=None, key_path=None):
             "error": "Command execution timed out",
             "exit_code": -1,
         }
-    except Exception as e:
+    except (OSError, subprocess.SubprocessError, ValueError) as e:
         return {
             "success": False,
             "output": "",
@@ -156,7 +159,7 @@ def execute_telnet_command(ip, port, username, password, command):
             "error": "",
             "exit_code": 0,
         }
-    except Exception as e:
+    except (OSError, subprocess.SubprocessError, ValueError) as e:
         return {
             "success": False,
             "output": "",

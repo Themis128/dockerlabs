@@ -1,10 +1,83 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Raspberry Pi Manager</title>
-    <link rel="stylesheet" href="styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <!-- Primary Meta Tags -->
+    <title>Raspberry Pi Manager - Device Management System</title>
+    <meta name="title" content="Raspberry Pi Manager - Device Management System">
+    <meta name="description" content="Comprehensive web-based management system for Raspberry Pi devices. Configure, monitor, and manage multiple Raspberry Pi devices from a single interface.">
+    <meta name="keywords" content="Raspberry Pi, Pi Manager, Device Management, IoT, Raspberry Pi Configuration, SD Card Management, OS Installation">
+    <meta name="author" content="Raspberry Pi Manager">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="English">
+    <meta name="revisit-after" content="7 days">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Raspberry Pi Manager">
+    <meta property="og:description" content="Comprehensive web-based management system for Raspberry Pi devices">
+    <meta property="og:site_name" content="Raspberry Pi Manager">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Raspberry Pi Manager">
+    <meta name="twitter:description" content="Comprehensive web-based management system for Raspberry Pi devices">
+
+    <!-- Theme and Color -->
+    <meta name="theme-color" content="#0078D4">
+    <meta name="color-scheme" content="light dark">
+    <meta name="msapplication-TileColor" content="#0078D4">
+    <meta name="msapplication-config" content="/browserconfig.xml">
+
+    <!-- Security Headers -->
+    <!-- Note: X-Frame-Options, X-Content-Type-Options, and other security headers are set via HTTP headers in server.py -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' ws: wss:;">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
+
+    <!-- Performance and Resource Hints -->
+    <link rel="preconnect" href="https://downloads.raspberrypi.org" crossorigin>
+    <link rel="dns-prefetch" href="https://downloads.raspberrypi.org">
+    <link rel="preload" href="styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="styles.css"></noscript>
+    <link rel="preload" href="app.js" as="script">
+
+    <!-- PWA Support -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Pi Manager">
+    <link rel="apple-touch-icon" href="/favicon.svg">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="shortcut icon" href="/favicon.ico">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="/">
+
+    <!-- Alternative Languages (if needed) -->
+    <link rel="alternate" hreflang="en" href="/">
+
+    <!-- Prefetch for faster navigation -->
+    <link rel="prefetch" href="/api/pis">
+
+    <!-- Critical CSS inline (if needed for above-the-fold content) -->
+    <style>
+        /* Critical CSS for initial render */
+        body{margin:0;padding:20px;font-family:'Segoe UI',system-ui,sans-serif;background:#F3F3F3;min-height:100vh}
+        .container{max-width:1200px;margin:0 auto;background:#FFFFFF;border-radius:8px;box-shadow:0 4px 8px rgba(0,0,0,0.12);overflow:hidden}
+        header{background:linear-gradient(135deg,#0078D4 0%,#005A9E 100%);color:#fff;padding:32px;text-align:center}
+        .tabs{display:flex;background:#FFFFFF;border-bottom:1px solid #E1E1E1;padding:0 8px;position:relative;flex-wrap:wrap}
+    </style>
 </head>
 <body>
     <div class="container">
@@ -13,19 +86,28 @@
             <p>Manage your Raspberry Pi devices</p>
         </header>
 
-        <nav class="tabs">
-            <button type="button" class="tab-button active" data-tab="dashboard">Dashboard</button>
-            <button type="button" class="tab-button" data-tab="pis">Raspberry Pis</button>
-            <button type="button" class="tab-button" data-tab="sdcard">SD Card</button>
-            <button type="button" class="tab-button" data-tab="osinstall">OS Install</button>
-            <button type="button" class="tab-button" data-tab="settings">Settings</button>
-            <button type="button" class="tab-button" data-tab="connections">Test Connections</button>
-            <button type="button" class="tab-button" data-tab="remote">Remote Connection</button>
+        <nav class="tabs" aria-label="Main navigation">
+            <button type="button" id="mobile-menu-toggle" class="mobile-menu-toggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="tabs-menu">
+                <span class="hamburger-icon">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </span>
+            </button>
+            <div class="tabs-container" id="tabs-menu" role="tablist">
+                <button type="button" class="tab-button active" data-tab="dashboard" role="tab" aria-selected="true" aria-controls="dashboard" id="tab-dashboard">Dashboard</button>
+                <button type="button" class="tab-button" data-tab="pis" role="tab" aria-selected="false" aria-controls="pis" id="tab-pis">Raspberry Pis</button>
+                <button type="button" class="tab-button" data-tab="sdcard" role="tab" aria-selected="false" aria-controls="sdcard" id="tab-sdcard">SD Card</button>
+                <button type="button" class="tab-button" data-tab="osinstall" role="tab" aria-selected="false" aria-controls="osinstall" id="tab-osinstall">OS Install</button>
+                <button type="button" class="tab-button" data-tab="settings" role="tab" aria-selected="false" aria-controls="settings" id="tab-settings">Settings</button>
+                <button type="button" class="tab-button" data-tab="connections" role="tab" aria-selected="false" aria-controls="connections" id="tab-connections">Test Connections</button>
+                <button type="button" class="tab-button" data-tab="remote" role="tab" aria-selected="false" aria-controls="remote" id="tab-remote">Remote Connection</button>
+            </div>
         </nav>
 
         <main>
             <!-- Dashboard Tab -->
-            <div id="dashboard" class="tab-content active">
+            <div id="dashboard" class="tab-content active" role="tabpanel" aria-labelledby="tab-dashboard" aria-hidden="false">
                 <h2>Dashboard</h2>
                 <div class="stats-grid">
                     <div class="stat-card">
@@ -52,16 +134,16 @@
             </div>
 
             <!-- Raspberry Pis Tab -->
-            <div id="pis" class="tab-content">
+            <div id="pis" class="tab-content" role="tabpanel" aria-labelledby="tab-pis" aria-hidden="true">
                 <h2>Raspberry Pi Devices</h2>
-                <div id="pi-list" class="pi-list">
+                <div id="pi-list" class="pi-list" role="region" aria-label="Raspberry Pi Device List" aria-live="polite" aria-atomic="true">
                     <p class="loading">Loading Raspberry Pis...</p>
                 </div>
                 <button type="button" id="refresh-pis" class="btn btn-primary">Refresh List</button>
             </div>
 
             <!-- SD Card Management Tab -->
-            <div id="sdcard" class="tab-content">
+            <div id="sdcard" class="tab-content" role="tabpanel" aria-labelledby="tab-sdcard" aria-hidden="true">
                 <h2>SD Card Management</h2>
                 <div class="test-section">
                     <h3>Detected SD Cards</h3>
@@ -73,17 +155,18 @@
                         </button>
                         <span id="auto-detect-status" class="auto-detect-status"></span>
                     </div>
-                    <div id="sdcard-list" class="pi-list">
+                    <div id="sdcard-list" class="pi-list" role="region" aria-label="SD Card List" aria-live="polite" aria-atomic="true">
                         <p class="loading">Click "Refresh SD Cards" to detect connected SD cards</p>
                     </div>
                 </div>
             </div>
 
             <!-- OS Installation Tab -->
-            <div id="osinstall" class="tab-content">
+            <div id="osinstall" class="tab-content" role="tabpanel" aria-labelledby="tab-osinstall" aria-hidden="true">
                 <h2>OS Installation</h2>
-                <form id="os-install-form" onsubmit="event.preventDefault(); return false;">
-                <div class="test-section">
+
+                <!-- Form 1: SD Card and OS Image Selection -->
+                <form id="os-selection-form" onsubmit="event.preventDefault(); return false;" class="test-section" novalidate>
                     <h3>Select SD Card</h3>
                     <select id="os-sdcard-select" aria-label="Select SD Card" class="select-full-width">
                         <option value="">-- Select SD Card --</option>
@@ -178,39 +261,47 @@
                         <label for="os-custom-file" class="form-label">Custom Image File:</label>
                         <input type="file" id="os-custom-file" accept=".img,.zip" class="file-input-full" aria-label="Select custom OS image file" title="Select custom OS image file">
                     </div>
+                </form>
 
-                    <!-- Configuration Options (Collapsible Sections) -->
-                    <div class="config-section">
-                        <h3>Configuration Options</h3>
-                        <p class="config-description">Configure the OS before installation</p>
+                <!-- Form 2: Configuration Options -->
+                <form id="os-config-form" onsubmit="event.preventDefault(); return false;" class="test-section" novalidate>
+                    <h3>Configuration Options</h3>
+                    <p class="config-description">Configure the OS before installation</p>
 
-                        <!-- Boot Settings -->
-                        <details class="details-section">
-                            <summary class="details-summary">Boot Settings</summary>
-                            <div class="details-content">
-                                <label class="form-label">
-                                    <input type="checkbox" id="os-enable-ssh" checked> Enable SSH
-                                </label>
-                                <label class="form-label">
-                                    <input type="checkbox" id="os-enable-serial"> Enable Serial Console
-                                </label>
-                                <label class="form-label">
-                                    <input type="checkbox" id="os-disable-overscan" checked> Disable Overscan
-                                </label>
-                                <label class="form-label">
-                                    GPU Memory (MB):
-                                    <input type="number" id="os-gpu-memory" value="64" min="16" max="512" class="form-input-number">
-                                </label>
-                            </div>
-                        </details>
+                    <!-- Boot Settings -->
+                    <details class="details-section">
+                        <summary class="details-summary">Boot Settings</summary>
+                        <div class="details-content">
+                            <label class="form-label">
+                                <input type="checkbox" id="os-enable-ssh" checked> Enable SSH
+                            </label>
+                            <label class="form-label">
+                                <input type="checkbox" id="os-enable-serial"> Enable Serial Console
+                            </label>
+                            <label class="form-label">
+                                <input type="checkbox" id="os-disable-overscan" checked> Disable Overscan
+                            </label>
+                            <label class="form-label">
+                                GPU Memory (MB):
+                                <input type="number" id="os-gpu-memory" value="64" min="16" max="512"
+                                       class="form-input-number" inputmode="numeric" step="16"
+                                       aria-describedby="gpu-memory-hint">
+                                <small id="gpu-memory-hint" class="form-hint">GPU memory in MB (16-512, typically 64 or 128)</small>
+                            </label>
+                        </div>
+                    </details>
 
-                        <!-- System Settings -->
-                        <details class="details-section">
-                            <summary class="details-summary">System Settings</summary>
-                            <div class="details-content">
+                    <!-- System Settings -->
+                    <details class="details-section">
+                        <summary class="details-summary">System Settings</summary>
+                        <div class="details-content">
                                 <label class="form-label">
                                     Hostname:
-                                    <input type="text" id="os-hostname" value="raspberrypi" class="form-input-full">
+                                    <input type="text" id="os-hostname" value="raspberrypi" class="form-input-full"
+                                           autocomplete="off" inputmode="text" pattern="[a-zA-Z0-9\-]+"
+                                           minlength="1" maxlength="63" spellcheck="false"
+                                           aria-describedby="hostname-hint">
+                                    <small id="hostname-hint" class="form-hint">Valid hostname characters: letters, numbers, and hyphens (1-63 characters)</small>
                                 </label>
                                 <label class="form-label">
                                     Timezone:
@@ -255,10 +346,10 @@
                             </div>
                         </details>
 
-                        <!-- Network Settings -->
-                        <details class="details-section">
-                            <summary class="details-summary">Network Settings</summary>
-                            <div class="details-content">
+                    <!-- Network Settings -->
+                    <details class="details-section">
+                        <summary class="details-summary">Network Settings</summary>
+                        <div class="details-content">
                                 <label class="form-label">
                                     <input type="checkbox" id="os-enable-ethernet" checked> Enable Ethernet
                                 </label>
@@ -266,9 +357,9 @@
                                     <input type="checkbox" id="os-enable-wifi"> Enable WiFi
                                 </label>
                                 <div id="os-wifi-settings" class="hidden nested-section">
-                                    <div class="info-box" style="background: #e7f3ff; border-left: 4px solid #2196F3; padding: 12px; margin-bottom: 15px; border-radius: 4px;">
+                                    <div class="info-box info-box-wifi">
                                         <strong>💡 WiFi Security Information:</strong>
-                                        <ul style="margin: 8px 0 0 20px; font-size: 0.9em;">
+                                        <ul>
                                             <li><strong>WPA3-Personal:</strong> Latest 2025 standard with SAE (Simultaneous Authentication of Equals) - Recommended for new networks</li>
                                             <li><strong>Transition Mode:</strong> Allows WPA2 and WPA3 devices to connect simultaneously - Best compatibility</li>
                                             <li><strong>Protected Management Frames (PMF):</strong> Automatically enabled for WPA3 - Protects against deauthentication attacks</li>
@@ -277,8 +368,15 @@
 
                                     <label class="form-label">
                                         Network Name (SSID):
-                                        <input type="text" id="os-wifi-ssid" class="form-input-full" placeholder="Your WiFi network name" aria-describedby="ssid-hint">
-                                        <small id="ssid-hint" class="form-hint">Enter the exact name of your wireless network as it appears on your router</small>
+                                        <div class="flex-row">
+                                            <input type="text" id="os-wifi-ssid" class="form-input-full" placeholder="Your WiFi network name" aria-describedby="ssid-hint">
+                                            <button type="button" id="os-wifi-scan-button" class="btn-secondary white-space-nowrap">🔍 Scan</button>
+                                        </div>
+                                        <small id="ssid-hint" class="form-hint">Enter the exact name of your wireless network as it appears on your router, or scan for available networks</small>
+                                        <div id="os-wifi-scan-results" class="wifi-scan-results">
+                                            <div class="wifi-scan-results-header">Available Networks:</div>
+                                            <div id="os-wifi-scan-list"></div>
+                                        </div>
                                     </label>
 
                                     <label class="form-label">
@@ -288,6 +386,7 @@
                                             <option value="WPA2_Personal">WPA2-Personal (Legacy Support) ⚠️</option>
                                             <option value="WPA3_Enterprise">WPA3-Enterprise (Advanced - Requires Certificates) 🔐</option>
                                             <option value="WPA2_Enterprise">WPA2-Enterprise (Legacy - Requires Certificates) ⚠️</option>
+                                            <option value="OWE">OWE (Opportunistic Wireless Encryption - Encrypted Open) 🔓🔒</option>
                                             <option value="Open">Open Network (Not Recommended - No Security) 🚫</option>
                                         </select>
                                         <small id="security-hint" class="form-hint">
@@ -300,7 +399,7 @@
                                         <label class="form-label" for="os-wifi-password">
                                             Password:
                                         </label>
-                                        <div style="position: relative;">
+                                        <div class="position-relative">
                                             <input type="password" id="os-wifi-password" autocomplete="new-password" class="form-input-full" placeholder="WiFi password (min. 8 characters)">
                                             <button type="button" id="os-wifi-password-toggle" class="password-toggle" aria-label="Show password">👁️</button>
                                         </div>
@@ -309,27 +408,27 @@
                                     </div>
 
                                     <div id="os-wifi-transition-mode" class="form-label">
-                                        <label style="display: flex; align-items: center; gap: 8px;">
+                                        <label class="flex-row-center">
                                             <input type="checkbox" id="os-wifi-transition" checked>
                                             <span>Enable WPA2/WPA3 Transition Mode</span>
                                         </label>
                                         <small class="form-hint">Allows compatibility with older devices while using WPA3 security</small>
                                     </div>
 
-                                    <div id="os-wifi-advanced-options" class="form-label" style="display: none;">
-                                        <label style="display: flex; align-items: center; gap: 8px;">
+                                    <div id="os-wifi-advanced-options" class="form-label wifi-advanced-options">
+                                        <label class="flex-row-center">
                                             <input type="checkbox" id="os-wifi-hidden">
                                             <span>Hidden Network</span>
                                         </label>
                                         <small class="form-hint">Enable if your network doesn't broadcast its SSID</small>
 
-                                        <label style="display: flex; align-items: center; gap: 8px; margin-top: 12px;">
+                                        <label class="flex-row-center margin-top-12">
                                             <input type="checkbox" id="os-wifi-precomputed-psk">
                                             <span>Use Pre-computed PSK</span>
                                         </label>
                                         <small class="form-hint">Pre-compute PSK for better security (matches wpa_passphrase output)</small>
 
-                                        <label class="form-label" style="margin-top: 12px;">
+                                        <label class="form-label margin-top-12">
                                             Frequency Band Preference:
                                             <select id="os-wifi-band" class="form-input-full">
                                                 <option value="">Auto (Both 2.4GHz and 5GHz)</option>
@@ -339,15 +438,164 @@
                                             <small class="form-hint">Prefer specific frequency band for this network</small>
                                         </label>
 
-                                        <label class="form-label" style="margin-top: 12px;">
+                                        <label class="form-label margin-top-12">
                                             Network Priority:
                                             <input type="number" id="os-wifi-priority" class="form-input-full" min="0" max="100" value="0">
                                             <small class="form-hint">Higher priority networks are preferred (0 = default, 1-100 = priority)</small>
                                         </label>
+
+                                        <label class="flex-row-center margin-top-12">
+                                            <input type="checkbox" id="os-wifi-auto-connect" checked>
+                                            <span>Auto-Connect</span>
+                                        </label>
+                                        <small class="form-hint">Automatically connect to this network when in range</small>
+
+                                        <label class="form-label margin-top-12">
+                                            Minimum Signal Strength (dBm):
+                                            <input type="number" id="os-wifi-min-signal" class="form-input-full" min="-100" max="0" step="1" placeholder="-70">
+                                            <small class="form-hint">Only connect if signal is stronger than this value (e.g., -70 dBm). Leave empty for no threshold.</small>
+                                        </label>
+
+                                        <div id="os-wifi-fast-roaming" class="margin-top-12">
+                                            <label class="flex-row-center">
+                                                <input type="checkbox" id="os-wifi-enable-fast-roaming">
+                                                <span>Enable 802.11r Fast Roaming</span>
+                                            </label>
+                                            <small class="form-hint">Enable fast handoff between access points (requires AP support)</small>
+
+                                            <div id="os-wifi-fast-roaming-options" class="wifi-sub-options">
+                                                <label class="form-label margin-top-8">
+                                                    Mobility Domain ID:
+                                                    <input type="number" id="os-wifi-mobility-domain" class="form-input-full" min="1" max="65535" value="1234">
+                                                    <small class="form-hint">Mobility domain identifier (1-65535)</small>
+                                                </label>
+
+                                                <label class="flex-row-center margin-top-8">
+                                                    <input type="checkbox" id="os-wifi-ft-psk">
+                                                    <span>Use FT-PSK (for Personal networks)</span>
+                                                </label>
+
+                                                <label class="flex-row-center margin-top-8">
+                                                    <input type="checkbox" id="os-wifi-ft-eap">
+                                                    <span>Use FT-EAP (for Enterprise networks)</span>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div id="os-wifi-rrm" class="margin-top-12">
+                                            <label class="flex-row-center">
+                                                <input type="checkbox" id="os-wifi-enable-rrm">
+                                                <span>Enable 802.11k (Radio Resource Management)</span>
+                                            </label>
+                                            <small class="form-hint">Helps devices find better access points and optimize roaming</small>
+
+                                            <div id="os-wifi-rrm-options" class="wifi-sub-options">
+                                                <label class="flex-row-center">
+                                                    <input type="checkbox" id="os-wifi-rrm-neighbor-report">
+                                                    <span>Enable Neighbor Report Requests</span>
+                                                </label>
+                                                <small class="form-hint">Request neighbor reports from access points for better roaming decisions</small>
+                                            </div>
+                                        </div>
+
+                                        <div id="os-wifi-wnm" class="margin-top-12">
+                                            <label class="flex-row-center">
+                                                <input type="checkbox" id="os-wifi-enable-wnm">
+                                                <span>Enable 802.11v (Wireless Network Management)</span>
+                                            </label>
+                                            <small class="form-hint">Network-assisted power savings and better network management</small>
+
+                                            <div id="os-wifi-wnm-options" class="wifi-sub-options">
+                                                <label class="flex-row-center">
+                                                    <input type="checkbox" id="os-wifi-bss-transition">
+                                                    <span>Enable BSS Transition Management</span>
+                                                </label>
+                                                <small class="form-hint">Allow access points to suggest better connections</small>
+
+                                                <label class="flex-row-center margin-top-8">
+                                                    <input type="checkbox" id="os-wifi-wnm-sleep-mode">
+                                                    <span>Enable WNM Sleep Mode</span>
+                                                </label>
+                                                <small class="form-hint">Enable power-saving sleep mode for battery-powered devices</small>
+                                            </div>
+                                        </div>
+
+                                        <div id="os-wifi-timeout" class="margin-top-12">
+                                            <h4 class="margin-bottom-8 font-size-normal">Connection Timeout Settings</h4>
+                                            <label class="form-label">
+                                                Connection Timeout (seconds):
+                                                <input type="number" id="os-wifi-connection-timeout" class="form-input-full" min="5" max="300" step="1" placeholder="30">
+                                                <small class="form-hint">Timeout for connection attempts (5-300 seconds). Leave empty for default.</small>
+                                            </label>
+                                            <label class="form-label margin-top-8">
+                                                Maximum Retries:
+                                                <input type="number" id="os-wifi-max-retries" class="form-input-full" min="1" max="10" step="1" placeholder="3">
+                                                <small class="form-hint">Maximum number of connection retry attempts (1-10). Leave empty for default.</small>
+                                            </label>
+                                        </div>
+
+                                        <div id="os-wifi-guest" class="margin-top-12">
+                                            <label class="flex-row-center">
+                                                <input type="checkbox" id="os-wifi-is-guest-network">
+                                                <span>Guest Network</span>
+                                            </label>
+                                            <small class="form-hint">Mark this as a guest network (enables client isolation)</small>
+
+                                            <div id="os-wifi-guest-options" class="wifi-sub-options">
+                                                <label class="flex-row-center">
+                                                    <input type="checkbox" id="os-wifi-enable-isolation">
+                                                    <span>Enable Client Isolation</span>
+                                                </label>
+                                                <small class="form-hint">Prevent devices on this network from communicating with each other</small>
+
+                                                <label class="form-label margin-top-8">
+                                                    VLAN ID (Optional):
+                                                    <input type="number" id="os-wifi-vlan-id" class="form-input-full" min="1" max="4094" step="1" placeholder="100">
+                                                    <small class="form-hint">VLAN ID for network segmentation (1-4094). Requires AP support.</small>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div id="os-wifi-mac-filtering" class="margin-top-12">
+                                            <label class="flex-row-center">
+                                                <input type="checkbox" id="os-wifi-enable-mac-filtering">
+                                                <span>Enable MAC Address Filtering</span>
+                                            </label>
+                                            <small class="form-hint">Note: MAC filtering is typically configured at the AP/router level</small>
+
+                                            <div id="os-wifi-mac-filtering-options" class="wifi-sub-options">
+                                                <label class="form-label">
+                                                    Allowed MAC Addresses (one per line):
+                                                    <textarea id="os-wifi-allowed-macs" rows="3" class="form-textarea-small" placeholder="AA:BB:CC:DD:EE:FF&#10;11:22:33:44:55:66"></textarea>
+                                                    <small class="form-hint">Whitelist of allowed MAC addresses (format: XX:XX:XX:XX:XX:XX)</small>
+                                                </label>
+                                                <label class="form-label margin-top-8">
+                                                    Blocked MAC Addresses (one per line):
+                                                    <textarea id="os-wifi-blocked-macs" rows="3" class="form-textarea-small" placeholder="AA:BB:CC:DD:EE:FF&#10;11:22:33:44:55:66"></textarea>
+                                                    <small class="form-hint">Blacklist of blocked MAC addresses (format: XX:XX:XX:XX:XX:XX)</small>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div id="os-wifi-hotspot20" class="margin-top-12">
+                                            <label class="flex-row-center">
+                                                <input type="checkbox" id="os-wifi-enable-hotspot20">
+                                                <span>Enable Hotspot 2.0 / Passpoint</span>
+                                            </label>
+                                            <small class="form-hint">Enterprise-grade seamless roaming and automatic authentication</small>
+
+                                            <div id="os-wifi-hotspot20-options" class="wifi-sub-options">
+                                                <label class="form-label">
+                                                    Domain Name:
+                                                    <input type="text" id="os-wifi-domain-name" class="form-input-full" placeholder="example.com">
+                                                    <small class="form-hint">Domain name for Passpoint authentication</small>
+                                                </label>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <div style="margin-top: 12px;">
-                                        <button type="button" id="os-wifi-advanced-toggle" class="btn-secondary" style="font-size: 0.9em;">
+                                    <div class="margin-top-12">
+                                        <button type="button" id="os-wifi-advanced-toggle" class="btn-secondary font-size-small">
                                             Show Advanced Options
                                         </button>
                                     </div>
@@ -429,6 +677,16 @@
                                         </select>
                                         <small class="form-hint">Select your country for regulatory compliance</small>
                                     </label>
+
+                                    <div class="network-profile-section">
+                                        <h4 class="network-profile-title">Network Profile Management</h4>
+                                        <div class="button-group flex-row-wrap">
+                                            <button type="button" id="export-network-profile" class="btn btn-secondary">💾 Export Network Profile</button>
+                                            <button type="button" id="import-network-profile" class="btn btn-secondary">📥 Import Network Profile</button>
+                                        </div>
+                                        <small class="form-hint">Export or import WiFi network configurations as JSON files</small>
+                                        <input type="file" id="import-network-profile-file" accept=".json" class="hidden-file-input">
+                                    </div>
                                 </div>
                                 <label class="form-label form-label-margin-top">
                                     <input type="checkbox" id="os-use-static-ip"> Use Static IP
@@ -436,24 +694,35 @@
                                 <div id="os-static-ip-settings" class="hidden nested-section-large">
                                     <label class="form-label">
                                         IP Address:
-                                        <input type="text" id="os-static-ip" placeholder="192.168.1.100" class="form-input-full">
+                                        <input type="text" id="os-static-ip" placeholder="192.168.1.100"
+                                               class="form-input-full" inputmode="numeric"
+                                               pattern="^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
+                                               autocomplete="off" spellcheck="false"
+                                               aria-describedby="ip-hint">
+                                        <small id="ip-hint" class="form-hint">IPv4 address format: xxx.xxx.xxx.xxx</small>
                                     </label>
                                     <label class="form-label">
                                         Gateway:
-                                        <input type="text" id="os-gateway" placeholder="192.168.1.1" class="form-input-full">
+                                        <input type="text" id="os-gateway" placeholder="192.168.1.1"
+                                               class="form-input-full" inputmode="numeric"
+                                               pattern="^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
+                                               autocomplete="off" spellcheck="false">
                                     </label>
                                     <label class="form-label">
                                         DNS:
-                                        <input type="text" id="os-dns" placeholder="8.8.8.8" class="form-input-full">
+                                        <input type="text" id="os-dns" placeholder="8.8.8.8"
+                                               class="form-input-full" inputmode="numeric"
+                                               pattern="^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
+                                               autocomplete="off" spellcheck="false">
                                     </label>
                                 </div>
                             </div>
                         </details>
 
-                        <!-- User Settings -->
-                        <details class="details-section">
-                            <summary class="details-summary">User Settings</summary>
-                            <div class="details-content">
+                    <!-- User Settings -->
+                    <details class="details-section">
+                        <summary class="details-summary">User Settings</summary>
+                        <div class="details-content">
                                 <label class="form-label">
                                     Default Password (for 'pi' user):
                                     <input type="password" id="os-default-password" placeholder="Leave empty for default" autocomplete="new-password" class="form-input-full">
@@ -466,13 +735,16 @@
                             </div>
                         </details>
 
-                        <!-- SSH Settings -->
-                        <details class="details-section">
-                            <summary class="details-summary">SSH Settings</summary>
-                            <div class="details-content">
+                    <!-- SSH Settings -->
+                    <details class="details-section">
+                        <summary class="details-summary">SSH Settings</summary>
+                        <div class="details-content">
                                 <label class="form-label">
                                     SSH Port:
-                                    <input type="number" id="os-ssh-port" value="22" min="1" max="65535" class="form-input-number">
+                                    <input type="number" id="os-ssh-port" value="22" min="1" max="65535"
+                                           class="form-input-number" inputmode="numeric"
+                                           aria-describedby="ssh-port-hint">
+                                    <small id="ssh-port-hint" class="form-hint">Valid port range: 1-65535 (default: 22)</small>
                                 </label>
                                 <label class="form-label">
                                     <input type="checkbox" id="os-ssh-password-auth" checked> Enable Password Authentication
@@ -487,10 +759,10 @@
                             </div>
                         </details>
 
-                        <!-- Package Settings -->
-                        <details class="details-section">
-                            <summary class="details-summary">Package Settings</summary>
-                            <div class="details-content">
+                    <!-- Package Settings -->
+                    <details class="details-section">
+                        <summary class="details-summary">Package Settings</summary>
+                        <div class="details-content">
                                 <label class="form-label">
                                     <input type="checkbox" id="os-update-packages" checked> Update Package List on First Boot
                                 </label>
@@ -504,10 +776,10 @@
                             </div>
                         </details>
 
-                        <!-- Custom Scripts -->
-                        <details class="details-section">
-                            <summary class="details-summary">Custom Scripts (Advanced)</summary>
-                            <div class="details-content">
+                    <!-- Custom Scripts -->
+                    <details class="details-section">
+                        <summary class="details-summary">Custom Scripts (Advanced)</summary>
+                        <div class="details-content">
                                 <label class="form-label">
                                     Pre-Install Scripts (file paths, one per line):
                                     <textarea id="os-pre-scripts" rows="2" placeholder="/path/to/script1.sh" class="form-textarea-small"></textarea>
@@ -522,10 +794,17 @@
                                 </label>
                             </div>
                         </details>
-                    </div>
+                </form>
 
-                    <button type="submit" id="install-os-submit" class="btn btn-primary install-button" style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;" aria-label="Submit OS installation form">Install</button>
-                    <button type="button" id="install-os" class="btn btn-primary install-button">Install OS to SD Card</button>
+                <!-- Installation Action Area (not a form, just action buttons) -->
+                <div class="test-section form-actions">
+                    <button type="button" id="install-os" class="btn btn-primary install-button"
+                            aria-describedby="install-warning" data-action="install-os">
+                        Install OS to SD Card
+                    </button>
+                    <p id="install-warning" class="sr-only" role="alert">
+                        Warning: This will erase all data on the selected SD card. This action cannot be undone.
+                    </p>
                     <div id="os-install-progress" class="progress-container">
                         <div class="progress-bar-wrapper">
                             <div id="os-progress-bar" class="progress-bar"></div>
@@ -533,11 +812,10 @@
                         <p id="os-status-text" class="status-text"></p>
                     </div>
                 </div>
-                </form>
             </div>
 
             <!-- Settings/Configuration Tab -->
-            <div id="settings" class="tab-content">
+            <div id="settings" class="tab-content" role="tabpanel" aria-labelledby="tab-settings" aria-hidden="true">
                 <h2>Pi Configuration</h2>
                 <div class="test-section">
                     <h3>Select Pi to Configure</h3>
@@ -601,7 +879,7 @@
                             </label>
                         </div>
 
-                        <button type="submit" id="apply-settings-submit" class="btn btn-primary settings-button" style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;" aria-label="Submit settings form">Apply</button>
+                        <button type="submit" id="apply-settings-submit" class="btn btn-primary settings-button sr-only-button" aria-label="Submit settings form">Apply</button>
                         <button type="button" id="apply-settings" class="btn btn-primary settings-button">Apply Settings to Pi</button>
                         <div id="settings-status" class="settings-status"></div>
                     </form>
@@ -609,13 +887,13 @@
             </div>
 
             <!-- Test Connections Tab -->
-            <div id="connections" class="tab-content">
+            <div id="connections" class="tab-content" role="tabpanel" aria-labelledby="tab-connections" aria-hidden="true">
                 <h2>Test Connections</h2>
                 <div class="test-section">
                     <h3>Test All Connections</h3>
                     <p>Test connectivity to all Raspberry Pis (ping, SSH, telnet)</p>
                     <button type="button" id="test-all" class="btn btn-primary">Test All Connections</button>
-                    <div id="test-results" class="test-results"></div>
+                    <div id="test-results" class="test-results" role="log" aria-live="polite" aria-atomic="true" aria-label="Test connection results"></div>
                 </div>
                 <div class="test-section">
                     <h3>Test SSH Authentication</h3>
@@ -625,12 +903,12 @@
                         <option value="2">Pi 2</option>
                     </select>
                     <button type="button" id="test-ssh" class="btn btn-primary">Test SSH Auth</button>
-                    <div id="ssh-results" class="test-results"></div>
+                    <div id="ssh-results" class="test-results" role="log" aria-live="polite" aria-atomic="true" aria-label="SSH authentication test results"></div>
                 </div>
             </div>
 
             <!-- Remote Connection Tab -->
-            <div id="remote" class="tab-content">
+            <div id="remote" class="tab-content" role="tabpanel" aria-labelledby="tab-remote" aria-hidden="true">
                 <h2>Remote Connection</h2>
                 <div class="test-section">
                     <h3>Connection Settings</h3>
@@ -671,7 +949,7 @@
                                 <input type="text" id="remote-key-path" placeholder="~/.ssh/id_rsa" autocomplete="off" class="remote-input">
                             </div>
                         </div>
-                        <button type="submit" id="remote-connect-btn-submit" class="btn btn-primary" style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;" aria-label="Submit remote connection form">Connect</button>
+                        <button type="submit" id="remote-connect-btn-submit" class="btn btn-primary sr-only-button" aria-label="Submit remote connection form">Connect</button>
                         <button type="button" id="remote-connect-btn" class="btn btn-primary">Connect</button>
                         <div id="remote-connection-status" class="remote-status"></div>
                     </form>
@@ -679,38 +957,84 @@
 
                 <div class="test-section terminal-section">
                     <h3>Command Terminal</h3>
-                    <div id="remote-terminal" class="terminal">
+                    <div id="remote-terminal" class="terminal" role="log" aria-live="polite" aria-atomic="false"
+                         aria-label="Remote terminal output" tabindex="0">
                         <div class="terminal-prompt">Remote Terminal - Select Pi and click Connect to start</div>
                     </div>
                     <div class="terminal-input-group">
                         <label for="remote-command-input" class="sr-only">Command Input</label>
-                        <input type="text" id="remote-command-input" placeholder="Enter command..." class="terminal-input" aria-label="Enter command to execute" onkeypress="if(event.key === 'Enter') executeRemoteCommand()">
-                        <button type="button" id="remote-execute-btn" class="btn btn-primary" onclick="executeRemoteCommand()" aria-label="Execute command">Execute</button>
-                        <button type="button" id="remote-clear-btn" class="btn btn-secondary" onclick="clearRemoteTerminal()" aria-label="Clear terminal">Clear</button>
+                        <input type="text" id="remote-command-input" placeholder="Enter command..."
+                               class="terminal-input" aria-label="Enter command to execute"
+                               autocomplete="off" spellcheck="false" inputmode="text"
+                               aria-describedby="command-hint">
+                        <small id="command-hint" class="sr-only">Press Enter or click Execute to run the command</small>
+                        <button type="button" id="remote-execute-btn" class="btn btn-primary" aria-label="Execute command">Execute</button>
+                        <button type="button" id="remote-clear-btn" class="btn btn-secondary" aria-label="Clear terminal">Clear</button>
                     </div>
                 </div>
 
                 <div class="test-section quick-commands">
                     <h3>Quick Commands</h3>
                     <div class="quick-commands-grid">
-                        <button type="button" class="btn btn-secondary" onclick="runQuickCommand('uname -a')">System Info</button>
-                        <button type="button" class="btn btn-secondary" onclick="runQuickCommand('df -h')">Disk Usage</button>
-                        <button type="button" class="btn btn-secondary" onclick="runQuickCommand('free -h')">Memory Info</button>
-                        <button type="button" class="btn btn-secondary" onclick="runQuickCommand('uptime')">Uptime</button>
-                        <button type="button" class="btn btn-secondary" onclick="runQuickCommand('hostname')">Hostname</button>
-                        <button type="button" class="btn btn-secondary" onclick="runQuickCommand('ifconfig')">Network Config</button>
-                        <button type="button" class="btn btn-secondary" onclick="runQuickCommand('sudo systemctl status ssh')">SSH Status</button>
-                        <button type="button" class="btn btn-secondary" onclick="runQuickCommand('sudo systemctl status inetd')">Telnet Status</button>
+                        <button type="button" class="btn btn-secondary quick-command-btn" data-command="uname -a">System Info</button>
+                        <button type="button" class="btn btn-secondary quick-command-btn" data-command="df -h">Disk Usage</button>
+                        <button type="button" class="btn btn-secondary quick-command-btn" data-command="free -h">Memory Info</button>
+                        <button type="button" class="btn btn-secondary quick-command-btn" data-command="uptime">Uptime</button>
+                        <button type="button" class="btn btn-secondary quick-command-btn" data-command="hostname">Hostname</button>
+                        <button type="button" class="btn btn-secondary quick-command-btn" data-command="ifconfig">Network Config</button>
+                        <button type="button" class="btn btn-secondary quick-command-btn" data-command="sudo systemctl status ssh">SSH Status</button>
+                        <button type="button" class="btn btn-secondary quick-command-btn" data-command="sudo systemctl status inetd">Telnet Status</button>
                     </div>
                 </div>
             </div>
         </main>
 
-        <footer>
+        <footer role="contentinfo">
             <p>Raspberry Pi Management System</p>
+            <p><small>&copy; 2025 Raspberry Pi Manager. All rights reserved.</small></p>
+            <nav aria-label="Footer navigation">
+                <ul>
+                    <li><a href="#dashboard">Dashboard</a></li>
+                    <li><a href="#settings">Settings</a></li>
+                </ul>
+            </nav>
         </footer>
     </div>
 
-    <script src="app.js"></script>
+    <!-- Modern JavaScript Loading with defer for better performance -->
+    <script src="button-system.js"></script>
+    <script src="app.js" defer></script>
+
+    <!-- Service Worker Registration (PWA) -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Service Worker registered:', reg))
+                    .catch(err => console.log('Service Worker registration failed:', err));
+            });
+        }
+
+        // Performance monitoring
+        if ('PerformanceObserver' in window) {
+            const perfObserver = new PerformanceObserver((list) => {
+                for (const entry of list.getEntries()) {
+                    if (entry.entryType === 'navigation') {
+                        console.log('Page Load Time:', entry.loadEventEnd - entry.fetchStart, 'ms');
+                    }
+                }
+            });
+            perfObserver.observe({ entryTypes: ['navigation', 'resource'] });
+        }
+
+        // Web Vitals tracking (Core Web Vitals)
+        if (typeof window.webVitals !== 'undefined') {
+            window.webVitals.getCLS(console.log);
+            window.webVitals.getFID(console.log);
+            window.webVitals.getFCP(console.log);
+            window.webVitals.getLCP(console.log);
+            window.webVitals.getTTFB(console.log);
+        }
+    </script>
 </body>
 </html>

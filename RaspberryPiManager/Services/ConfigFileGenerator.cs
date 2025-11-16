@@ -79,7 +79,30 @@ public class ConfigFileGenerator : IConfigFileGenerator
                 Identity = network.Identity,
                 AnonymousIdentity = network.AnonymousIdentity,
                 Phase2Auth = network.Phase2Auth,
-                EAPPassword = network.EAPPassword
+                EAPPassword = network.EAPPassword,
+                AutoConnect = network.AutoConnect,
+                MinSignalStrength = network.MinSignalStrength,
+                EnableFastRoaming = network.EnableFastRoaming,
+                MobilityDomain = network.MobilityDomain,
+                UseFTEAP = network.UseFTEAP,
+                UseFTPSK = network.UseFTPSK,
+                EnableRRM = network.EnableRRM,
+                RRMNeighborReport = network.RRMNeighborReport,
+                EnableWNM = network.EnableWNM,
+                BSSTransition = network.BSSTransition,
+                WNMSleepMode = network.WNMSleepMode,
+                ConnectionTimeout = network.ConnectionTimeout,
+                MaxRetries = network.MaxRetries,
+                IsGuestNetwork = network.IsGuestNetwork,
+                EnableIsolation = network.EnableIsolation,
+                VLANId = network.VLANId,
+                EnableMACFiltering = network.EnableMACFiltering,
+                AllowedMACAddresses = network.AllowedMACAddresses,
+                BlockedMACAddresses = network.BlockedMACAddresses,
+                EnableHotspot20 = network.EnableHotspot20,
+                Interworking = network.Interworking,
+                HS20 = network.HS20,
+                DomainName = network.DomainName
             });
         }
 
@@ -194,9 +217,123 @@ public class ConfigFileGenerator : IConfigFileGenerator
                 AppendEnterpriseConfig(sb, net);
                 break;
 
+            case WPASecurityType.OWE:
+                // Opportunistic Wireless Encryption (encrypted open networks)
+                sb.AppendLine("    key_mgmt=OWE");
+                sb.AppendLine("    proto=RSN");
+                sb.AppendLine("    pairwise=CCMP");
+                sb.AppendLine("    group=CCMP");
+                sb.AppendLine("    ieee80211w=2"); // PMF required for OWE
+                break;
+
             case WPASecurityType.Open:
                 sb.AppendLine("    key_mgmt=NONE");
                 break;
+        }
+
+        // Phase 1: Auto-connect settings
+        if (!net.AutoConnect)
+        {
+            sb.AppendLine("    disabled=1"); // Manual connection only
+        }
+
+        // Signal strength threshold
+        if (net.MinSignalStrength.HasValue)
+        {
+            sb.AppendLine($"    signal_threshold={net.MinSignalStrength.Value}");
+        }
+
+        // Phase 1: 802.11r Fast Roaming
+        if (net.EnableFastRoaming)
+        {
+            var mobilityDomain = net.MobilityDomain ?? 1234;
+            sb.AppendLine($"    mobility_domain={mobilityDomain}");
+
+            // FT-EAP for enterprise networks
+            if (net.SecurityType == WPASecurityType.WPA3_Enterprise ||
+                net.SecurityType == WPASecurityType.WPA2_Enterprise)
+            {
+                if (net.UseFTEAP)
+                {
+                    sb.AppendLine("    ft_eap_method=FT-EAP");
+                }
+            }
+
+            // FT-PSK for personal networks
+            if (net.SecurityType == WPASecurityType.WPA3_Personal ||
+                net.SecurityType == WPASecurityType.WPA2_Personal)
+            {
+                if (net.UseFTPSK)
+                {
+                    sb.AppendLine("    ft_psk=1");
+                }
+            }
+        }
+
+        // Phase 2: 802.11k (Radio Resource Management)
+        if (net.EnableRRM)
+        {
+            if (net.RRMNeighborReport)
+            {
+                sb.AppendLine("    rrm_neighbor_report=1");
+            }
+        }
+
+        // Phase 2: 802.11v (Wireless Network Management)
+        if (net.EnableWNM)
+        {
+            if (net.BSSTransition)
+            {
+                sb.AppendLine("    bss_transition=1");
+            }
+
+            if (net.WNMSleepMode)
+            {
+                sb.AppendLine("    wnm_sleep_mode=1");
+            }
+        }
+
+        // Phase 3: Connection Timeout Settings
+        if (net.ConnectionTimeout.HasValue)
+        {
+            sb.AppendLine($"    connection_timeout={net.ConnectionTimeout.Value}");
+        }
+
+        if (net.MaxRetries.HasValue)
+        {
+            sb.AppendLine($"    max_retries={net.MaxRetries.Value}");
+        }
+
+        // Phase 3: Guest Network Isolation
+        if (net.IsGuestNetwork || net.EnableIsolation)
+        {
+            sb.AppendLine("    ap_isolate=1"); // Client isolation
+        }
+
+        if (net.VLANId.HasValue)
+        {
+            sb.AppendLine($"    vlan_id={net.VLANId.Value}");
+        }
+
+        // Phase 3: MAC Address Filtering
+        // Note: MAC filtering is typically handled at AP level, but we document it
+        if (net.EnableMACFiltering)
+        {
+            // wpa_supplicant doesn't directly support MAC filtering
+            // This would typically be configured at the AP/router level
+            // We include it in the model for documentation and future AP configuration
+        }
+
+        // Phase 3: Hotspot 2.0 / Passpoint
+        if (net.EnableHotspot20)
+        {
+            sb.AppendLine("    interworking=1");
+            sb.AppendLine("    hs20=1");
+
+            if (!string.IsNullOrEmpty(net.DomainName))
+            {
+                sb.AppendLine($"    domain_name=\"{net.DomainName}\"");
+            }
         }
 
         // Frequency band preference (per network)

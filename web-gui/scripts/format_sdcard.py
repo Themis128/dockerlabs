@@ -169,7 +169,7 @@ def format_sdcard_windows(device_id):
 
     except subprocess.TimeoutExpired:
         return {"success": False, "error": "Formatting operation timed out"}
-    except Exception as e:
+    except (OSError, subprocess.SubprocessError, ValueError) as e:
         return {"success": False, "error": f"Error formatting SD card: {str(e)}"}
 
 
@@ -194,9 +194,10 @@ def format_sdcard_linux(device_id):
                 capture_output=True,
                 timeout=10,
                 stderr=subprocess.DEVNULL,
+                check=False,
             )
             progress("Partitions unmounted successfully", 15)
-        except:
+        except (OSError, subprocess.SubprocessError):
             pass  # Ignore unmount errors
 
         # Use parted to create partitions
@@ -262,7 +263,7 @@ def format_sdcard_linux(device_id):
         return {"success": False, "error": f"Formatting failed: {error_msg}"}
     except subprocess.TimeoutExpired:
         return {"success": False, "error": "Formatting operation timed out"}
-    except Exception as e:
+    except (OSError, subprocess.SubprocessError, ValueError) as e:
         return {"success": False, "error": f"Error formatting SD card: {str(e)}"}
 
 
@@ -281,6 +282,7 @@ def format_sdcard_macos(device_id):
             ["diskutil", "unmountDisk", "force", device_id],
             capture_output=True,
             timeout=30,
+            check=False,
         )
         progress("Disk unmounted", 15)
 
@@ -293,6 +295,7 @@ def format_sdcard_macos(device_id):
             capture_output=True,
             text=True,
             timeout=120,
+            check=False,
         )
         progress("Partition scheme created", 80)
 
@@ -310,7 +313,7 @@ def format_sdcard_macos(device_id):
 
     except subprocess.TimeoutExpired:
         return {"success": False, "error": "Formatting operation timed out"}
-    except Exception as e:
+    except (OSError, subprocess.SubprocessError, ValueError) as e:
         return {"success": False, "error": f"Error formatting SD card: {str(e)}"}
 
 
@@ -336,7 +339,7 @@ def main():
         if not result.get("success"):
             sys.exit(1)
 
-    except Exception as e:
+    except (OSError, subprocess.SubprocessError, ValueError, json.JSONDecodeError) as e:
         print(json.dumps({"success": False, "error": str(e)}))
         sys.exit(1)
 

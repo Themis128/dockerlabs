@@ -19,13 +19,11 @@ def list_sdcards_windows():
         ConvertTo-Json -Depth 3
         """
         result = subprocess.run(
-            ["powershell", "-Command", ps_script], capture_output=True, text=True, timeout=10
+            ["powershell", "-Command", ps_script], capture_output=True, text=True, timeout=10, check=False
         )
 
         if result.returncode == 0 and result.stdout.strip():
             try:
-                import json
-
                 output = result.stdout.strip()
                 # Handle both single object and array responses
                 if output.startswith("["):
@@ -66,11 +64,10 @@ def list_sdcards_linux():
             capture_output=True,
             text=True,
             timeout=10,
+            check=False,
         )
 
         if result.returncode == 0:
-            import json
-
             data = json.loads(result.stdout)
             sdcards = []
 
@@ -100,7 +97,7 @@ def list_sdcards_macos():
     """List disks on macOS using diskutil"""
     try:
         result = subprocess.run(
-            ["diskutil", "list", "-plist", "external"], capture_output=True, text=True, timeout=10
+            ["diskutil", "list", "-plist", "external"], capture_output=True, text=True, timeout=10, check=False
         )
 
         if result.returncode == 0:

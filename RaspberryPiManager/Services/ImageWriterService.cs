@@ -6,14 +6,14 @@ namespace RaspberryPiManager.Services;
 
 public interface IImageWriterService
 {
-    Task<bool> WriteImageAsync(string imagePath, string targetDevice, IProgress<double>? progress = null);
-    Task<bool> VerifyImageAsync(string imagePath, string targetDevice);
-    Task<long> GetImageSizeAsync(string imagePath);
+    Task<bool> WriteImageAsync(string imagePath, string targetDevice, IProgress<double>? progress = null, CancellationToken cancellationToken = default);
+    Task<bool> VerifyImageAsync(string imagePath, string targetDevice, CancellationToken cancellationToken = default);
+    ValueTask<long> GetImageSizeAsync(string imagePath, CancellationToken cancellationToken = default);
 }
 
 public class ImageWriterService : IImageWriterService
 {
-    private readonly ILogger<ImageWriterService>? _logger;
+    private readonly ILogger<ImageWriterService> _logger;
     private readonly IDiskManagementService _diskService;
 
 #if WINDOWS
@@ -42,63 +42,72 @@ public class ImageWriterService : IImageWriterService
         _logger = logger;
     }
 
-    public async Task<bool> WriteImageAsync(string imagePath, string targetDevice, IProgress<double>? progress = null)
+    public async Task<bool> WriteImageAsync(string imagePath, string targetDevice, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger?.LogInformation($"Writing image {imagePath} to {targetDevice}");
+            _logger.LogInformation("Writing image {ImagePath} to {TargetDevice}", imagePath, targetDevice);
 
             // Unmount target device first
-            await _diskService.UnmountDiskAsync(targetDevice);
+            await _diskService.UnmountDiskAsync(targetDevice).ConfigureAwait(false);
 
             // Write image using platform-specific writer
 #if WINDOWS
-            return await ((Platforms.Windows.Services.WindowsImageWriter)_imageWriter).WriteImageAsync(imagePath, targetDevice, progress);
+            return await ((Platforms.Windows.Services.WindowsImageWriter)_imageWriter).WriteImageAsync(imagePath, targetDevice, progress).ConfigureAwait(false);
 #elif LINUX
-            return await ((Platforms.Linux.Services.LinuxImageWriter)_imageWriter).WriteImageAsync(imagePath, targetDevice, progress);
+            return await ((Platforms.Linux.Services.LinuxImageWriter)_imageWriter).WriteImageAsync(imagePath, targetDevice, progress).ConfigureAwait(false);
 #elif MACCATALYST || IOS
-            return await ((Platforms.macOS.Services.MacImageWriter)_imageWriter).WriteImageAsync(imagePath, targetDevice, progress);
+            return await ((Platforms.macOS.Services.MacImageWriter)_imageWriter).WriteImageAsync(imagePath, targetDevice, progress).ConfigureAwait(false);
 #else
             return false;
 #endif
         }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("Image write cancelled for: {TargetDevice}", targetDevice);
+            return false;
+        }
         catch (Exception ex)
         {
-            _logger?.LogError(ex, $"Error writing image to {targetDevice}");
+            _logger.LogError(ex, "Error writing image to {TargetDevice}", targetDevice);
             return false;
         }
     }
 
-    public async Task<bool> VerifyImageAsync(string imagePath, string targetDevice)
+    public async Task<bool> VerifyImageAsync(string imagePath, string targetDevice, CancellationToken cancellationToken = default)
     {
         try
         {
-            _logger?.LogInformation($"Verifying image on {targetDevice}");
+            _logger.LogInformation("Verifying image on {TargetDevice}", targetDevice);
 #if WINDOWS
-            return await ((Platforms.Windows.Services.WindowsImageWriter)_imageWriter).VerifyImageAsync(imagePath, targetDevice);
+            return await ((Platforms.Windows.Services.WindowsImageWriter)_imageWriter).VerifyImageAsync(imagePath, targetDevice).ConfigureAwait(false);
 #elif LINUX
-            return await ((Platforms.Linux.Services.LinuxImageWriter)_imageWriter).VerifyImageAsync(imagePath, targetDevice);
+            return await ((Platforms.Linux.Services.LinuxImageWriter)_imageWriter).VerifyImageAsync(imagePath, targetDevice).ConfigureAwait(false);
 #elif MACCATALYST || IOS
-            return await ((Platforms.macOS.Services.MacImageWriter)_imageWriter).VerifyImageAsync(imagePath, targetDevice);
+            return await ((Platforms.macOS.Services.MacImageWriter)_imageWriter).VerifyImageAsync(imagePath, targetDevice).ConfigureAwait(false);
 #else
             return false;
 #endif
         }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("Image verification cancelled for: {TargetDevice}", targetDevice);
+            return false;
+        }
         catch (Exception ex)
         {
-            _logger?.LogError(ex, $"Error verifying image on {targetDevice}");
+            _logger.LogError(ex, "Error verifying image on {TargetDevice}", targetDevice);
             return false;
         }
     }
 
-    public async Task<long> GetImageSizeAsync(string imagePath)
+    public async ValueTask<long> GetImageSizeAsync(string imagePath, CancellationToken cancellationToken = default)
     {
-        return await Task.Run(() =>
-        {
-            if (!File.Exists(imagePath))
-                return 0;
+        if (!File.Exists(imagePath))
+            return 0;
 
-            return new FileInfo(imagePath).Length;
-        });
+        // Use async file I/O for better performance
+        var fileInfo = new FileInfo(imagePath);
+        return await ValueTask.FromResult(fileInfo.Length).ConfigureAwait(false);
     }
 }

@@ -1,0 +1,43 @@
+/* Import the existing styles from web-gui/public/styles.css */
+/* This will be the main CSS file for the Nuxt app */
+
+:root {
+  /* Windows 11 Color Palette */
+  --win11-accent: #0078D4;
+  --win11-accent-hover: #106EBE;
+  --win11-accent-pressed: #005A9E;
+  --win11-bg-primary: #FFFFFF;
+  --win11-bg-secondary: #F3F3F3;
+  --win11-bg-tertiary: #E1E1E1;
+  --win11-text-primary: #202020;
+  --win11-text-secondary: #6B6B6B;
+  --win11-border: #E1E1E1;
+  --win11-border-hover: #C7C7C7;
+  --win11-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --win11-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.08);
+  --win11-shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.12);
+  --win11-shadow-xl: 0 8px 16px rgba(0, 0, 0, 0.16);
+  --win11-success: #107C10;
+  --win11-warning: #FFB900;
+  --win11-error: #D13438;
+  --win11-info: #0078D4;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Segoe UI Variable', system-ui, sans-serif;
+  background: var(--win11-bg-secondary);
+  min-height: 100vh;
+  padding: 20px;
+  color: var(--win11-text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Additional global styles can be added here */
+/* The original styles.css will be gradually migrated to component-scoped styles */

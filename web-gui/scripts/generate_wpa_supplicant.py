@@ -245,9 +245,101 @@ def generate_wpa_supplicant(network_settings):
             if eap_password:
                 lines.append(f'    password="{eap_password}"')
 
+        elif security_type == "OWE":
+            # Opportunistic Wireless Encryption (encrypted open networks)
+            lines.append("    key_mgmt=OWE")
+            lines.append("    proto=RSN")
+            lines.append("    pairwise=CCMP")
+            lines.append("    group=CCMP")
+            lines.append("    ieee80211w=2")  # PMF required for OWE
+
         elif security_type == "Open":
             # Open network (no security - not recommended)
             lines.append("    key_mgmt=NONE")
+
+        # Phase 1: Auto-connect settings
+        auto_connect = net.get("auto_connect", True)
+        if not auto_connect:
+            lines.append("    disabled=1")  # Manual connection only
+
+        # Signal strength threshold
+        min_signal = net.get("min_signal_strength")
+        if min_signal is not None:
+            lines.append(f"    signal_threshold={min_signal}")
+
+        # Phase 1: 802.11r Fast Roaming
+        enable_fast_roaming = net.get("enable_fast_roaming", False)
+        if enable_fast_roaming:
+            mobility_domain = net.get("mobility_domain", 1234)
+            lines.append(f"    mobility_domain={mobility_domain}")
+
+            # FT-EAP for enterprise networks
+            if security_type in ["WPA3_Enterprise", "WPA2_Enterprise"]:
+                use_ft_eap = net.get("use_ft_eap", False)
+                if use_ft_eap:
+                    lines.append("    ft_eap_method=FT-EAP")
+
+            # FT-PSK for personal networks
+            if security_type in ["WPA3_Personal", "WPA2_Personal"]:
+                use_ft_psk = net.get("use_ft_psk", False)
+                if use_ft_psk:
+                    lines.append("    ft_psk=1")
+
+        # Phase 2: 802.11k (Radio Resource Management)
+        enable_rrm = net.get("enable_rrm", False)
+        if enable_rrm:
+            rrm_neighbor_report = net.get("rrm_neighbor_report", False)
+            if rrm_neighbor_report:
+                lines.append("    rrm_neighbor_report=1")
+
+        # Phase 2: 802.11v (Wireless Network Management)
+        enable_wnm = net.get("enable_wnm", False)
+        if enable_wnm:
+            bss_transition = net.get("bss_transition", False)
+            if bss_transition:
+                lines.append("    bss_transition=1")
+
+            wnm_sleep_mode = net.get("wnm_sleep_mode", False)
+            if wnm_sleep_mode:
+                lines.append("    wnm_sleep_mode=1")
+
+        # Phase 3: Connection Timeout Settings
+        connection_timeout = net.get("connection_timeout")
+        if connection_timeout is not None:
+            lines.append(f"    connection_timeout={connection_timeout}")
+
+        max_retries = net.get("max_retries")
+        if max_retries is not None:
+            lines.append(f"    max_retries={max_retries}")
+
+        # Phase 3: Guest Network Isolation
+        is_guest = net.get("is_guest_network", False)
+        enable_isolation = net.get("enable_isolation", False)
+        if is_guest or enable_isolation:
+            lines.append("    ap_isolate=1")  # Client isolation
+
+        vlan_id = net.get("vlan_id")
+        if vlan_id is not None:
+            lines.append(f"    vlan_id={vlan_id}")
+
+        # Phase 3: MAC Address Filtering
+        # Note: MAC filtering is typically handled at AP level, but we can document it
+        enable_mac_filtering = net.get("enable_mac_filtering", False)
+        if enable_mac_filtering:
+            allowed_macs = net.get("allowed_mac_addresses", [])
+            blocked_macs = net.get("blocked_mac_addresses", [])
+            # wpa_supplicant doesn't directly support MAC filtering, but we can note it
+            # This would typically be configured at the AP/router level
+
+        # Phase 3: Hotspot 2.0 / Passpoint
+        enable_hotspot20 = net.get("enable_hotspot20", False)
+        if enable_hotspot20:
+            lines.append("    interworking=1")
+            lines.append("    hs20=1")
+
+            domain_name = net.get("domain_name")
+            if domain_name:
+                lines.append(f'    domain_name="{domain_name}"')
 
         # Frequency band preference (per network)
         freq_list = net.get("wifi_freq_list")
@@ -267,7 +359,7 @@ def main():
     args = parser.parse_args()
 
     if args.file:
-        with open(args.file, 'r') as f:
+        with open(args.file, 'r', encoding='utf-8') as f:
             settings = json.load(f)
     elif args.settings:
         settings = json.loads(args.settings)

@@ -21,14 +21,17 @@ def configure_ssh(ip, username, settings):
         # Configure password authentication
         if settings["password_auth"]:
             commands.append(
-                "sudo sed -i 's/#PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config"
+                "sudo sed -i 's/#PasswordAuthentication no/"
+                "PasswordAuthentication yes/' /etc/ssh/sshd_config"
             )
             commands.append(
-                "sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config"
+                "sudo sed -i 's/PasswordAuthentication no/"
+                "PasswordAuthentication yes/' /etc/ssh/sshd_config"
             )
         else:
             commands.append(
-                "sudo sed -i 's/PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config"
+                "sudo sed -i 's/PasswordAuthentication yes/"
+                "PasswordAuthentication no/' /etc/ssh/sshd_config"
             )
 
     if "ssh_port" in settings and settings["ssh_port"] != 22:
@@ -76,23 +79,25 @@ def configure_network(ip, username, settings):
 
             if os.path.exists(wpa_script):
                 # Generate wpa_supplicant.conf
-                import subprocess
-                import json
                 network_config = json.dumps({"network": settings})
                 result = subprocess.run(
                     ["python3", wpa_script, "--settings", network_config],
                     capture_output=True,
                     text=True,
-                    timeout=10
+                    timeout=10,
+                    check=False,
                 )
 
                 if result.returncode == 0:
                     wpa_config = result.stdout
                     # Write to /boot/wpa_supplicant.conf (for first boot)
                     # Or to /etc/wpa_supplicant/wpa_supplicant.conf (for existing system)
-                    commands.append(f"sudo mkdir -p /boot")
+                    commands.append("sudo mkdir -p /boot")
                     commands.append(f"echo '{wpa_config}' | sudo tee /boot/wpa_supplicant.conf")
-                    commands.append(f"sudo cp /boot/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant.conf 2>/dev/null || true")
+                    commands.append(
+                        "sudo cp /boot/wpa_supplicant.conf "
+                        "/etc/wpa_supplicant/wpa_supplicant.conf 2>/dev/null || true"
+                    )
                     commands.append("sudo systemctl restart wpa_supplicant 2>/dev/null || true")
             else:
                 # Fallback: basic wpa_supplicant config
@@ -113,7 +118,7 @@ network={{
     group=CCMP
     ieee80211w=2
 }}"""
-                commands.append(f"sudo mkdir -p /boot")
+                commands.append("sudo mkdir -p /boot")
                 commands.append(f"sudo tee /boot/wpa_supplicant.conf << 'EOF'\n{wpa_config}\nEOF")
 
     return commands
@@ -141,13 +146,13 @@ def execute_commands(ip, username, commands):
             capture_output=True,
             text=True,
             timeout=60,
+            check=False,
         )
 
         if result.returncode == 0:
             return True, result.stdout
-        else:
-            return False, result.stderr
-    except Exception as e:
+        return False, result.stderr
+    except (OSError, subprocess.SubprocessError, ValueError) as e:
         return False, str(e)
 
 
@@ -173,7 +178,7 @@ def main():
 
     # Load config to get IP
     try:
-        with open("pi-config.json", "r") as f:
+        with open("pi-config.json", "r", encoding='utf-8') as f:
             config = json.load(f)
     except FileNotFoundError:
         print(json.dumps({"success": False, "error": "pi-config.json not found"}))
@@ -194,7 +199,7 @@ def main():
     try:
         if args.settings_file:
             # Read from file (preferred method)
-            with open(args.settings_file, "r") as f:
+            with open(args.settings_file, "r", encoding='utf-8') as f:
                 settings = json.load(f)
         else:
             # Fall back to string (for backward compatibility)

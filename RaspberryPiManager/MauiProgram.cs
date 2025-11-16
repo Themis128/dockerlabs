@@ -51,7 +51,14 @@ public static class MauiProgram
         builder.Services.AddSingleton<Utilities.NetworkHelper>();
         builder.Services.AddSingleton<Utilities.ScriptGenerator>();
         builder.Services.AddSingleton<IConfigFileGenerator, ConfigFileGenerator>();
-        builder.Services.AddSingleton<HttpClient>();
+
+        // Use IHttpClientFactory for better HttpClient management (2025 best practice)
+        builder.Services.AddHttpClient();
+        builder.Services.AddHttpClient<IImageDownloadService>(client =>
+        {
+            client.Timeout = TimeSpan.FromMinutes(30); // Long timeout for large downloads
+            client.DefaultRequestHeaders.Add("User-Agent", "RaspberryPiManager/1.0");
+        });
 
         // Platform-specific services
 #if WINDOWS

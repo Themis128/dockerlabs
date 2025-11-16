@@ -45,21 +45,28 @@ public partial class SDCardViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task LoadSDCards()
+    private async Task LoadSDCards(CancellationToken cancellationToken = default)
     {
         IsRefreshing = true;
         StatusMessage = "Scanning for SD cards...";
 
         try
         {
-            var cards = await _sdCardService.GetSDCardsAsync();
             SdCards.Clear();
-            foreach (var card in cards)
+            var count = 0;
+
+            // Use IAsyncEnumerable for streaming results (2025 best practice)
+            await foreach (var card in _sdCardService.GetSDCardsAsync(cancellationToken).ConfigureAwait(true))
             {
                 SdCards.Add(card);
+                count++;
             }
 
-            StatusMessage = $"Found {cards.Count} SD card(s)";
+            StatusMessage = $"Found {count} SD card(s)";
+        }
+        catch (OperationCanceledException)
+        {
+            StatusMessage = "Scan cancelled";
         }
         catch (Exception ex)
         {
@@ -72,7 +79,7 @@ public partial class SDCardViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task FormatSDCard(SDCardInfo? card)
+    private async Task FormatSDCard(SDCardInfo? card, CancellationToken cancellationToken = default)
     {
         if (card == null) return;
 
@@ -80,16 +87,20 @@ public partial class SDCardViewModel : ObservableObject
 
         try
         {
-            var success = await _sdCardService.FormatSDCardAsync(card.DeviceId, "FAT32");
+            var success = await _sdCardService.FormatSDCardAsync(card.DeviceId, "FAT32", cancellationToken).ConfigureAwait(true);
             if (success)
             {
                 StatusMessage = "Format completed successfully";
-                await LoadSDCards();
+                await LoadSDCards(cancellationToken);
             }
             else
             {
                 StatusMessage = "Format failed";
             }
+        }
+        catch (OperationCanceledException)
+        {
+            StatusMessage = "Format cancelled";
         }
         catch (Exception ex)
         {
@@ -98,14 +109,18 @@ public partial class SDCardViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task EjectSDCard(SDCardInfo? card)
+    private async Task EjectSDCard(SDCardInfo? card, CancellationToken cancellationToken = default)
     {
         if (card == null) return;
 
         try
         {
-            var success = await _sdCardService.EjectSDCardAsync(card.DeviceId);
+            var success = await _sdCardService.EjectSDCardAsync(card.DeviceId, cancellationToken).ConfigureAwait(true);
             StatusMessage = success ? "SD card ejected" : "Failed to eject SD card";
+        }
+        catch (OperationCanceledException)
+        {
+            StatusMessage = "Eject cancelled";
         }
         catch (Exception ex)
         {

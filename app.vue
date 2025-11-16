@@ -1,0 +1,12 @@
+<template>
+  <NuxtLayout>
+    <NuxtPage />
+  </NuxtLayout>
+  <ClientOnly>
+    <NotificationToast />
+  </ClientOnly>
+</template>
+
+<script setup lang="ts">
+// Root component - uses default layout
+</script>

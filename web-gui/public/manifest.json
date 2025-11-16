@@ -1,0 +1,22 @@
+{
+  "name": "Raspberry Pi Manager",
+  "short_name": "Pi Manager",
+  "description": "Comprehensive web-based management system for Raspberry Pi devices",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F3F3F3",
+  "theme_color": "#0078D4",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["utilities", "productivity"],
+  "screenshots": [],
+  "shortcuts": [],
+  "prefer_related_applications": false
+}

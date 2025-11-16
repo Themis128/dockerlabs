@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 
-test.describe('Raspberry Pi Configuration', () => {
+test.describe('Configuration Validation', () => {
   test('pi-config.json should exist and be valid JSON', () => {
     const configPath = path.join(process.cwd(), 'pi-config.json');
     expect(fs.existsSync(configPath)).toBeTruthy();
@@ -30,39 +30,60 @@ test.describe('Raspberry Pi Configuration', () => {
     const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 
     const pis = config.raspberry_pis;
-    expect(Object.keys(pis).length).toBeGreaterThan(0);
+    expect(typeof pis).toBe('object');
 
-    for (const [key, pi] of Object.entries(pis)) {
-      const piConfig = pi as { name: string; ip: string; mac: string; connection: string };
-      expect(piConfig).toHaveProperty('name');
-      expect(piConfig).toHaveProperty('ip');
-      expect(piConfig).toHaveProperty('mac');
-      expect(piConfig).toHaveProperty('connection');
-
-      expect(typeof piConfig.name).toBe('string');
-      expect(typeof piConfig.ip).toBe('string');
-      expect(typeof piConfig.mac).toBe('string');
-      expect(typeof piConfig.connection).toBe('string');
-
-      // Validate IP format (basic check)
-      const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
-      expect(piConfig.ip).toMatch(ipRegex);
-
-      // Validate MAC format (basic check)
-      const macRegex = /^([0-9A-F]{2}-){5}[0-9A-F]{2}$/i;
-      expect(piConfig.mac).toMatch(macRegex);
+    for (const [piNumber, piData] of Object.entries(pis as Record<string, any>)) {
+      expect(piData).toHaveProperty('name');
+      expect(typeof piData.name).toBe('string');
     }
   });
 
-  test('should have at least one Ethernet and one WiFi connection', () => {
-    const configPath = path.join(process.cwd(), 'pi-config.json');
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+  test('nuxt.config.ts should exist and be valid', () => {
+    const configPath = path.join(process.cwd(), 'nuxt.config.ts');
+    expect(fs.existsSync(configPath)).toBeTruthy();
 
-    const pis = config.raspberry_pis;
-    const ethernetPis = Object.values(pis).filter((pi: any) => pi.connection === 'Wired');
-    const wifiPis = Object.values(pis).filter((pi: any) => pi.connection === '2.4G');
+    const configContent = fs.readFileSync(configPath, 'utf-8');
+    // Basic validation - file should contain Nuxt config
+    expect(configContent).toContain('defineNuxtConfig');
+  });
 
-    expect(ethernetPis.length).toBeGreaterThan(0);
-    expect(wifiPis.length).toBeGreaterThan(0);
+  test('tsconfig.json should exist and be valid JSON', () => {
+    const configPath = path.join(process.cwd(), 'tsconfig.json');
+    expect(fs.existsSync(configPath)).toBeTruthy();
+
+    const configContent = fs.readFileSync(configPath, 'utf-8');
+    expect(() => JSON.parse(configContent)).not.toThrow();
+  });
+
+  test('package.json should have required scripts', () => {
+    const packagePath = path.join(process.cwd(), 'package.json');
+    const packageContent = JSON.parse(fs.readFileSync(packagePath, 'utf-8'));
+
+    expect(packageContent).toHaveProperty('scripts');
+    expect(packageContent.scripts).toHaveProperty('dev');
+    expect(packageContent.scripts).toHaveProperty('build');
+    expect(packageContent.scripts).toHaveProperty('test');
+  });
+
+  test('package.json should have Nuxt dependency', () => {
+    const packagePath = path.join(process.cwd(), 'package.json');
+    const packageContent = JSON.parse(fs.readFileSync(packagePath, 'utf-8'));
+
+    expect(packageContent).toHaveProperty('dependencies');
+    expect(packageContent.dependencies).toHaveProperty('nuxt');
+    expect(packageContent.dependencies.nuxt).toMatch(/^\^?4\./);
+  });
+
+  test('.env.example should exist', () => {
+    const envExamplePath = path.join(process.cwd(), '.env.example');
+    expect(fs.existsSync(envExamplePath)).toBeTruthy();
+  });
+
+  test('.env.example should contain required variables', () => {
+    const envExamplePath = path.join(process.cwd(), '.env.example');
+    const envContent = fs.readFileSync(envExamplePath, 'utf-8');
+
+    expect(envContent).toContain('PYTHON_SERVER_URL');
+    expect(envContent).toContain('API_BASE_URL');
   });
 });

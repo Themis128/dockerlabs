@@ -1,25 +1,32 @@
 {
+  "extends": "./.nuxt/tsconfig.json",
   "compilerOptions": {
     "target": "ES2022",
-    "module": "commonjs",
-    "lib": ["ES2022", "DOM"],
-    "moduleResolution": "node",
+    "module": "ESNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "allowJs": true,
-    "outDir": "./dist",
-    "rootDir": "./",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["@playwright/test", "node"]
+    "types": ["@playwright/test", "node"],
+    "paths": {
+      "~/*": ["./*"],
+      "@/*": ["./*"]
+    }
   },
   "include": [
-    "tests/**/*",
-    "playwright.config.ts"
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.vue",
+    ".nuxt/**/*"
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    ".nuxt",
+    ".output"
   ]
 }
