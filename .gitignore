@@ -35,6 +35,12 @@ yarn-error.log*
 *.swo
 *~
 
+# Deno Language Server
+# Auto-generated temporary artifacts - contains system paths and user config
+.deno_lsp/
+.deno_lsp/**/*
+*.deno_lsp*
+
 # Python
 __pycache__/
 *.py[cod]

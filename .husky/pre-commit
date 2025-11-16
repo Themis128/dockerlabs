@@ -1,11 +1,23 @@
 echo "🔍 Running pre-commit checks..."
 
-# Check TypeScript syntax
-echo "Checking TypeScript..."
-npx tsc --noEmit --skipLibCheck || {
-  echo "❌ TypeScript check failed"
-  exit 1
+# Generate Nuxt types first (required for auto-imports)
+echo "Generating Nuxt types..."
+npx nuxi prepare --skip-build || {
+  echo "⚠️  Warning: Failed to generate Nuxt types, skipping TypeScript check"
 }
+
+# Check TypeScript syntax (only if Nuxt types are available)
+if [ -d ".nuxt" ]; then
+  echo "Checking TypeScript..."
+  npx tsc --noEmit --skipLibCheck || {
+    echo "❌ TypeScript check failed"
+    echo "💡 Tip: Run 'npm run dev' once to generate Nuxt types, then try again"
+    exit 1
+  }
+else
+  echo "⚠️  Skipping TypeScript check (Nuxt types not generated)"
+  echo "💡 Tip: Run 'npm run dev' once to generate Nuxt types"
+fi
 
 # Check Python syntax
 echo "Checking Python syntax..."

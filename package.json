@@ -24,7 +24,7 @@
     "start:nuxt": "nuxt dev --port 3001",
     "dev": "nuxt dev",
     "dev:all": "concurrently -n \"PYTHON,NUXT\" -c \"blue,green\" --kill-others-on-fail \"npm run start:python\" \"npm run start:nuxt:wait\"",
-    "start:nuxt:wait": "wait-on -d 3000 -i 2000 -t 30000 -l http-get://127.0.0.1:3000/api/health && npm run start:nuxt",
+    "start:nuxt:wait": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/wait-for-python.ps1",
     "build": "nuxt build",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
