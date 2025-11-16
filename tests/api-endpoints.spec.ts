@@ -39,8 +39,12 @@ test.describe('API Endpoints - GET Requests', () => {
 
     // Accept 200 or service unavailable (503/504) if servers aren't running
     expect([200, 503, 504]).toContain(result.status);
-    const contentType = result.headers['content-type'] || result.headers['Content-Type'] || '';
-    expect(contentType.toLowerCase()).toContain('json');
+    
+    // Only check content-type for successful responses
+    if (result.status === 200) {
+      const contentType = result.headers['content-type'] || result.headers['Content-Type'] || '';
+      expect(contentType.toLowerCase()).toContain('json');
+    }
 
     expect(result.data).toBeDefined();
     expect(typeof result.data === 'object').toBeTruthy();
@@ -111,7 +115,10 @@ test.describe('API Endpoints - GET Requests', () => {
   });
 
   test('GET /api/os-images should return list of OS images', async ({ request }) => {
-    const result = await apiRequest(request, '/os-images');
+    const result = await apiRequest(request, '/os-images', {
+      timeout: 5000,
+      retries: 0,
+    });
 
     // Accept 200, 429 (rate limiting), 500 (server error), or service unavailable (503/504) if servers aren't running
     expect([200, 429, 500, 503, 504]).toContain(result.status);
@@ -126,7 +133,10 @@ test.describe('API Endpoints - GET Requests', () => {
   });
 
   test('GET /api/scan-wifi should scan for WiFi networks', async ({ request }) => {
-    const result = await apiRequest(request, '/scan-wifi');
+    const result = await apiRequest(request, '/scan-wifi', {
+      timeout: 5000,
+      retries: 0,
+    });
 
     // Should return a response (may be success or error)
     expect([200, 400, 404, 500, 503, 504]).toContain(result.status);
@@ -166,6 +176,8 @@ test.describe('API Endpoints - POST Requests', () => {
         username: 'pi',
         password: 'raspberry',
       },
+      timeout: 5000,
+      retries: 0,
     });
 
     // Should return a response (may be success or error depending on Pi availability)
@@ -204,6 +216,8 @@ test.describe('API Endpoints - POST Requests', () => {
         pi_model: 'pi5',
         file_system: 'fat32',
       },
+      timeout: 5000,
+      retries: 0,
     });
 
     // Should return a response (may be success or error depending on device availability)
@@ -220,6 +234,8 @@ test.describe('API Endpoints - POST Requests', () => {
         os_image: 'raspios-lite',
         pi_model: 'pi5',
       },
+      timeout: 5000,
+      retries: 0,
     });
 
     // Should return a response (may be success or error depending on device availability)
@@ -255,6 +271,8 @@ test.describe('API Endpoints - POST Requests', () => {
     const result = await apiRequest(request, '/scan-wifi', {
       method: 'POST',
       body: {},
+      timeout: 5000,
+      retries: 0,
     });
 
     // Should return a response (may be success or error)
@@ -269,10 +287,12 @@ test.describe('API Endpoints - POST Requests', () => {
       body: {
         pi: '1',
       },
+      timeout: 5000,
+      retries: 0,
     });
 
     // Should return a response (may be success or error depending on Pi availability)
-    expect([200, 400, 404, 500]).toContain(result.status);
+    expect([200, 400, 404, 500, 503, 504]).toContain(result.status);
     expect(result.data).toBeDefined();
     expect(typeof result.data === 'object').toBeTruthy();
   });
@@ -284,6 +304,8 @@ test.describe('API Endpoints - CORS and Headers', () => {
       headers: {
         'Origin': 'http://localhost:3001',
       },
+      timeout: 5000,
+      retries: 0,
     });
 
     // Accept 200, 429 (rate limiting), 500 (server error), or service unavailable (503/504) if servers aren't running
@@ -318,7 +340,10 @@ test.describe('API Endpoints - CORS and Headers', () => {
   });
 
   test('API responses should have correct Content-Type header', async ({ request }) => {
-    const result = await apiRequest(request, '/pis');
+    const result = await apiRequest(request, '/pis', {
+      timeout: 5000,
+      retries: 0,
+    });
 
     // Accept 200, 429 (rate limiting), 500 (server error), or service unavailable (503/504) if servers aren't running
     expect([200, 429, 500, 503, 504]).toContain(result.status);
@@ -332,7 +357,10 @@ test.describe('API Endpoints - CORS and Headers', () => {
 
 test.describe('API Endpoints - Error Handling', () => {
   test('Invalid endpoint should return 404', async ({ request }) => {
-    const result = await apiRequest(request, '/invalid-endpoint');
+    const result = await apiRequest(request, '/invalid-endpoint', {
+      timeout: 5000,
+      retries: 0,
+    });
 
     // Accept 404 or service unavailable (503/504) if servers aren't running
     expect([404, 503, 504]).toContain(result.status);
@@ -347,7 +375,10 @@ test.describe('API Endpoints - Error Handling', () => {
 
   test('API should handle missing required parameters gracefully', async ({ request }) => {
     // Test endpoint that requires parameters without providing them
-    const result = await apiRequest(request, '/test-ssh');
+    const result = await apiRequest(request, '/test-ssh', {
+      timeout: 5000,
+      retries: 0,
+    });
 
     // Should return error status (400, 404, 500, 503, or 504)
     expect([400, 404, 500, 503, 504]).toContain(result.status);
@@ -360,6 +391,8 @@ test.describe('API Endpoints - Error Handling', () => {
       body: {
         // Missing required fields
       },
+      timeout: 5000,
+      retries: 0,
     });
 
     // Should return error status (400, 404, 500, 503, or 504)
@@ -370,25 +403,27 @@ test.describe('API Endpoints - Error Handling', () => {
   test('API should handle timeout gracefully', async ({ request }) => {
     const startTime = Date.now();
 
-    try {
-      const result = await apiRequest(request, '/pis');
-      const duration = Date.now() - startTime;
+    const result = await apiRequest(request, '/pis', {
+      timeout: 5000,
+      retries: 0,
+    });
+    const duration = Date.now() - startTime;
 
-      // Should complete within reasonable time (60 seconds)
-      expect(duration).toBeLessThan(60000);
+    // Should complete within reasonable time (10 seconds with 5s timeout)
+    expect(duration).toBeLessThan(10000);
 
-      // Should return some status code
-      expect(result.status).toBeGreaterThanOrEqual(200);
-    } catch (error) {
-      // Timeout errors are acceptable for this test
-      expect(error).toBeDefined();
-    }
+    // Should return some status code (even if it's a timeout)
+    expect(result.status).toBeGreaterThanOrEqual(200);
+    expect(result.data).toBeDefined();
   });
 });
 
 test.describe('API Endpoints - Response Structure', () => {
   test('Successful responses should have consistent structure', async ({ request }) => {
-    const result = await apiRequest(request, '/pis');
+    const result = await apiRequest(request, '/pis', {
+      timeout: 5000,
+      retries: 0,
+    });
 
     // Only check structure if we got a successful response
     if (result.status === 200) {
@@ -406,7 +441,10 @@ test.describe('API Endpoints - Response Structure', () => {
   });
 
   test('Error responses should have error information', async ({ request }) => {
-    const result = await apiRequest(request, '/invalid-endpoint');
+    const result = await apiRequest(request, '/invalid-endpoint', {
+      timeout: 5000,
+      retries: 0,
+    });
 
     if (result.status >= 400 && result.status < 500) {
       expect(result.data).toBeDefined();

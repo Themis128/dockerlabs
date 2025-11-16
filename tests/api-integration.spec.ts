@@ -3,10 +3,13 @@ import { apiRequest, testApiEndpoint, waitForApiResponse } from './helpers/api-h
 
 test.describe('API Integration through Nuxt Proxy', () => {
   test('GET /api/pis should return valid JSON through Nuxt proxy', async ({ request }) => {
-    const result = await apiRequest(request, '/pis');
+    const result = await apiRequest(request, '/pis', {
+      timeout: 5000,
+      retries: 0,
+    });
 
-    // Accept 200 (success) or 429 (rate limiting) or 500 (server error)
-    expect([200, 429, 500]).toContain(result.status);
+    // Accept 200 (success) or 429 (rate limiting) or 500 (server error) or 503/504 (timeout/unavailable)
+    expect([200, 429, 500, 503, 504]).toContain(result.status);
 
     if (result.status === 200) {
       // Content-type may include charset, so just check it contains json
@@ -27,10 +30,13 @@ test.describe('API Integration through Nuxt Proxy', () => {
   });
 
   test('GET /api/pis should include success property', async ({ request }) => {
-    const result = await apiRequest(request, '/pis');
+    const result = await apiRequest(request, '/pis', {
+      timeout: 5000,
+      retries: 0,
+    });
 
-    // Accept 200 (success) or 429 (rate limiting) or 500 (server error)
-    expect([200, 429, 500]).toContain(result.status);
+    // Accept 200 (success) or 429 (rate limiting) or 500 (server error) or 503/504 (timeout/unavailable)
+    expect([200, 429, 500, 503, 504]).toContain(result.status);
 
     if (result.status === 200 && result.data) {
       // API may return success property
@@ -41,10 +47,13 @@ test.describe('API Integration through Nuxt Proxy', () => {
   });
 
   test('GET /api/sdcards should return valid JSON through Nuxt proxy', async ({ request }) => {
-    const result = await apiRequest(request, '/sdcards');
+    const result = await apiRequest(request, '/sdcards', {
+      timeout: 5000,
+      retries: 0,
+    });
 
-    // Accept 200 (success) or 429 (rate limiting) or 500 (server error)
-    expect([200, 429, 500]).toContain(result.status);
+    // Accept 200 (success) or 429 (rate limiting) or 500 (server error) or 503/504 (timeout/unavailable)
+    expect([200, 429, 500, 503, 504]).toContain(result.status);
 
     if (result.status === 200) {
       // Content-type may include charset, so just check it contains json
@@ -128,10 +137,13 @@ test.describe('API Integration through Nuxt Proxy', () => {
 
   test('API error handling should return proper error structure', async ({ request }) => {
     // Test with invalid endpoint
-    const result = await apiRequest(request, '/invalid-endpoint');
+    const result = await apiRequest(request, '/invalid-endpoint', {
+      timeout: 5000,
+      retries: 0,
+    });
 
-    // Should return error status (404 or 500)
-    expect(result.status).toBeGreaterThanOrEqual(400);
+    // Should return error status (404, 500, 503, or 504)
+    expect([404, 500, 503, 504]).toContain(result.status);
 
     // Error response should be an object or at least defined
     expect(result.data).toBeDefined();
@@ -144,15 +156,17 @@ test.describe('API Integration through Nuxt Proxy', () => {
     // This test verifies the API doesn't hang
     const startTime = Date.now();
 
-    try {
-      await apiRequest(request, '/pis');
-      const duration = Date.now() - startTime;
+    const result = await apiRequest(request, '/pis', {
+      timeout: 5000,
+      retries: 0,
+    });
+    const duration = Date.now() - startTime;
 
-      // Should complete within reasonable time (30 seconds)
-      expect(duration).toBeLessThan(30000);
-    } catch (error) {
-      // Timeout errors are acceptable for this test
-      expect(error).toBeDefined();
-    }
+    // Should complete within reasonable time (10 seconds with 5s timeout)
+    expect(duration).toBeLessThan(10000);
+    
+    // Should return some status code (even if it's a timeout)
+    expect(result.status).toBeGreaterThanOrEqual(200);
+    expect(result.data).toBeDefined();
   });
 });
