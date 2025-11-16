@@ -15,11 +15,17 @@
     "maui:dev": "powershell -ExecutionPolicy Bypass -File ./run-maui-dev.ps1",
     "maui:build": "powershell -ExecutionPolicy Bypass -File ./build-maui.ps1",
     "web:start": "powershell -ExecutionPolicy Bypass -File ./start-web-gui.ps1",
+    "lint:html": "htmlhint web-gui/public/**/*.html",
+    "lint:html:json": "htmlhint web-gui/public/**/*.html --format json",
+    "lint:html:compact": "htmlhint web-gui/public/**/*.html --format compact",
+    "lint:html:validate": "html-validate web-gui/public/**/*.html",
     "prepare": "husky"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",
     "@types/node": "^24.10.0",
+    "html-validate": "^10.3.1",
+    "htmlhint": "^1.7.1",
     "husky": "^9.1.7",
     "typescript": "^5.9.3"
   }

@@ -38,9 +38,27 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
         super().__init__(*args, **kwargs)
 
     def handle(self):
-        """Override handle to set timeout"""
+        """Override handle to set timeout and handle connection errors gracefully"""
         self.timeout = REQUEST_TIMEOUT
-        super().handle()
+        try:
+            super().handle()
+        except (ConnectionResetError, BrokenPipeError, ConnectionAbortedError):
+            # Client disconnected before request could be read - this is normal
+            # Suppress these errors to avoid cluttering logs
+            pass
+        except OSError as e:
+            # Check for connection reset errors (Windows error 10054, Linux errno 104)
+            # ConnectionResetError is a subclass of OSError, but we catch it separately above
+            # This catches other OSErrors that might be connection-related
+            if hasattr(e, 'winerror') and e.winerror == 10054:
+                # Windows: "An existing connection was forcibly closed by the remote host"
+                pass
+            elif hasattr(e, 'errno') and e.errno == 104:
+                # Linux: "Connection reset by peer"
+                pass
+            else:
+                # Re-raise if it's a different OSError
+                raise
 
     def do_GET(self):
         if self.path == "/api/pis":

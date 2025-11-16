@@ -34,15 +34,88 @@ public class ConfigFileGenerator : IConfigFileGenerator
         sb.AppendLine("network={");
         sb.AppendLine($"    ssid=\"{network.SSID}\"");
 
-        if (!string.IsNullOrEmpty(network.Password))
+        // WPA3 2025 Implementation
+        switch (network.SecurityType)
         {
-            sb.AppendLine($"    psk=\"{network.Password}\"");
-        }
-        else
-        {
-            sb.AppendLine("    key_mgmt=NONE");
+            case WPASecurityType.WPA3_Personal:
+                if (network.UseTransitionMode)
+                {
+                    // WPA2/WPA3 Transition Mode - Best compatibility (2025 recommended)
+                    sb.AppendLine("    key_mgmt=WPA-PSK SAE");
+                    sb.AppendLine("    psk=\"" + network.Password + "\"");
+                    sb.AppendLine("    proto=RSN");
+                    sb.AppendLine("    pairwise=CCMP");
+                    sb.AppendLine("    group=CCMP");
+                }
+                else
+                {
+                    // Pure WPA3-Personal (SAE only) - Maximum security
+                    sb.AppendLine("    key_mgmt=SAE");
+                    sb.AppendLine("    psk=\"" + network.Password + "\"");
+                    sb.AppendLine("    proto=RSN");
+                    sb.AppendLine("    pairwise=CCMP");
+                    sb.AppendLine("    group=CCMP");
+                }
+                // Protected Management Frames (PMF) - Required for WPA3
+                if (network.EnablePMF)
+                {
+                    sb.AppendLine("    ieee80211w=2"); // PMF required
+                }
+                break;
+
+            case WPASecurityType.WPA2_Personal:
+                // WPA2-PSK (legacy support)
+                sb.AppendLine("    key_mgmt=WPA-PSK");
+                sb.AppendLine("    psk=\"" + network.Password + "\"");
+                sb.AppendLine("    proto=RSN");
+                sb.AppendLine("    pairwise=CCMP");
+                sb.AppendLine("    group=CCMP");
+                if (network.EnablePMF)
+                {
+                    sb.AppendLine("    ieee80211w=1"); // PMF optional for WPA2
+                }
+                break;
+
+            case WPASecurityType.WPA3_Enterprise:
+                // WPA3-Enterprise (192-bit security suite)
+                sb.AppendLine("    key_mgmt=WPA-EAP-SUITE-B-192");
+                sb.AppendLine("    proto=RSN");
+                sb.AppendLine("    pairwise=GCMP-256");
+                sb.AppendLine("    group=GCMP-256");
+                sb.AppendLine("    ieee80211w=2"); // PMF required
+                if (!string.IsNullOrEmpty(network.EAPMethod))
+                {
+                    sb.AppendLine($"    eap={network.EAPMethod}");
+                }
+                if (!string.IsNullOrEmpty(network.CAFilePath))
+                {
+                    sb.AppendLine($"    ca_cert=\"{network.CAFilePath}\"");
+                }
+                if (!string.IsNullOrEmpty(network.ClientCertPath))
+                {
+                    sb.AppendLine($"    client_cert=\"{network.ClientCertPath}\"");
+                }
+                break;
+
+            case WPASecurityType.WPA2_Enterprise:
+                // WPA2-Enterprise (legacy)
+                sb.AppendLine("    key_mgmt=WPA-EAP");
+                sb.AppendLine("    proto=RSN");
+                sb.AppendLine("    pairwise=CCMP");
+                sb.AppendLine("    group=CCMP");
+                if (!string.IsNullOrEmpty(network.EAPMethod))
+                {
+                    sb.AppendLine($"    eap={network.EAPMethod}");
+                }
+                break;
+
+            case WPASecurityType.Open:
+                // Open network (no security - not recommended)
+                sb.AppendLine("    key_mgmt=NONE");
+                break;
         }
 
+        // Static IP configuration
         if (network.UseStaticIP && !string.IsNullOrEmpty(network.StaticIP))
         {
             sb.AppendLine("    static_ip_address=");

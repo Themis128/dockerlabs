@@ -1,0 +1,43 @@
+{
+  "rules": {
+    "color-hex-case": "lower",
+    "color-hex-length": "short",
+    "color-named": "never",
+    "selector-max-id": 0,
+    "declaration-no-important": true,
+    "declaration-block-trailing-semicolon": "always",
+    "indentation": 2,
+    "max-line-length": 120,
+    "no-descending-specificity": true,
+    "no-duplicate-selectors": true,
+    "no-empty-source": null,
+    "property-no-unknown": true,
+    "selector-class-pattern": "^[a-z][a-zA-Z0-9_-]*$",
+    "selector-id-pattern": "^[a-z][a-zA-Z0-9_-]*$",
+    "string-quotes": "double",
+    "value-list-comma-space-after": "always-single-line",
+    "value-list-comma-space-before": "never",
+    "at-rule-no-unknown": [
+      true,
+      {
+        "ignoreAtRules": ["tailwind", "apply", "variants", "responsive", "screen"]
+      }
+    ],
+    "property-no-vendor-prefix": true,
+    "value-no-vendor-prefix": true,
+    "declaration-block-no-duplicate-properties": true,
+    "declaration-block-no-shorthand-property-overrides": true,
+    "selector-pseudo-class-no-unknown": true,
+    "selector-pseudo-element-no-unknown": true,
+    "unit-no-unknown": true,
+    "function-name-case": "lower"
+  },
+  "ignoreFiles": [
+    "**/*.js",
+    "**/*.ts",
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/*.min.css"
+  ]
+}

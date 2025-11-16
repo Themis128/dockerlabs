@@ -59,7 +59,7 @@ def configure_telnet(ip, username, settings):
 
 
 def configure_network(ip, username, settings):
-    """Configure network settings on Pi"""
+    """Configure network settings on Pi with WPA3 2025 support"""
     commands = []
 
     if "hostname" in settings and settings["hostname"]:
@@ -68,9 +68,53 @@ def configure_network(ip, username, settings):
         commands.append(f"echo '{hostname}' | sudo tee /etc/hostname")
 
     if "wifi_enable" in settings and settings["wifi_enable"]:
-        if "wifi_ssid" in settings and "wifi_password" in settings:
-            # Configure WiFi (simplified - would need wpa_supplicant config)
-            commands.append("# WiFi configuration would be added here")
+        if "wifi_ssid" in settings:
+            # Generate wpa_supplicant.conf with WPA3 support
+            import os
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            wpa_script = os.path.join(script_dir, "generate_wpa_supplicant.py")
+
+            if os.path.exists(wpa_script):
+                # Generate wpa_supplicant.conf
+                import subprocess
+                import json
+                network_config = json.dumps({"network": settings})
+                result = subprocess.run(
+                    ["python3", wpa_script, "--settings", network_config],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+
+                if result.returncode == 0:
+                    wpa_config = result.stdout
+                    # Write to /boot/wpa_supplicant.conf (for first boot)
+                    # Or to /etc/wpa_supplicant/wpa_supplicant.conf (for existing system)
+                    commands.append(f"sudo mkdir -p /boot")
+                    commands.append(f"echo '{wpa_config}' | sudo tee /boot/wpa_supplicant.conf")
+                    commands.append(f"sudo cp /boot/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant.conf 2>/dev/null || true")
+                    commands.append("sudo systemctl restart wpa_supplicant 2>/dev/null || true")
+            else:
+                # Fallback: basic wpa_supplicant config
+                ssid = settings.get("wifi_ssid", "")
+                password = settings.get("wifi_password", "")
+                country = settings.get("wifi_country", "US")
+
+                wpa_config = f"""ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+update_config=1
+country={country}
+
+network={{
+    ssid="{ssid}"
+    psk="{password}"
+    key_mgmt=WPA-PSK SAE
+    proto=RSN
+    pairwise=CCMP
+    group=CCMP
+    ieee80211w=2
+}}"""
+                commands.append(f"sudo mkdir -p /boot")
+                commands.append(f"sudo tee /boot/wpa_supplicant.conf << 'EOF'\n{wpa_config}\nEOF")
 
     return commands
 

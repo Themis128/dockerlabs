@@ -14,13 +14,13 @@
         </header>
 
         <nav class="tabs">
-            <button class="tab-button active" data-tab="dashboard">Dashboard</button>
-            <button class="tab-button" data-tab="pis">Raspberry Pis</button>
-            <button class="tab-button" data-tab="sdcard">SD Card</button>
-            <button class="tab-button" data-tab="osinstall">OS Install</button>
-            <button class="tab-button" data-tab="settings">Settings</button>
-            <button class="tab-button" data-tab="connections">Test Connections</button>
-            <button class="tab-button" data-tab="remote">Remote Connection</button>
+            <button type="button" class="tab-button active" data-tab="dashboard">Dashboard</button>
+            <button type="button" class="tab-button" data-tab="pis">Raspberry Pis</button>
+            <button type="button" class="tab-button" data-tab="sdcard">SD Card</button>
+            <button type="button" class="tab-button" data-tab="osinstall">OS Install</button>
+            <button type="button" class="tab-button" data-tab="settings">Settings</button>
+            <button type="button" class="tab-button" data-tab="connections">Test Connections</button>
+            <button type="button" class="tab-button" data-tab="remote">Remote Connection</button>
         </nav>
 
         <main>
@@ -31,24 +31,24 @@
                     <div class="stat-card">
                         <h3>Total Pis</h3>
                         <p class="stat-value" id="total-pis">-</p>
-                        <p style="font-size: 0.8em; opacity: 0.8; margin-top: 5px;">Physical devices</p>
+                        <p class="stat-subtitle">Physical devices</p>
                     </div>
                     <div class="stat-card">
                         <h3>Ethernet</h3>
                         <p class="stat-value" id="ethernet-count">-</p>
-                        <p style="font-size: 0.8em; opacity: 0.8; margin-top: 5px;">Connections</p>
+                        <p class="stat-subtitle">Connections</p>
                     </div>
                     <div class="stat-card">
                         <h3>WiFi</h3>
                         <p class="stat-value" id="wifi-count">-</p>
-                        <p style="font-size: 0.8em; opacity: 0.8; margin-top: 5px;">Connections</p>
+                        <p class="stat-subtitle">Connections</p>
                     </div>
                     <div class="stat-card">
                         <h3>Status</h3>
                         <p class="stat-value" id="status">Ready</p>
                     </div>
                 </div>
-                <button id="refresh-dashboard" class="btn btn-primary">Refresh</button>
+                <button type="button" id="refresh-dashboard" class="btn btn-primary">Refresh</button>
             </div>
 
             <!-- Raspberry Pis Tab -->
@@ -57,7 +57,7 @@
                 <div id="pi-list" class="pi-list">
                     <p class="loading">Loading Raspberry Pis...</p>
                 </div>
-                <button id="refresh-pis" class="btn btn-primary">Refresh List</button>
+                <button type="button" id="refresh-pis" class="btn btn-primary">Refresh List</button>
             </div>
 
             <!-- SD Card Management Tab -->
@@ -65,13 +65,13 @@
                 <h2>SD Card Management</h2>
                 <div class="test-section">
                     <h3>Detected SD Cards</h3>
-                    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
-                        <button id="refresh-sdcards" class="btn btn-primary">Refresh SD Cards</button>
-                        <button id="toggle-auto-detect" class="btn btn-secondary" style="position: relative;">
+                    <div class="button-group">
+                        <button type="button" id="refresh-sdcards" class="btn btn-primary">Refresh SD Cards</button>
+                        <button type="button" id="toggle-auto-detect" class="btn btn-secondary btn-relative">
                             <span id="auto-detect-text">Enable Auto-Detection</span>
-                            <span id="auto-detect-indicator" style="display: none; margin-left: 8px; animation: pulse 2s infinite;">🔍</span>
+                            <span id="auto-detect-indicator" class="auto-detect-indicator">🔍</span>
                         </button>
-                        <span id="auto-detect-status" style="color: #666; font-size: 0.9em; margin-left: 10px;"></span>
+                        <span id="auto-detect-status" class="auto-detect-status"></span>
                     </div>
                     <div id="sdcard-list" class="pi-list">
                         <p class="loading">Click "Refresh SD Cards" to detect connected SD cards</p>
@@ -85,12 +85,12 @@
                 <form id="os-install-form" onsubmit="event.preventDefault(); return false;">
                 <div class="test-section">
                     <h3>Select SD Card</h3>
-                    <select id="os-sdcard-select" style="width: 100%; padding: 10px; margin-bottom: 15px;">
+                    <select id="os-sdcard-select" aria-label="Select SD Card" class="select-full-width">
                         <option value="">-- Select SD Card --</option>
                     </select>
 
                     <h3>Select OS Image</h3>
-                    <div style="margin-bottom: 15px;">
+                    <div class="radio-group">
                         <label>
                             <input type="radio" name="os-source" value="download" checked> Download OS Image
                         </label><br>
@@ -100,7 +100,7 @@
                     </div>
 
                     <div id="os-download-section">
-                        <select id="os-version-select" style="width: 100%; padding: 10px; margin-bottom: 15px;">
+                        <select id="os-version-select" aria-label="Select OS Image" class="select-full-width">
                             <optgroup label="Raspberry Pi OS - Official (32-bit)">
                                 <option value="raspios_lite_armhf" data-url="https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-latest/" data-desc="Minimal Raspberry Pi OS without desktop environment. Perfect for headless servers, IoT projects, and applications where you don't need a GUI. Uses less resources and boots faster.">Raspberry Pi OS Lite (32-bit)</option>
                                 <option value="raspios_armhf" data-url="https://downloads.raspberrypi.org/raspios_armhf/images/raspios_armhf-latest/" data-desc="Raspberry Pi OS with desktop environment (PIXEL). Ideal for general computing, programming, web browsing, and educational use. Includes essential software but not all recommended packages.">Raspberry Pi OS with Desktop (32-bit)</option>
@@ -134,83 +134,87 @@
                                 <option value="batocera_rpi4" data-url="https://updates.batocera.org/rpi4/stable/last/batocera-rpi4-39.img.gz" data-desc="Batocera Linux - Modern retro gaming distribution with sleek interface. Features automatic game scraping, beautiful themes, and support for 100+ gaming systems. Ideal for creating a professional retro gaming setup.">Batocera Linux (Raspberry Pi 4)</option>
                             </optgroup>
                             <optgroup label="Specialized OS - Home Automation">
-                                <option value="homeassistant_rpi4" data-url="https://github.com/home-assistant/operating-system/releases/download/12.0/haos_rpi4-64-12.0.img.xz">Home Assistant OS 12.0 (Raspberry Pi 4)</option>
-                                <option value="homeassistant_rpi5" data-url="https://github.com/home-assistant/operating-system/releases/download/12.0/haos_rpi5-64-12.0.img.xz">Home Assistant OS 12.0 (Raspberry Pi 5)</option>
-                                <option value="openhabian_rpi" data-url="https://github.com/openhab/openhabian/releases/download/v1.9/openhabianpi-rpi-1.9.img.xz">openHABian 1.9</option>
+                                <option value="homeassistant_rpi4" data-url="https://github.com/home-assistant/operating-system/releases/download/12.0/haos_rpi4-64-12.0.img.xz" data-desc="Home Assistant OS 12.0 - Complete smart home automation platform. Integrates with 1000+ devices and services. Features powerful automation engine, beautiful dashboard, and local-first privacy. Perfect for controlling your entire smart home.">Home Assistant OS 12.0 (Raspberry Pi 4)</option>
+                                <option value="homeassistant_rpi5" data-url="https://github.com/home-assistant/operating-system/releases/download/12.0/haos_rpi5-64-12.0.img.xz" data-desc="Home Assistant OS 12.0 for Pi 5 - Optimized for Raspberry Pi 5's improved performance. Handles larger smart home setups with faster response times and better database performance.">Home Assistant OS 12.0 (Raspberry Pi 5)</option>
+                                <option value="openhabian_rpi" data-url="https://github.com/openhab/openhabian/releases/download/v1.9/openhabianpi-rpi-1.9.img.xz" data-desc="openHABian 1.9 - Easy-to-install openHAB home automation system. Pre-configured with openHAB, InfluxDB, Grafana, and other tools. Great for users who prefer Java-based automation platform with extensive rule engine.">openHABian 1.9</option>
                             </optgroup>
                             <optgroup label="Specialized OS - 3D Printing">
-                                <option value="octopi_rpi" data-url="https://github.com/OctoPrint/OctoPi/releases/download/0.19.0/octopi-0.19.0.zip">OctoPi 0.19.0</option>
-                                <option value="klipper_rpi" data-url="https://github.com/Klipper3d/klipper/releases/download/v0.12.0/klipper-rpi.img.xz">Klipper (Raspberry Pi)</option>
+                                <option value="octopi_rpi" data-url="https://github.com/OctoPrint/OctoPi/releases/download/0.19.0/octopi-0.19.0.zip" data-desc="OctoPi 0.19.0 - Complete 3D printer management system with OctoPrint. Monitor and control your 3D printer remotely via web interface. Includes timelapse recording, plugin support, and mobile apps. Essential for modern 3D printing workflow.">OctoPi 0.19.0</option>
+                                <option value="klipper_rpi" data-url="https://github.com/Klipper3d/klipper/releases/download/v0.12.0/klipper-rpi.img.xz" data-desc="Klipper - Advanced 3D printer firmware that runs on Raspberry Pi. Provides superior print quality through advanced motion planning and pressure advance. Perfect for users who want the best print quality and advanced features.">Klipper (Raspberry Pi)</option>
                             </optgroup>
                             <optgroup label="Specialized OS - Network/Server">
-                                <option value="openmediavault_rpi" data-url="https://github.com/openmediavault/openmediavault/releases/download/7.0/openmediavault-rpi-7.0.img.xz">OpenMediaVault 7.0</option>
-                                <option value="pihole_rpi" data-url="https://github.com/pi-hole/pi-hole/releases/download/v5.0/pihole-rpi.img.xz">Pi-hole (Network-wide Ad Blocking)</option>
-                                <option value="pivpn_rpi" data-url="https://github.com/pivpn/pivpn/releases/download/v3.0/pivpn-rpi.img.xz">PiVPN (VPN Server)</option>
+                                <option value="openmediavault_rpi" data-url="https://github.com/openmediavault/openmediavault/releases/download/7.0/openmediavault-rpi-7.0.img.xz" data-desc="OpenMediaVault 7.0 - Network-attached storage (NAS) solution with web-based management. Perfect for creating a home file server with SMB/CIFS, FTP, NFS, and more. Includes plugin system for extending functionality.">OpenMediaVault 7.0</option>
+                                <option value="pihole_rpi" data-url="https://github.com/pi-hole/pi-hole/releases/download/v5.0/pihole-rpi.img.xz" data-desc="Pi-hole - Network-wide ad blocker and DNS sinkhole. Blocks ads and trackers for all devices on your network without installing software. Features beautiful web interface and detailed statistics. Essential for ad-free browsing.">Pi-hole (Network-wide Ad Blocking)</option>
+                                <option value="pivpn_rpi" data-url="https://github.com/pivpn/pivpn/releases/download/v3.0/pivpn-rpi.img.xz" data-desc="PiVPN - Simple VPN server installer supporting WireGuard and OpenVPN. Easy setup wizard creates secure VPN access to your home network. Perfect for remote access, privacy, and security when using public Wi-Fi.">PiVPN (VPN Server)</option>
                             </optgroup>
                             <optgroup label="Lightweight Linux Distributions">
-                                <option value="dietpi_rpi" data-url="https://dietpi.com/downloads/images/DietPi_RPi-ARMv8-Bullseye.img.xz">DietPi (Lightweight Debian)</option>
-                                <option value="alpine_rpi" data-url="https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/aarch64/alpine-rpi-aarch64-3.19.0.img">Alpine Linux 3.19 (64-bit)</option>
-                                <option value="archlinux_arm_rpi" data-url="https://archlinuxarm.org/os/ArchLinuxARM-rpi-aarch64-latest.tar.gz">Arch Linux ARM (64-bit)</option>
+                                <option value="dietpi_rpi" data-url="https://dietpi.com/downloads/images/DietPi_RPi-ARMv8-Bullseye.img.xz" data-desc="DietPi - Ultra-lightweight Debian-based OS optimized for single-board computers. Minimal footprint with easy software installation via menu system. Perfect for resource-constrained projects and maximizing performance.">DietPi (Lightweight Debian)</option>
+                                <option value="alpine_rpi" data-url="https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/aarch64/alpine-rpi-aarch64-3.19.0.img" data-desc="Alpine Linux 3.19 - Security-oriented, lightweight Linux distribution using musl libc and BusyBox. Minimal base system (~5MB) perfect for containers, embedded systems, and security-focused applications.">Alpine Linux 3.19 (64-bit)</option>
+                                <option value="archlinux_arm_rpi" data-url="https://archlinuxarm.org/os/ArchLinuxARM-rpi-aarch64-latest.tar.gz" data-desc="Arch Linux ARM - Rolling-release distribution for advanced users. Always up-to-date packages, minimal base installation, and extensive documentation. Perfect for users who want full control and latest software.">Arch Linux ARM (64-bit)</option>
                             </optgroup>
                             <optgroup label="Security & Penetration Testing">
-                                <option value="kali_rpi" data-url="https://kali.download/arm-images/kali-2024.1-raspberry-pi-arm64.img.xz">Kali Linux 2024.1 (64-bit)</option>
-                                <option value="parrot_rpi" data-url="https://deb.parrot.sh/parrot/iso/5.3/Parrot-security-rpi-aarch64-5.3.iso">Parrot Security OS (64-bit)</option>
+                                <option value="kali_rpi" data-url="https://kali.download/arm-images/kali-2024.1-raspberry-pi-arm64.img.xz" data-desc="Kali Linux 2024.1 - Advanced penetration testing and security auditing platform. Includes 600+ security tools for ethical hacking, forensics, and security research. Used by security professionals worldwide.">Kali Linux 2024.1 (64-bit)</option>
+                                <option value="parrot_rpi" data-url="https://deb.parrot.sh/parrot/iso/5.3/Parrot-security-rpi-aarch64-5.3.iso" data-desc="Parrot Security OS - Security-focused Linux distribution for penetration testing, computer forensics, reverse engineering, and privacy protection. Features modern interface and comprehensive toolset.">Parrot Security OS (64-bit)</option>
                             </optgroup>
                             <optgroup label="Alternative Operating Systems">
-                                <option value="risc_os_rpi" data-url="https://www.riscosopen.org/content/downloads/raspberry-pi">RISC OS (Non-Linux)</option>
-                                <option value="freebsd_rpi" data-url="https://download.freebsd.org/ftp/releases/arm64/aarch64/ISO-IMAGES/14.0/FreeBSD-14.0-RELEASE-arm64-aarch64-RPI.img.xz">FreeBSD 14.0 (64-bit)</option>
-                                <option value="netbsd_rpi" data-url="https://cdn.netbsd.org/pub/NetBSD/NetBSD-10.0/evbarm-aarch64/binary/gzimg/NetBSD-10.0-evbarm-aarch64.img.gz">NetBSD 10.0 (64-bit)</option>
+                                <option value="risc_os_rpi" data-url="https://www.riscosopen.org/content/downloads/raspberry-pi" data-desc="RISC OS - Unique non-Linux operating system originally developed for ARM processors. Fast, lightweight desktop OS with retro computing feel. Interesting for educational purposes and retro computing enthusiasts.">RISC OS (Non-Linux)</option>
+                                <option value="freebsd_rpi" data-url="https://download.freebsd.org/ftp/releases/arm64/aarch64/ISO-IMAGES/14.0/FreeBSD-14.0-RELEASE-arm64-aarch64-RPI.img.xz" data-desc="FreeBSD 14.0 - Advanced Unix-like operating system known for performance, security, and ZFS filesystem. Excellent for servers, networking, and advanced users who prefer BSD over Linux.">FreeBSD 14.0 (64-bit)</option>
+                                <option value="netbsd_rpi" data-url="https://cdn.netbsd.org/pub/NetBSD/NetBSD-10.0/evbarm-aarch64/binary/gzimg/NetBSD-10.0-evbarm-aarch64.img.gz" data-desc="NetBSD 10.0 - Highly portable Unix-like OS with focus on clean design and code quality. Runs on 60+ hardware platforms. Great for embedded systems and portability-focused projects.">NetBSD 10.0 (64-bit)</option>
                             </optgroup>
                             <optgroup label="Development & Learning">
-                                <option value="scratch_rpi" data-url="https://downloads.raspberrypi.org/scratch_os/images/scratch_os-latest/">Scratch OS (Educational)</option>
-                                <option value="raspbian_old" data-url="https://downloads.raspberrypi.org/raspbian/images/raspbian-2019-09-30/">Raspbian (Legacy - 32-bit only)</option>
+                                <option value="scratch_rpi" data-url="https://downloads.raspberrypi.org/scratch_os/images/scratch_os-latest/" data-desc="Scratch OS - Educational operating system designed for teaching programming to children. Features Scratch programming environment and educational software. Perfect for schools and learning environments.">Scratch OS (Educational)</option>
+                                <option value="raspbian_old" data-url="https://downloads.raspberrypi.org/raspbian/images/raspbian-2019-09-30/" data-desc="Raspbian (Legacy) - Original Debian-based OS for Raspberry Pi, now superseded by Raspberry Pi OS. Only for compatibility with very old projects. Not recommended for new installations.">Raspbian (Legacy - 32-bit only)</option>
                             </optgroup>
                         </select>
-                        <p style="color: #666; font-size: 0.85em; margin-top: 5px; margin-bottom: 0;">
+                        <div id="os-description" class="os-description">
+                            <p class="os-description-text" id="os-description-text"></p>
+                        </div>
+                        <p class="os-note">
                             <strong>Note:</strong> Images will be downloaded from official sources. Some images may require manual URL resolution for the latest version.
                         </p>
                     </div>
 
-                    <div id="os-custom-section" style="display: none;">
-                        <input type="file" id="os-custom-file" accept=".img,.zip" style="width: 100%; padding: 10px; margin-bottom: 15px;">
+                    <div id="os-custom-section" class="hidden">
+                        <label for="os-custom-file" class="form-label">Custom Image File:</label>
+                        <input type="file" id="os-custom-file" accept=".img,.zip" class="file-input-full" aria-label="Select custom OS image file" title="Select custom OS image file">
                     </div>
 
                     <!-- Configuration Options (Collapsible Sections) -->
-                    <div style="margin-top: 20px; border-top: 2px solid #e0e0e0; padding-top: 20px;">
+                    <div class="config-section">
                         <h3>Configuration Options</h3>
-                        <p style="color: #666; font-size: 0.9em; margin-bottom: 15px;">Configure the OS before installation</p>
+                        <p class="config-description">Configure the OS before installation</p>
 
                         <!-- Boot Settings -->
-                        <details style="margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
-                            <summary style="cursor: pointer; font-weight: bold; padding: 5px;">Boot Settings</summary>
-                            <div style="margin-top: 15px; padding-left: 10px;">
-                                <label style="display: block; margin-bottom: 10px;">
+                        <details class="details-section">
+                            <summary class="details-summary">Boot Settings</summary>
+                            <div class="details-content">
+                                <label class="form-label">
                                     <input type="checkbox" id="os-enable-ssh" checked> Enable SSH
                                 </label>
-                                <label style="display: block; margin-bottom: 10px;">
+                                <label class="form-label">
                                     <input type="checkbox" id="os-enable-serial"> Enable Serial Console
                                 </label>
-                                <label style="display: block; margin-bottom: 10px;">
+                                <label class="form-label">
                                     <input type="checkbox" id="os-disable-overscan" checked> Disable Overscan
                                 </label>
-                                <label style="display: block; margin-bottom: 10px;">
+                                <label class="form-label">
                                     GPU Memory (MB):
-                                    <input type="number" id="os-gpu-memory" value="64" min="16" max="512" style="width: 100px; padding: 5px; margin-left: 10px;">
+                                    <input type="number" id="os-gpu-memory" value="64" min="16" max="512" class="form-input-number">
                                 </label>
                             </div>
                         </details>
 
                         <!-- System Settings -->
-                        <details style="margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
-                            <summary style="cursor: pointer; font-weight: bold; padding: 5px;">System Settings</summary>
-                            <div style="margin-top: 15px; padding-left: 10px;">
-                                <label style="display: block; margin-bottom: 10px;">
+                        <details class="details-section">
+                            <summary class="details-summary">System Settings</summary>
+                            <div class="details-content">
+                                <label class="form-label">
                                     Hostname:
-                                    <input type="text" id="os-hostname" value="raspberrypi" style="width: 100%; padding: 8px; margin-top: 5px;">
+                                    <input type="text" id="os-hostname" value="raspberrypi" class="form-input-full">
                                 </label>
-                                <label style="display: block; margin-bottom: 10px;">
+                                <label class="form-label">
                                     Timezone:
-                                    <select id="os-timezone" style="width: 100%; padding: 8px; margin-top: 5px;">
+                                    <select id="os-timezone" class="form-input-full">
                                         <option value="UTC">UTC</option>
                                         <option value="America/New_York">America/New_York (EST)</option>
                                         <option value="America/Chicago">America/Chicago (CST)</option>
@@ -221,9 +225,9 @@
                                         <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
                                     </select>
                                 </label>
-                                <label style="display: block; margin-bottom: 10px;">
+                                <label class="form-label">
                                     Locale:
-                                    <select id="os-locale" style="width: 100%; padding: 8px; margin-top: 5px;">
+                                    <select id="os-locale" class="form-input-full">
                                         <option value="en_US.UTF-8">English (US)</option>
                                         <option value="en_GB.UTF-8">English (UK)</option>
                                         <option value="fr_FR.UTF-8">French</option>
@@ -233,18 +237,18 @@
                                         <option value="ja_JP.UTF-8">Japanese</option>
                                     </select>
                                 </label>
-                                <div style="margin-top: 10px;">
-                                    <label style="display: block; margin-bottom: 5px;">Hardware Interfaces:</label>
-                                    <label style="display: block; margin-bottom: 5px;">
+                                <div class="nested-section">
+                                    <label class="form-label-small">Hardware Interfaces:</label>
+                                    <label class="form-label-small">
                                         <input type="checkbox" id="os-enable-camera"> Enable Camera
                                     </label>
-                                    <label style="display: block; margin-bottom: 5px;">
+                                    <label class="form-label-small">
                                         <input type="checkbox" id="os-enable-spi"> Enable SPI
                                     </label>
-                                    <label style="display: block; margin-bottom: 5px;">
+                                    <label class="form-label-small">
                                         <input type="checkbox" id="os-enable-i2c"> Enable I2C
                                     </label>
-                                    <label style="display: block; margin-bottom: 5px;">
+                                    <label class="form-label-small">
                                         <input type="checkbox" id="os-enable-serial-hw"> Enable Serial (Hardware)
                                     </label>
                                 </div>
@@ -252,135 +256,203 @@
                         </details>
 
                         <!-- Network Settings -->
-                        <details style="margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
-                            <summary style="cursor: pointer; font-weight: bold; padding: 5px;">Network Settings</summary>
-                            <div style="margin-top: 15px; padding-left: 10px;">
-                                <label style="display: block; margin-bottom: 10px;">
+                        <details class="details-section">
+                            <summary class="details-summary">Network Settings</summary>
+                            <div class="details-content">
+                                <label class="form-label">
                                     <input type="checkbox" id="os-enable-ethernet" checked> Enable Ethernet
                                 </label>
-                                <label style="display: block; margin-bottom: 10px;">
+                                <label class="form-label">
                                     <input type="checkbox" id="os-enable-wifi"> Enable WiFi
                                 </label>
-                                <div id="os-wifi-settings" style="display: none; margin-top: 10px; padding-left: 20px; border-left: 2px solid #ddd;">
-                                    <label style="display: block; margin-bottom: 10px;">
-                                        SSID:
-                                        <input type="text" id="os-wifi-ssid" style="width: 100%; padding: 8px; margin-top: 5px;">
+                                <div id="os-wifi-settings" class="hidden nested-section">
+                                    <div class="info-box" style="background: #e7f3ff; border-left: 4px solid #2196F3; padding: 12px; margin-bottom: 15px; border-radius: 4px;">
+                                        <strong>💡 WiFi Security Information:</strong>
+                                        <ul style="margin: 8px 0 0 20px; font-size: 0.9em;">
+                                            <li><strong>WPA3-Personal:</strong> Latest 2025 standard with SAE (Simultaneous Authentication of Equals) - Recommended for new networks</li>
+                                            <li><strong>Transition Mode:</strong> Allows WPA2 and WPA3 devices to connect simultaneously - Best compatibility</li>
+                                            <li><strong>Protected Management Frames (PMF):</strong> Automatically enabled for WPA3 - Protects against deauthentication attacks</li>
+                                        </ul>
+                                    </div>
+
+                                    <label class="form-label">
+                                        Network Name (SSID):
+                                        <input type="text" id="os-wifi-ssid" class="form-input-full" placeholder="Your WiFi network name" aria-describedby="ssid-hint">
+                                        <small id="ssid-hint" class="form-hint">Enter the exact name of your wireless network as it appears on your router</small>
                                     </label>
-                                    <label style="display: block; margin-bottom: 10px;">
-                                        Password:
-                                        <input type="password" id="os-wifi-password" autocomplete="new-password" style="width: 100%; padding: 8px; margin-top: 5px;">
-                                    </label>
-                                    <label style="display: block; margin-bottom: 10px;">
-                                        Country Code:
-                                        <select id="os-wifi-country" style="width: 100%; padding: 8px; margin-top: 5px;">
-                                            <option value="US">US</option>
-                                            <option value="GB">GB</option>
-                                            <option value="DE">DE</option>
-                                            <option value="FR">FR</option>
-                                            <option value="JP">JP</option>
+
+                                    <label class="form-label">
+                                        Security Type:
+                                        <select id="os-wifi-security" class="form-input-full" aria-describedby="security-hint">
+                                            <option value="WPA3_Personal" selected>WPA3-Personal (Recommended - 2025 Standard) 🔒</option>
+                                            <option value="WPA2_Personal">WPA2-Personal (Legacy Support) ⚠️</option>
+                                            <option value="WPA3_Enterprise">WPA3-Enterprise (Advanced - Requires Certificates) 🔐</option>
+                                            <option value="WPA2_Enterprise">WPA2-Enterprise (Legacy - Requires Certificates) ⚠️</option>
+                                            <option value="Open">Open Network (Not Recommended - No Security) 🚫</option>
                                         </select>
+                                        <small id="security-hint" class="form-hint">
+                                            <strong>WPA3</strong> provides enhanced security with protection against brute-force attacks,
+                                            forward secrecy, and stronger encryption. Use WPA2 only if your router doesn't support WPA3.
+                                        </small>
+                                    </label>
+
+                                    <div id="os-wifi-password-section">
+                                        <label class="form-label" for="os-wifi-password">
+                                            Password:
+                                        </label>
+                                        <div style="position: relative;">
+                                            <input type="password" id="os-wifi-password" autocomplete="new-password" class="form-input-full" placeholder="WiFi password (min. 8 characters)">
+                                            <button type="button" id="os-wifi-password-toggle" class="password-toggle" aria-label="Show password">👁️</button>
+                                        </div>
+                                        <div id="os-wifi-password-strength" class="password-strength"></div>
+                                        <small class="form-hint">Use a strong password (8+ characters, mix of letters, numbers, symbols)</small>
+                                    </div>
+
+                                    <div id="os-wifi-transition-mode" class="form-label">
+                                        <label style="display: flex; align-items: center; gap: 8px;">
+                                            <input type="checkbox" id="os-wifi-transition" checked>
+                                            <span>Enable WPA2/WPA3 Transition Mode</span>
+                                        </label>
+                                        <small class="form-hint">Allows compatibility with older devices while using WPA3 security</small>
+                                    </div>
+
+                                    <div id="os-wifi-enterprise-settings" class="hidden nested-section">
+                                        <label class="form-label">
+                                            EAP Method:
+                                            <select id="os-wifi-eap-method" class="form-input-full">
+                                                <option value="TLS">TLS</option>
+                                                <option value="TTLS">TTLS</option>
+                                                <option value="PEAP">PEAP</option>
+                                            </select>
+                                        </label>
+                                        <label class="form-label">
+                                            CA Certificate Path:
+                                            <input type="text" id="os-wifi-ca-cert" class="form-input-full" placeholder="/path/to/ca.pem">
+                                        </label>
+                                        <label class="form-label">
+                                            Client Certificate Path:
+                                            <input type="text" id="os-wifi-client-cert" class="form-input-full" placeholder="/path/to/client.pem">
+                                        </label>
+                                    </div>
+
+                                    <label class="form-label">
+                                        Country Code:
+                                        <select id="os-wifi-country" class="form-input-full">
+                                            <option value="US">United States (US)</option>
+                                            <option value="GB">United Kingdom (GB)</option>
+                                            <option value="DE">Germany (DE)</option>
+                                            <option value="FR">France (FR)</option>
+                                            <option value="JP">Japan (JP)</option>
+                                            <option value="CA">Canada (CA)</option>
+                                            <option value="AU">Australia (AU)</option>
+                                            <option value="IT">Italy (IT)</option>
+                                            <option value="ES">Spain (ES)</option>
+                                            <option value="NL">Netherlands (NL)</option>
+                                        </select>
+                                        <small class="form-hint">Select your country for regulatory compliance</small>
                                     </label>
                                 </div>
-                                <label style="display: block; margin-top: 15px; margin-bottom: 10px;">
+                                <label class="form-label form-label-margin-top">
                                     <input type="checkbox" id="os-use-static-ip"> Use Static IP
                                 </label>
-                                <div id="os-static-ip-settings" style="display: none; margin-top: 10px; padding-left: 20px; border-left: 2px solid #ddd;">
-                                    <label style="display: block; margin-bottom: 10px;">
+                                <div id="os-static-ip-settings" class="hidden nested-section-large">
+                                    <label class="form-label">
                                         IP Address:
-                                        <input type="text" id="os-static-ip" placeholder="192.168.1.100" style="width: 100%; padding: 8px; margin-top: 5px;">
+                                        <input type="text" id="os-static-ip" placeholder="192.168.1.100" class="form-input-full">
                                     </label>
-                                    <label style="display: block; margin-bottom: 10px;">
+                                    <label class="form-label">
                                         Gateway:
-                                        <input type="text" id="os-gateway" placeholder="192.168.1.1" style="width: 100%; padding: 8px; margin-top: 5px;">
+                                        <input type="text" id="os-gateway" placeholder="192.168.1.1" class="form-input-full">
                                     </label>
-                                    <label style="display: block; margin-bottom: 10px;">
+                                    <label class="form-label">
                                         DNS:
-                                        <input type="text" id="os-dns" placeholder="8.8.8.8" style="width: 100%; padding: 8px; margin-top: 5px;">
+                                        <input type="text" id="os-dns" placeholder="8.8.8.8" class="form-input-full">
                                     </label>
                                 </div>
                             </div>
                         </details>
 
                         <!-- User Settings -->
-                        <details style="margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
-                            <summary style="cursor: pointer; font-weight: bold; padding: 5px;">User Settings</summary>
-                            <div style="margin-top: 15px; padding-left: 10px;">
-                                <label style="display: block; margin-bottom: 10px;">
+                        <details class="details-section">
+                            <summary class="details-summary">User Settings</summary>
+                            <div class="details-content">
+                                <label class="form-label">
                                     Default Password (for 'pi' user):
-                                    <input type="password" id="os-default-password" placeholder="Leave empty for default" autocomplete="new-password" style="width: 100%; padding: 8px; margin-top: 5px;">
+                                    <input type="password" id="os-default-password" placeholder="Leave empty for default" autocomplete="new-password" class="form-input-full">
                                 </label>
-                                <div id="os-users-list" style="margin-top: 15px;">
-                                    <label style="font-weight: bold; display: block; margin-bottom: 10px;">Additional Users:</label>
+                                <div id="os-users-list" class="users-section">
+                                    <label class="users-label">Additional Users:</label>
                                     <div id="os-users-container"></div>
-                                    <button type="button" id="os-add-user" class="btn btn-secondary" style="margin-top: 10px;">Add User</button>
+                                    <button type="button" id="os-add-user" class="btn btn-secondary button-margin-top">Add User</button>
                                 </div>
                             </div>
                         </details>
 
                         <!-- SSH Settings -->
-                        <details style="margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
-                            <summary style="cursor: pointer; font-weight: bold; padding: 5px;">SSH Settings</summary>
-                            <div style="margin-top: 15px; padding-left: 10px;">
-                                <label style="display: block; margin-bottom: 10px;">
+                        <details class="details-section">
+                            <summary class="details-summary">SSH Settings</summary>
+                            <div class="details-content">
+                                <label class="form-label">
                                     SSH Port:
-                                    <input type="number" id="os-ssh-port" value="22" min="1" max="65535" style="width: 100px; padding: 5px; margin-left: 10px;">
+                                    <input type="number" id="os-ssh-port" value="22" min="1" max="65535" class="form-input-number">
                                 </label>
-                                <label style="display: block; margin-bottom: 10px;">
+                                <label class="form-label">
                                     <input type="checkbox" id="os-ssh-password-auth" checked> Enable Password Authentication
                                 </label>
-                                <label style="display: block; margin-bottom: 10px;">
+                                <label class="form-label">
                                     <input type="checkbox" id="os-ssh-disable-root" checked> Disable Root Login
                                 </label>
-                                <label style="display: block; margin-bottom: 10px;">
+                                <label class="form-label">
                                     SSH Authorized Keys (one per line):
-                                    <textarea id="os-ssh-keys" rows="3" placeholder="ssh-rsa AAAAB3NzaC1yc2E..." style="width: 100%; padding: 8px; margin-top: 5px; font-family: monospace; font-size: 0.9em;"></textarea>
+                                    <textarea id="os-ssh-keys" rows="3" placeholder="ssh-rsa AAAAB3NzaC1yc2E..." class="form-textarea"></textarea>
                                 </label>
                             </div>
                         </details>
 
                         <!-- Package Settings -->
-                        <details style="margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
-                            <summary style="cursor: pointer; font-weight: bold; padding: 5px;">Package Settings</summary>
-                            <div style="margin-top: 15px; padding-left: 10px;">
-                                <label style="display: block; margin-bottom: 10px;">
+                        <details class="details-section">
+                            <summary class="details-summary">Package Settings</summary>
+                            <div class="details-content">
+                                <label class="form-label">
                                     <input type="checkbox" id="os-update-packages" checked> Update Package List on First Boot
                                 </label>
-                                <label style="display: block; margin-bottom: 10px;">
+                                <label class="form-label">
                                     <input type="checkbox" id="os-upgrade-packages"> Upgrade All Packages on First Boot
                                 </label>
-                                <label style="display: block; margin-bottom: 10px;">
+                                <label class="form-label">
                                     Packages to Install (comma-separated):
-                                    <input type="text" id="os-packages" placeholder="vim, git, htop, docker" style="width: 100%; padding: 8px; margin-top: 5px;">
+                                    <input type="text" id="os-packages" placeholder="vim, git, htop, docker" class="form-input-full">
                                 </label>
                             </div>
                         </details>
 
                         <!-- Custom Scripts -->
-                        <details style="margin-bottom: 15px; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
-                            <summary style="cursor: pointer; font-weight: bold; padding: 5px;">Custom Scripts (Advanced)</summary>
-                            <div style="margin-top: 15px; padding-left: 10px;">
-                                <label style="display: block; margin-bottom: 10px;">
+                        <details class="details-section">
+                            <summary class="details-summary">Custom Scripts (Advanced)</summary>
+                            <div class="details-content">
+                                <label class="form-label">
                                     Pre-Install Scripts (file paths, one per line):
-                                    <textarea id="os-pre-scripts" rows="2" placeholder="/path/to/script1.sh" style="width: 100%; padding: 8px; margin-top: 5px; font-family: monospace; font-size: 0.9em;"></textarea>
+                                    <textarea id="os-pre-scripts" rows="2" placeholder="/path/to/script1.sh" class="form-textarea-small"></textarea>
                                 </label>
-                                <label style="display: block; margin-bottom: 10px;">
+                                <label class="form-label">
                                     Post-Install Scripts (file paths, one per line):
-                                    <textarea id="os-post-scripts" rows="2" placeholder="/path/to/script2.sh" style="width: 100%; padding: 8px; margin-top: 5px; font-family: monospace; font-size: 0.9em;"></textarea>
+                                    <textarea id="os-post-scripts" rows="2" placeholder="/path/to/script2.sh" class="form-textarea-small"></textarea>
                                 </label>
-                                <label style="display: block; margin-bottom: 10px;">
+                                <label class="form-label">
                                     First Boot Scripts (file paths, one per line):
-                                    <textarea id="os-firstboot-scripts" rows="2" placeholder="/path/to/script3.sh" style="width: 100%; padding: 8px; margin-top: 5px; font-family: monospace; font-size: 0.9em;"></textarea>
+                                    <textarea id="os-firstboot-scripts" rows="2" placeholder="/path/to/script3.sh" class="form-textarea-small"></textarea>
                                 </label>
                             </div>
                         </details>
                     </div>
 
-                    <button type="button" id="install-os" class="btn btn-primary" style="width: 100%; margin-top: 20px;">Install OS to SD Card</button>
-                    <div id="os-install-progress" style="margin-top: 15px; display: none;">
-                        <div style="background: #f0f0f0; border-radius: 4px; padding: 10px;">
-                            <div id="os-progress-bar" style="background: #667eea; height: 20px; border-radius: 4px; width: 0%; transition: width 0.3s;"></div>
+                    <button type="submit" id="install-os-submit" class="btn btn-primary install-button" style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;" aria-label="Submit OS installation form">Install</button>
+                    <button type="button" id="install-os" class="btn btn-primary install-button">Install OS to SD Card</button>
+                    <div id="os-install-progress" class="progress-container">
+                        <div class="progress-bar-wrapper">
+                            <div id="os-progress-bar" class="progress-bar"></div>
                         </div>
-                        <p id="os-status-text" style="margin-top: 10px;"></p>
+                        <p id="os-status-text" class="status-text"></p>
                     </div>
                 </div>
                 </form>
@@ -391,48 +463,69 @@
                 <h2>Pi Configuration</h2>
                 <div class="test-section">
                     <h3>Select Pi to Configure</h3>
-                    <select id="settings-pi-select" style="width: 100%; padding: 10px; margin-bottom: 20px;">
+                    <select id="settings-pi-select" aria-label="Select Pi to Configure" class="select-full-width select-margin-bottom">
                         <option value="">-- Select Raspberry Pi --</option>
                         <option value="1">Raspberry Pi 1</option>
                         <option value="2">Raspberry Pi 2</option>
                     </select>
 
-                    <form id="settings-form" style="display: none;" onsubmit="event.preventDefault(); return false;">
+                    <form id="settings-form" class="settings-form" onsubmit="event.preventDefault(); return false;">
                         <h3>SSH Settings</h3>
-                        <label style="display: block; margin: 10px 0;">
+                        <label class="settings-label">
                             <input type="checkbox" id="settings-ssh-enable" checked> Enable SSH
                         </label>
-                        <label style="display: block; margin: 10px 0;">
+                        <label class="settings-label">
                             <input type="checkbox" id="settings-ssh-password-auth" checked> Enable Password Authentication
                         </label>
-                        <label style="display: block; margin: 10px 0;">
-                            SSH Port: <input type="number" id="settings-ssh-port" value="22" autocomplete="off" style="width: 100px; padding: 5px;">
+                        <label class="settings-label">
+                            SSH Port: <input type="number" id="settings-ssh-port" value="22" autocomplete="off" class="settings-input-number">
                         </label>
 
                         <h3>Telnet Settings</h3>
-                        <label style="display: block; margin: 10px 0;">
+                        <label class="settings-label">
                             <input type="checkbox" id="settings-telnet-enable"> Enable Telnet
                         </label>
-                        <label style="display: block; margin: 10px 0;">
-                            Telnet Port: <input type="number" id="settings-telnet-port" value="23" autocomplete="off" style="width: 100px; padding: 5px;">
+                        <label class="settings-label">
+                            Telnet Port: <input type="number" id="settings-telnet-port" value="23" autocomplete="off" class="settings-input-number">
                         </label>
 
                         <h3>Network Settings</h3>
-                        <label style="display: block; margin: 10px 0;">
-                            Hostname: <input type="text" id="settings-hostname" placeholder="raspberrypi" autocomplete="off" style="width: 200px; padding: 5px;">
+                        <label class="form-label">
+                            Hostname:
+                            <input type="text" id="settings-hostname" placeholder="raspberrypi" autocomplete="off" class="form-input-full">
                         </label>
-                        <label style="display: block; margin: 10px 0;">
+                        <label class="form-label">
                             <input type="checkbox" id="settings-wifi-enable"> Enable WiFi
                         </label>
-                        <label style="display: block; margin: 10px 0;">
-                            WiFi SSID: <input type="text" id="settings-wifi-ssid" autocomplete="off" style="width: 200px; padding: 5px;">
-                        </label>
-                        <label style="display: block; margin: 10px 0;">
-                            WiFi Password: <input type="password" id="settings-wifi-password" autocomplete="new-password" style="width: 200px; padding: 5px;">
-                        </label>
+                        <div id="settings-wifi-config" class="hidden nested-section">
+                            <label class="form-label">
+                                Network Name (SSID):
+                                <input type="text" id="settings-wifi-ssid" autocomplete="off" class="form-input-full" placeholder="Your WiFi network name">
+                            </label>
+                            <label class="form-label">
+                                Security Type:
+                                <select id="settings-wifi-security" class="form-input-full">
+                                    <option value="WPA3_Personal" selected>WPA3-Personal (Recommended - 2025 Standard)</option>
+                                    <option value="WPA2_Personal">WPA2-Personal (Legacy Support)</option>
+                                    <option value="WPA3_Enterprise">WPA3-Enterprise (Advanced)</option>
+                                    <option value="WPA2_Enterprise">WPA2-Enterprise (Legacy)</option>
+                                    <option value="Open">Open Network (Not Recommended)</option>
+                                </select>
+                                <small class="form-hint">WPA3 provides enhanced security with protection against brute-force attacks</small>
+                            </label>
+                            <label class="form-label">
+                                Password:
+                                <input type="password" id="settings-wifi-password" autocomplete="new-password" class="form-input-full" placeholder="WiFi password">
+                            </label>
+                            <label class="form-label">
+                                <input type="checkbox" id="settings-wifi-transition" checked> Enable WPA2/WPA3 Transition Mode
+                                <small class="form-hint">Best compatibility with older devices while using WPA3 security</small>
+                            </label>
+                        </div>
 
-                        <button type="button" id="apply-settings" class="btn btn-primary" style="margin-top: 20px;">Apply Settings to Pi</button>
-                        <div id="settings-status" style="margin-top: 15px;"></div>
+                        <button type="submit" id="apply-settings-submit" class="btn btn-primary settings-button" style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;" aria-label="Submit settings form">Apply</button>
+                        <button type="button" id="apply-settings" class="btn btn-primary settings-button">Apply Settings to Pi</button>
+                        <div id="settings-status" class="settings-status"></div>
                     </form>
                 </div>
             </div>
@@ -443,17 +536,17 @@
                 <div class="test-section">
                     <h3>Test All Connections</h3>
                     <p>Test connectivity to all Raspberry Pis (ping, SSH, telnet)</p>
-                    <button id="test-all" class="btn btn-primary">Test All Connections</button>
+                    <button type="button" id="test-all" class="btn btn-primary">Test All Connections</button>
                     <div id="test-results" class="test-results"></div>
                 </div>
                 <div class="test-section">
                     <h3>Test SSH Authentication</h3>
                     <label for="pi-select">Select Pi:</label>
-                    <select id="pi-select">
+                    <select id="pi-select" aria-label="Select Pi for SSH test">
                         <option value="1">Pi 1</option>
                         <option value="2">Pi 2</option>
                     </select>
-                    <button id="test-ssh" class="btn btn-primary">Test SSH Auth</button>
+                    <button type="button" id="test-ssh" class="btn btn-primary">Test SSH Auth</button>
                     <div id="ssh-results" class="test-results"></div>
                 </div>
             </div>
@@ -464,70 +557,72 @@
                 <div class="test-section">
                     <h3>Connection Settings</h3>
                     <form id="remote-connection-form" onsubmit="event.preventDefault(); return false;">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                        <div class="remote-form-grid">
                             <div>
-                                <label for="remote-pi-select" style="display: block; margin-bottom: 5px;">Select Pi:</label>
-                                <select id="remote-pi-select" style="width: 100%; padding: 10px;">
+                                <label for="remote-pi-select" class="remote-form-field">Select Pi:</label>
+                                <select id="remote-pi-select" class="remote-input">
                                     <option value="1">Raspberry Pi 1</option>
                                     <option value="2">Raspberry Pi 2</option>
                                 </select>
                             </div>
                             <div>
-                                <label for="remote-connection-type" style="display: block; margin-bottom: 5px;">Connection Type:</label>
-                                <select id="remote-connection-type" style="width: 100%; padding: 10px;">
+                                <label for="remote-connection-type" class="remote-form-field">Connection Type:</label>
+                                <select id="remote-connection-type" class="remote-input">
                                     <option value="ssh">SSH</option>
                                     <option value="telnet">Telnet</option>
                                 </select>
                             </div>
                             <div>
-                                <label for="remote-network-type" style="display: block; margin-bottom: 5px;">Network:</label>
-                                <select id="remote-network-type" style="width: 100%; padding: 10px;">
+                                <label for="remote-network-type" class="remote-form-field">Network:</label>
+                                <select id="remote-network-type" class="remote-input">
                                     <option value="auto">Auto (Ethernet preferred)</option>
                                     <option value="ethernet">Ethernet</option>
                                     <option value="wifi">WiFi</option>
                                 </select>
                             </div>
                             <div>
-                                <label for="remote-username" style="display: block; margin-bottom: 5px;">Username:</label>
-                                <input type="text" id="remote-username" value="pi" autocomplete="username" style="width: 100%; padding: 10px;">
+                                <label for="remote-username" class="remote-form-field">Username:</label>
+                                <input type="text" id="remote-username" value="pi" autocomplete="username" class="remote-input">
                             </div>
                             <div>
-                                <label for="remote-password" style="display: block; margin-bottom: 5px;">Password (optional):</label>
-                                <input type="password" id="remote-password" placeholder="Leave empty for key auth" autocomplete="current-password" style="width: 100%; padding: 10px;">
+                                <label for="remote-password" class="remote-form-field">Password (optional):</label>
+                                <input type="password" id="remote-password" placeholder="Leave empty for key auth" autocomplete="current-password" class="remote-input">
                             </div>
                             <div>
-                                <label for="remote-key-path" style="display: block; margin-bottom: 5px;">SSH Key Path (optional):</label>
-                                <input type="text" id="remote-key-path" placeholder="~/.ssh/id_rsa" autocomplete="off" style="width: 100%; padding: 10px;">
+                                <label for="remote-key-path" class="remote-form-field">SSH Key Path (optional):</label>
+                                <input type="text" id="remote-key-path" placeholder="~/.ssh/id_rsa" autocomplete="off" class="remote-input">
                             </div>
                         </div>
+                        <button type="submit" id="remote-connect-btn-submit" class="btn btn-primary" style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;" aria-label="Submit remote connection form">Connect</button>
                         <button type="button" id="remote-connect-btn" class="btn btn-primary">Connect</button>
-                        <div id="remote-connection-status" style="margin-top: 10px; color: #666;"></div>
+                        <div id="remote-connection-status" class="remote-status"></div>
                     </form>
                 </div>
 
-                <div class="test-section" style="margin-top: 20px;">
+                <div class="test-section terminal-section">
                     <h3>Command Terminal</h3>
-                    <div id="remote-terminal" style="background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 6px; font-family: 'Courier New', monospace; min-height: 400px; max-height: 600px; overflow-y: auto; font-size: 14px; line-height: 1.5;">
-                        <div style="color: #4ec9b0;">Remote Terminal - Select Pi and click Connect to start</div>
+                    <div id="remote-terminal" class="terminal">
+                        <div class="terminal-prompt">Remote Terminal - Select Pi and click Connect to start</div>
                     </div>
-                    <div style="margin-top: 15px; display: flex; gap: 10px;">
-                        <input type="text" id="remote-command-input" placeholder="Enter command..." style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: 'Courier New', monospace;" onkeypress="if(event.key === 'Enter') executeRemoteCommand()">
-                        <button id="remote-execute-btn" class="btn btn-primary" onclick="executeRemoteCommand()">Execute</button>
-                        <button id="remote-clear-btn" class="btn btn-secondary" onclick="clearRemoteTerminal()">Clear</button>
+                    <div class="terminal-input-group">
+                        <label for="remote-command-input" class="sr-only">Command Input</label>
+                        <input type="text" id="remote-command-input" placeholder="Enter command..." class="terminal-input" aria-label="Enter command to execute" onkeypress="if(event.key === 'Enter') executeRemoteCommand()">
+                        <button type="button" id="remote-execute-btn" class="btn btn-primary" onclick="executeRemoteCommand()" aria-label="Execute command">Execute</button>
+                        <button type="button" id="remote-clear-btn" class="btn btn-secondary" onclick="clearRemoteTerminal()" aria-label="Clear terminal">Clear</button>
                     </div>
                 </div>
 
-                <div class="test-section" style="margin-top: 20px;">
+                <div class="test-section quick-commands">
                     <h3>Quick Commands</h3>
-                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                        <button class="btn btn-secondary" onclick="runQuickCommand('uname -a')">System Info</button>
-                        <button class="btn btn-secondary" onclick="runQuickCommand('df -h')">Disk Usage</button>
-                        <button class="btn btn-secondary" onclick="runQuickCommand('free -h')">Memory Info</button>
-                        <button class="btn btn-secondary" onclick="runQuickCommand('uptime')">Uptime</button>
-                        <button class="btn btn-secondary" onclick="runQuickCommand('hostname')">Hostname</button>
-                        <button class="btn btn-secondary" onclick="runQuickCommand('ifconfig')">Network Config</button>
-                        <button class="btn btn-secondary" onclick="runQuickCommand('sudo systemctl status ssh')">SSH Status</button>
-                        <button class="btn btn-secondary" onclick="runQuickCommand('sudo systemctl status inetd')">Telnet Status</button>
+                    <div class="quick-commands-grid">
+                        <button type="button" class="btn btn-secondary" onclick="runQuickCommand('uname -a')">System Info</button>
+                        <button type="button" class="btn btn-secondary" onclick="runQuickCommand('df -h')">Disk Usage</button>
+                        <button type="button" class="btn btn-secondary" onclick="runQuickCommand('free -h')">Memory Info</button>
+                        <button type="button" class="btn btn-secondary" onclick="runQuickCommand('uptime')">Uptime</button>
+                        <button type="button" class="btn btn-secondary" onclick="runQuickCommand('hostname')">Hostname</button>
+                        <button type="button" class="btn btn-secondary" onclick="runQuickCommand('ifconfig')">Network Config</button>
+                        <button type="button" class="btn btn-secondary" onclick="runQuickCommand('sudo systemctl status ssh')">SSH Status</button>
+                        <button type="button" class="btn btn-secondary" onclick="runQuickCommand('sudo systemctl status inetd')">Telnet Status</button>
                     </div>
                 </div>
             </div>

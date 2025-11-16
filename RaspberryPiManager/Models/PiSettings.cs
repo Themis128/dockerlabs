@@ -24,6 +24,23 @@ public class NetworkSettings
     public string Gateway { get; set; } = string.Empty;
     public string DNS { get; set; } = string.Empty;
     public bool EnableEthernet { get; set; } = true;
+
+    // WPA3 Support (2025 standards)
+    public WPASecurityType SecurityType { get; set; } = WPASecurityType.WPA3_Personal;
+    public bool UseTransitionMode { get; set; } = true; // WPA2/WPA3 compatibility
+    public bool EnablePMF { get; set; } = true; // Protected Management Frames (required for WPA3)
+    public string? EAPMethod { get; set; } // For WPA3-Enterprise
+    public string? CAFilePath { get; set; } // For WPA3-Enterprise
+    public string? ClientCertPath { get; set; } // For WPA3-Enterprise
+}
+
+public enum WPASecurityType
+{
+    WPA3_Personal,      // SAE (Simultaneous Authentication of Equals) - Recommended
+    WPA2_Personal,      // WPA-PSK (legacy support)
+    WPA3_Enterprise,    // WPA-EAP-SUITE-B-192 (requires certificates)
+    WPA2_Enterprise,    // WPA-EAP (legacy enterprise)
+    Open                // No security (not recommended)
 }
 
 public class SSHSettings

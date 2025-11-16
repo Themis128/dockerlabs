@@ -53,7 +53,7 @@ async function loadPis() {
         // Show loading error in pi-list if it exists
         const piList = document.getElementById('pi-list');
         if (piList) {
-            piList.innerHTML = `<p class="loading" style="color: #dc3545;">Error loading Raspberry Pis: ${error.message}</p>`;
+            piList.innerHTML = `<p class="loading error-message">Error loading Raspberry Pis: ${error.message}</p>`;
         }
     }
 }
@@ -184,7 +184,7 @@ function showError(message) {
     const statusElement = document.querySelector('[id*="status"], .status-message');
     if (statusElement) {
         statusElement.textContent = `Error: ${message}`;
-        statusElement.style.color = '#dc3545';
+        statusElement.classList.add('error-message');
     }
 }
 
@@ -340,6 +340,31 @@ document.querySelectorAll('input[name="os-source"]').forEach(radio => {
     });
 });
 
+// Show OS description when selection changes
+function updateOSDescription() {
+    const osSelect = document.getElementById('os-version-select');
+    if (!osSelect) return;
+
+    const selectedOption = osSelect.options[osSelect.selectedIndex];
+    const description = selectedOption ? selectedOption.getAttribute('data-desc') : null;
+    const descriptionDiv = document.getElementById('os-description');
+    const descriptionText = document.getElementById('os-description-text');
+
+    if (description && descriptionDiv && descriptionText) {
+        descriptionText.textContent = description;
+        descriptionDiv.style.display = 'block';
+    } else if (descriptionDiv) {
+        descriptionDiv.style.display = 'none';
+    }
+}
+
+document.getElementById('os-version-select')?.addEventListener('change', updateOSDescription);
+
+// Initialize description on page load
+document.addEventListener('DOMContentLoaded', () => {
+    updateOSDescription();
+});
+
 // WiFi settings toggle
 document.getElementById('os-enable-wifi')?.addEventListener('change', (e) => {
     const wifiSettings = document.getElementById('os-wifi-settings');
@@ -348,11 +373,110 @@ document.getElementById('os-enable-wifi')?.addEventListener('change', (e) => {
     }
 });
 
+// WPA3 Security type change handler
+document.getElementById('os-wifi-security')?.addEventListener('change', (e) => {
+    const securityType = e.target.value;
+    const passwordSection = document.getElementById('os-wifi-password-section');
+    const transitionMode = document.getElementById('os-wifi-transition-mode');
+    const enterpriseSettings = document.getElementById('os-wifi-enterprise-settings');
+
+    // Show/hide password section based on security type
+    if (securityType === 'Open') {
+        passwordSection.style.display = 'none';
+        transitionMode.style.display = 'none';
+    } else {
+        passwordSection.style.display = 'block';
+    }
+
+    // Show/hide transition mode (only for WPA3-Personal)
+    if (securityType === 'WPA3_Personal') {
+        transitionMode.style.display = 'block';
+    } else {
+        transitionMode.style.display = 'none';
+    }
+
+    // Show/hide enterprise settings
+    if (securityType === 'WPA3_Enterprise' || securityType === 'WPA2_Enterprise') {
+        enterpriseSettings.classList.remove('hidden');
+    } else {
+        enterpriseSettings.classList.add('hidden');
+    }
+});
+
+// Password strength checker
+function checkPasswordStrength(password) {
+    if (!password) return { strength: 'none', score: 0 };
+
+    let score = 0;
+    if (password.length >= 8) score++;
+    if (password.length >= 12) score++;
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
+    if (/\d/.test(password)) score++;
+    if (/[^a-zA-Z\d]/.test(password)) score++;
+
+    if (score <= 2) return { strength: 'weak', score };
+    if (score <= 3) return { strength: 'medium', score };
+    return { strength: 'strong', score };
+}
+
+// Password strength indicator
+document.getElementById('os-wifi-password')?.addEventListener('input', (e) => {
+    const password = e.target.value;
+    const strengthDiv = document.getElementById('os-wifi-password-strength');
+    if (!strengthDiv) return;
+
+    const result = checkPasswordStrength(password);
+    strengthDiv.className = 'password-strength';
+
+    if (result.strength !== 'none') {
+        strengthDiv.classList.add(result.strength);
+    }
+});
+
+// Password toggle (show/hide)
+document.getElementById('os-wifi-password-toggle')?.addEventListener('click', (e) => {
+    const passwordInput = document.getElementById('os-wifi-password');
+    const toggleButton = e.target;
+
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleButton.textContent = '🙈';
+        toggleButton.setAttribute('aria-label', 'Hide password');
+    } else {
+        passwordInput.type = 'password';
+        toggleButton.textContent = '👁️';
+        toggleButton.setAttribute('aria-label', 'Show password');
+    }
+});
+
 // Static IP settings toggle
 document.getElementById('os-use-static-ip')?.addEventListener('change', (e) => {
     const staticIpSettings = document.getElementById('os-static-ip-settings');
     if (staticIpSettings) {
         staticIpSettings.style.display = e.target.checked ? 'block' : 'none';
+    }
+});
+
+// Settings tab WiFi toggle
+document.getElementById('settings-wifi-enable')?.addEventListener('change', (e) => {
+    const wifiConfig = document.getElementById('settings-wifi-config');
+    if (wifiConfig) {
+        wifiConfig.classList.toggle('hidden', !e.target.checked);
+    }
+});
+
+// Settings tab WPA3 security type handler
+document.getElementById('settings-wifi-security')?.addEventListener('change', (e) => {
+    const securityType = e.target.value;
+    const transitionCheckbox = document.getElementById('settings-wifi-transition');
+
+    // Show/hide transition mode (only for WPA3-Personal)
+    if (transitionCheckbox) {
+        if (securityType === 'WPA3_Personal') {
+            transitionCheckbox.closest('.form-label').style.display = 'block';
+        } else {
+            transitionCheckbox.closest('.form-label').style.display = 'none';
+        }
     }
 });
 
@@ -380,7 +504,8 @@ document.getElementById('os-add-user')?.addEventListener('click', () => {
     userCounter++;
 });
 
-document.getElementById('install-os')?.addEventListener('click', async () => {
+// Use the visible button for click handler, submit button is hidden for accessibility
+(document.getElementById('install-os-button') || document.getElementById('install-os'))?.addEventListener('click', async () => {
     const deviceId = document.getElementById('os-sdcard-select').value;
     if (!deviceId) {
         alert('Please select an SD card');
@@ -420,6 +545,11 @@ document.getElementById('install-os')?.addEventListener('click', async () => {
                 wifi_ssid: document.getElementById('os-wifi-ssid')?.value || '',
                 wifi_password: document.getElementById('os-wifi-password')?.value || '',
                 wifi_country: document.getElementById('os-wifi-country')?.value || 'US',
+                wifi_security_type: document.getElementById('os-wifi-security')?.value || 'WPA3_Personal',
+                wifi_transition_mode: document.getElementById('os-wifi-transition')?.checked ?? true,
+                wifi_eap_method: document.getElementById('os-wifi-eap-method')?.value || '',
+                wifi_ca_cert: document.getElementById('os-wifi-ca-cert')?.value || '',
+                wifi_client_cert: document.getElementById('os-wifi-client-cert')?.value || '',
                 use_static_ip: document.getElementById('os-use-static-ip')?.checked ?? false,
                 static_ip: document.getElementById('os-static-ip')?.value || '',
                 gateway: document.getElementById('os-gateway')?.value || '',
@@ -525,8 +655,11 @@ document.getElementById('apply-settings')?.addEventListener('click', async () =>
         network: {
             hostname: document.getElementById('settings-hostname').value,
             wifi_enable: document.getElementById('settings-wifi-enable').checked,
-            wifi_ssid: document.getElementById('settings-wifi-ssid').value,
-            wifi_password: document.getElementById('settings-wifi-password').value
+            wifi_ssid: document.getElementById('settings-wifi-ssid')?.value || '',
+            wifi_password: document.getElementById('settings-wifi-password')?.value || '',
+            wifi_security_type: document.getElementById('settings-wifi-security')?.value || 'WPA3_Personal',
+            wifi_transition_mode: document.getElementById('settings-wifi-transition')?.checked ?? true,
+            enable_pmf: true  // Protected Management Frames
         }
     };
 
