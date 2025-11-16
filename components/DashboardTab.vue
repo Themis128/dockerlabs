@@ -138,6 +138,7 @@ const loadDashboard = async () => {
     // Check for backend connection errors
     if (!networkScanResponse.success) {
       const errorMsg = networkScanResponse.error || 'Failed to scan network'
+      // 503 = Service Unavailable (backend not running)
       if (errorMsg.includes('Cannot connect') || errorMsg.includes('Service Unavailable') || errorMsg.includes('503')) {
         status.value = 'Error - Python backend not running. Start with: npm run start:server'
         devices.value = []
@@ -148,6 +149,21 @@ const loadDashboard = async () => {
         wifiCount.value = 0
         lastUpdateTime.value = new Date().toLocaleTimeString()
         return
+      }
+      // 500 = Internal Server Error (backend running but error occurred)
+      // Network scan can fail due to permissions or network issues, but we can continue with configured Pis
+      if (errorMsg.includes('500') || errorMsg.includes('Internal Server Error')) {
+        status.value = `Warning - Network scan failed: ${errorMsg}. Showing configured devices only.`
+        if (process.dev) {
+          console.warn('[DashboardTab] Network scan failed, continuing with configured Pis only:', errorMsg)
+        }
+        // Continue with partial data - we'll still show configured Pis
+      } else {
+        // Other errors - log but continue
+        status.value = `Warning - Network scan unavailable: ${errorMsg}. Showing configured devices only.`
+        if (process.dev) {
+          console.warn('[DashboardTab] Network scan error:', errorMsg)
+        }
       }
     }
 

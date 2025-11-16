@@ -53,28 +53,37 @@ export const useApi = () => {
         console.error(`[API GET Error] ${endpoint}:`, error);
 
         // Extract more detailed error information
+        // Prefer error message from Python backend (error.data.error) over generic fetch errors
         let errorMessage = 'Request failed';
-        if (error.message) {
-          errorMessage = error.message;
-        } else if (error.data?.error) {
+        if (error.data?.error) {
+          // Python backend returned an error message - use it
           errorMessage = error.data.error;
         } else if (error.data?.message) {
           errorMessage = error.data.message;
+        } else if (error.message) {
+          errorMessage = error.message;
         } else if (error.statusMessage) {
           errorMessage = error.statusMessage;
         }
 
-        // Add more context for common errors
-        if (
-          errorMessage.includes('fetch') ||
-          errorMessage.includes('network') ||
-          errorMessage.includes('ECONNREFUSED')
+        // Handle rate limit errors (429) - provide user-friendly message
+        if (error.statusCode === 429) {
+          const retryAfter = error.data?.retry_after || 60;
+          errorMessage = error.data?.error || `Rate limit exceeded. Please wait ${retryAfter} seconds before retrying.`;
+        } else if (
+          (errorMessage.includes('fetch') ||
+            errorMessage.includes('network') ||
+            errorMessage.includes('ECONNREFUSED')) &&
+          !error.data?.error
         ) {
+          // Only override if we don't have a backend error message
           errorMessage = 'Cannot connect to backend server. Start it with: npm run start:server';
-        } else if (error.statusCode === 504 || errorMessage.includes('timeout')) {
+        } else if ((error.statusCode === 504 || errorMessage.includes('timeout')) && !error.data?.error) {
+          // Only override if we don't have a backend error message
           errorMessage =
             'Backend server timeout. The Python server may be slow to respond or not running.';
-        } else if (error.statusCode === 500) {
+        } else if (error.statusCode === 500 && !error.data?.error) {
+          // Only override if we don't have a backend error message
           errorMessage = 'Backend server error. Check the Python server logs for details.';
         }
 
@@ -132,28 +141,37 @@ export const useApi = () => {
         console.error(`[API POST Error] ${endpoint}:`, error);
 
         // Extract more detailed error information
+        // Prefer error message from Python backend (error.data.error) over generic fetch errors
         let errorMessage = 'Request failed';
-        if (error.message) {
-          errorMessage = error.message;
-        } else if (error.data?.error) {
+        if (error.data?.error) {
+          // Python backend returned an error message - use it
           errorMessage = error.data.error;
         } else if (error.data?.message) {
           errorMessage = error.data.message;
+        } else if (error.message) {
+          errorMessage = error.message;
         } else if (error.statusMessage) {
           errorMessage = error.statusMessage;
         }
 
-        // Add more context for common errors
-        if (
-          errorMessage.includes('fetch') ||
-          errorMessage.includes('network') ||
-          errorMessage.includes('ECONNREFUSED')
+        // Handle rate limit errors (429) - provide user-friendly message
+        if (error.statusCode === 429) {
+          const retryAfter = error.data?.retry_after || 60;
+          errorMessage = error.data?.error || `Rate limit exceeded. Please wait ${retryAfter} seconds before retrying.`;
+        } else if (
+          (errorMessage.includes('fetch') ||
+            errorMessage.includes('network') ||
+            errorMessage.includes('ECONNREFUSED')) &&
+          !error.data?.error
         ) {
+          // Only override if we don't have a backend error message
           errorMessage = 'Cannot connect to backend server. Start it with: npm run start:server';
-        } else if (error.statusCode === 504 || errorMessage.includes('timeout')) {
+        } else if ((error.statusCode === 504 || errorMessage.includes('timeout')) && !error.data?.error) {
+          // Only override if we don't have a backend error message
           errorMessage =
             'Backend server timeout. The Python server may be slow to respond or not running.';
-        } else if (error.statusCode === 500) {
+        } else if (error.statusCode === 500 && !error.data?.error) {
+          // Only override if we don't have a backend error message
           errorMessage = 'Backend server error. Check the Python server logs for details.';
         }
 

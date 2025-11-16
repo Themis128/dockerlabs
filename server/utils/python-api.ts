@@ -98,17 +98,33 @@ export async function callPythonApi(event: H3Event, options: PythonApiOptions): 
     // Suppress only pure connection errors (ECONNREFUSED, ENOTFOUND) without HTTP status
     // These are expected during startup if Python server isn't fully ready
     // Also suppress timeouts during initial startup (first 30 seconds) as they're likely due to hot reload
+    // Suppress 429 (rate limit) errors - they're expected when multiple components load simultaneously
+    const isRateLimitError = httpStatusCode === 429;
     const isPureConnectionError = isConnectionError && !hasServerResponse && !isTimeout;
     const timeSinceStartup = Date.now() - serverStartTime;
     const isStartupTimeout = isTimeout && process.dev && timeSinceStartup < STARTUP_GRACE_PERIOD;
-    const shouldLog = process.dev && !isPureConnectionError && !isStartupTimeout;
+
+    // Network scan errors (500s) are often due to permissions or network issues - treat as warnings
+    const isNetworkScanError = options.endpoint === '/api/scan-network' && httpStatusCode === 500;
+
+    // Rate limit repeated errors from the same endpoint to avoid spam
+    const errorKey = `api_error_${options.endpoint}_${httpStatusCode || 'unknown'}`;
+    const lastErrorLogTime = (globalThis as any)[errorKey] || 0;
+    const now = Date.now();
+    const timeSinceLastError = now - lastErrorLogTime;
+    const shouldRateLimitError = timeSinceLastError < 60000; // 1 minute cooldown per endpoint/status
+
+    const shouldLog = process.dev && !isPureConnectionError && !isStartupTimeout && !isRateLimitError && !shouldRateLimitError;
 
     if (shouldLog) {
-      // Use warning level for timeouts, error for other issues
-      const logLevel = isTimeout ? 'warn' : 'error';
+      // Use warning level for timeouts, network scan errors, and rate limits
+      // Use error level for other unexpected issues
+      const logLevel = isTimeout || isNetworkScanError ? 'warn' : 'error';
       const logMethod = logLevel === 'warn' ? console.warn : console.error;
 
-      logMethod(`[Python API] ${isTimeout ? 'Timeout' : 'Error'} calling Python backend:`, {
+      const errorType = isTimeout ? 'Timeout' : isNetworkScanError ? 'Network scan error (expected)' : 'Error';
+
+      logMethod(`[Python API] ${errorType} calling Python backend:`, {
         url,
         method: options.method || 'GET',
         error: errorMessage,
@@ -120,6 +136,21 @@ export async function callPythonApi(event: H3Event, options: PythonApiOptions): 
         hasServerResponse,
         hasResponseData: !!responseData,
       });
+
+      // Track when we last logged this error
+      (globalThis as any)[errorKey] = now;
+    } else if (isRateLimitError && process.dev) {
+      // Log rate limit errors at debug level only (very rarely, to avoid spam)
+      // Only log once per endpoint per minute to reduce noise
+      const rateLimitKey = `rate_limit_${options.endpoint}`;
+      const lastLogTime = (globalThis as any)[rateLimitKey] || 0;
+      if (now - lastLogTime > 60000) {
+        // Log once per minute per endpoint
+        console.warn(
+          `[Python API] Rate limit hit for ${options.endpoint}. Requests will be retried automatically.`
+        );
+        (globalThis as any)[rateLimitKey] = now;
+      }
     }
 
     // Handle connection errors (server not running) - these don't have HTTP status codes
@@ -157,6 +188,15 @@ export async function callPythonApi(event: H3Event, options: PythonApiOptions): 
         success: false,
         error: errorMessage || 'Python server returned an error',
       };
+
+      // For rate limit errors, include retry_after information
+      if (httpStatusCode === 429) {
+        const retryAfter = errorData.retry_after || error.response?.headers?.['retry-after'] || 60;
+        errorData.retry_after = retryAfter;
+        errorData.rate_limited = true;
+        // Use a more user-friendly error message
+        errorData.error = errorData.error || `Rate limit exceeded. Please wait ${retryAfter} seconds before retrying.`;
+      }
 
       throw createError({
         statusCode: httpStatusCode,

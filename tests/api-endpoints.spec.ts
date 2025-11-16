@@ -43,8 +43,8 @@ test.describe('API Endpoints - GET Requests', () => {
       retries: 0, // No retries for faster failure
     });
 
-    // Accept 200, 500 (server error), or service unavailable (503/504) if servers aren't running
-    expect([200, 500, 503, 504]).toContain(result.status);
+    // Accept 200, 429 (rate limiting), 500 (server error), or service unavailable (503/504) if servers aren't running
+    expect([200, 429, 500, 503, 504]).toContain(result.status);
 
     // Only check content-type for successful responses
     if (result.status === 200) {
@@ -69,8 +69,8 @@ test.describe('API Endpoints - GET Requests', () => {
       retries: 0,
     });
 
-    // Should return 200, 400, 404, 500, or 504 (timeout) (depending on Pi availability)
-    expect([200, 400, 404, 500, 503, 504]).toContain(result.status);
+    // Should return 200, 400, 404, 429 (rate limiting), 500, or 504 (timeout) (depending on Pi availability)
+    expect([200, 400, 404, 429, 500, 503, 504]).toContain(result.status);
     expect(result.data).toBeDefined();
     expect(typeof result.data === 'object').toBeTruthy();
   });
@@ -82,8 +82,8 @@ test.describe('API Endpoints - GET Requests', () => {
       retries: 0,
     });
 
-    // Should return a response (may be success or error depending on Pi availability)
-    expect([200, 400, 404, 500, 503, 504]).toContain(result.status);
+    // Should return a response (may be success or error depending on Pi availability, including rate limiting)
+    expect([200, 400, 404, 429, 500, 503, 504]).toContain(result.status);
     expect(result.data).toBeDefined();
     expect(typeof result.data === 'object').toBeTruthy();
   });
@@ -95,8 +95,8 @@ test.describe('API Endpoints - GET Requests', () => {
       retries: 0,
     });
 
-    // Should return a response (may be success or error depending on Pi availability)
-    expect([200, 400, 404, 500, 503, 504]).toContain(result.status);
+    // Should return a response (may be success or error depending on Pi availability, including rate limiting)
+    expect([200, 400, 404, 429, 500, 503, 504]).toContain(result.status);
     expect(result.data).toBeDefined();
     expect(typeof result.data === 'object').toBeTruthy();
   });
@@ -144,8 +144,8 @@ test.describe('API Endpoints - GET Requests', () => {
       retries: 0,
     });
 
-    // Should return a response (may be success or error)
-    expect([200, 400, 404, 500, 503, 504]).toContain(result.status);
+    // Should return a response (may be success or error, including rate limiting)
+    expect([200, 400, 404, 429, 500, 503, 504]).toContain(result.status);
     expect(result.data).toBeDefined();
     expect(typeof result.data === 'object').toBeTruthy();
   });
@@ -208,8 +208,8 @@ test.describe('API Endpoints - POST Requests', () => {
       headers: {},
     }));
 
-    // Should return a response (may be success or error depending on Pi availability)
-    expect([200, 400, 401, 404, 500, 503, 504]).toContain(result.status);
+    // Should return a response (may be success or error depending on Pi availability, including rate limiting)
+    expect([200, 400, 401, 404, 429, 500, 503, 504]).toContain(result.status);
     expect(result.data).toBeDefined();
     expect(typeof result.data === 'object').toBeTruthy();
   });
@@ -226,8 +226,8 @@ test.describe('API Endpoints - POST Requests', () => {
       retries: 0,
     });
 
-    // Should return a response (may be success or error depending on device availability)
-    expect([200, 400, 404, 500, 503, 504]).toContain(result.status);
+    // Should return a response (may be success or error depending on device availability, including rate limiting)
+    expect([200, 400, 404, 429, 500, 503, 504]).toContain(result.status);
     expect(result.data).toBeDefined();
     expect(typeof result.data === 'object').toBeTruthy();
   });
@@ -267,8 +267,8 @@ test.describe('API Endpoints - POST Requests', () => {
       headers: {},
     }));
 
-    // Should return a response (may be success or error depending on Pi availability)
-    expect([200, 400, 404, 500, 503, 504]).toContain(result.status);
+    // Should return a response (may be success or error depending on Pi availability, including rate limiting)
+    expect([200, 400, 404, 429, 500, 503, 504]).toContain(result.status);
     expect(result.data).toBeDefined();
     expect(typeof result.data === 'object').toBeTruthy();
   });
@@ -281,8 +281,8 @@ test.describe('API Endpoints - POST Requests', () => {
       retries: 0,
     });
 
-    // Should return a response (may be success or error)
-    expect([200, 400, 404, 500, 503, 504]).toContain(result.status);
+    // Should return a response (may be success or error, including rate limiting)
+    expect([200, 400, 404, 429, 500, 503, 504]).toContain(result.status);
     expect(result.data).toBeDefined();
     expect(typeof result.data === 'object').toBeTruthy();
   });
@@ -421,8 +421,8 @@ test.describe('API Endpoints - Error Handling', () => {
       retries: 0,
     });
 
-    // Should return error status (400, 404, 500, 503, or 504)
-    expect([400, 404, 500, 503, 504]).toContain(result.status);
+    // Should return error status (400, 404, 429 rate limiting, 500, 503, or 504)
+    expect([400, 404, 429, 500, 503, 504]).toContain(result.status);
     expect(result.data).toBeDefined();
   });
 
@@ -526,8 +526,8 @@ test.describe('API Endpoints - Direct Python Backend Access', () => {
   test('GET /api/pis should return list from Python backend', async ({ request }) => {
     const result = await pythonApiRequest(request, '/pis');
 
-    // Accept 200 or connection errors if Python server isn't running
-    expect([200, 500, 503, 504]).toContain(result.status);
+    // Accept 200, rate limiting (429), or connection errors if Python server isn't running
+    expect([200, 429, 500, 503, 504]).toContain(result.status);
 
     // Content-type check only if we got a successful response
     if (result.status === 200) {
@@ -542,8 +542,8 @@ test.describe('API Endpoints - Direct Python Backend Access', () => {
   test('GET /api/test-connections should work from Python backend', async ({ request }) => {
     const result = await pythonApiRequest(request, '/test-connections');
 
-    // Accept various status codes including connection errors
-    expect([200, 400, 404, 500, 503, 504]).toContain(result.status);
+    // Accept various status codes including connection errors and rate limiting
+    expect([200, 400, 404, 429, 500, 503, 504]).toContain(result.status);
     expect(result.data).toBeDefined();
     expect(typeof result.data === 'object').toBeTruthy();
   });
@@ -551,8 +551,8 @@ test.describe('API Endpoints - Direct Python Backend Access', () => {
   test('GET /api/sdcards should return list from Python backend', async ({ request }) => {
     const result = await pythonApiRequest(request, '/sdcards');
 
-    // Accept 200 or connection errors if Python server isn't running
-    expect([200, 500, 503, 504]).toContain(result.status);
+    // Accept 200, rate limiting (429), or connection errors if Python server isn't running
+    expect([200, 429, 500, 503, 504]).toContain(result.status);
 
     // Content-type check only if we got a successful response
     if (result.status === 200) {
@@ -574,8 +574,8 @@ test.describe('API Endpoints - Direct Python Backend Access', () => {
       },
     });
 
-    // Accept various status codes including connection errors
-    expect([200, 400, 404, 500, 503, 504]).toContain(result.status);
+    // Accept various status codes including connection errors and rate limiting
+    expect([200, 400, 404, 429, 500, 503, 504]).toContain(result.status);
     expect(result.data).toBeDefined();
     expect(typeof result.data === 'object').toBeTruthy();
   });
@@ -595,7 +595,7 @@ test.describe('API Endpoints - Direct Python Backend Access', () => {
       headers: {},
     }));
 
-    expect([200, 400, 401, 404, 500, 503, 504]).toContain(result.status);
+    expect([200, 400, 401, 404, 429, 500, 503, 504]).toContain(result.status);
     expect(result.data).toBeDefined();
     expect(typeof result.data === 'object').toBeTruthy();
   });
@@ -615,7 +615,7 @@ test.describe('API Endpoints - Direct Python Backend Access', () => {
       headers: {},
     }));
 
-    expect([200, 400, 401, 404, 500, 503, 504]).toContain(result.status);
+    expect([200, 400, 401, 404, 429, 500, 503, 504]).toContain(result.status);
     expect(result.data).toBeDefined();
     expect(typeof result.data === 'object').toBeTruthy();
   });
@@ -630,8 +630,8 @@ test.describe('API Endpoints - Direct Python Backend Access', () => {
       },
     });
 
-    // Accept various status codes including connection errors
-    expect([200, 400, 404, 500, 503, 504]).toContain(result.status);
+    // Accept various status codes including rate limiting (429) and connection errors
+    expect([200, 400, 404, 429, 500, 503, 504]).toContain(result.status);
     expect(result.data).toBeDefined();
     expect(typeof result.data === 'object').toBeTruthy();
   });
@@ -652,7 +652,7 @@ test.describe('API Endpoints - Direct Python Backend Access', () => {
       headers: {},
     }));
 
-    expect([200, 400, 404, 500, 503, 504]).toContain(result.status);
+    expect([200, 400, 404, 429, 500, 503, 504]).toContain(result.status);
     expect(result.data).toBeDefined();
     expect(typeof result.data === 'object').toBeTruthy();
   });
