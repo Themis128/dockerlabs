@@ -23,7 +23,12 @@ def test_ping(ip, count=2):
             timeout=10
         )
         return result.returncode == 0
-    except:
+    except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as e:
+        # Network/system errors are expected in connectivity tests
+        return False
+    except Exception as e:
+        # Log unexpected errors but don't crash
+        print(f"Warning: Unexpected error in ping test: {e}", file=sys.stderr)
         return False
 
 def test_port(ip, port, timeout=2):
@@ -34,7 +39,12 @@ def test_port(ip, port, timeout=2):
         result = sock.connect_ex((ip, port))
         sock.close()
         return result == 0
-    except:
+    except (socket.error, OSError, ValueError) as e:
+        # Network/socket errors are expected in port tests
+        return False
+    except Exception as e:
+        # Log unexpected errors but don't crash
+        print(f"Warning: Unexpected error in port test: {e}", file=sys.stderr)
         return False
 
 def test_pi(pi_name, ip, connection_type):

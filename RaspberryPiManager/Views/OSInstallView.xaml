@@ -12,6 +12,7 @@
         <StackLayout Padding="20" Spacing="15">
             <Label Text="Select SD Card" FontSize="18" FontAttributes="Bold" />
             <Picker SelectedItem="{Binding SelectedSDCard}"
+                    ItemsSource="{Binding SdCards}"
                     ItemDisplayBinding="{Binding Label}" />
 
             <Label Text="Select OS Image" FontSize="18" FontAttributes="Bold" />

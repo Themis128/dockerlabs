@@ -9,29 +9,28 @@ jobs:
   build-windows:
     name: Build Windows Release
     runs-on: windows-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '9.0.x'
-    
+
     - name: Install .NET MAUI workload
       run: dotnet workload install maui
-    
+
     - name: Restore dependencies
       run: dotnet restore RaspberryPiManager/RaspberryPiManager.csproj
-    
+
     - name: Build Release
       run: dotnet build RaspberryPiManager/RaspberryPiManager.csproj -f net9.0-windows10.0.19041.0 -c Release -p:PublishSingleFile=true --no-restore
-    
+
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
         name: windows-release
         path: RaspberryPiManager/bin/Release/net9.0-windows10.0.19041.0/
         retention-days: 30
-

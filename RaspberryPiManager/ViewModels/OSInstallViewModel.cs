@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using RaspberryPiManager.Models;
 using RaspberryPiManager.Services;
+using System.Collections.ObjectModel;
 
 namespace RaspberryPiManager.ViewModels;
 
@@ -13,29 +14,68 @@ public partial class OSInstallViewModel : ObservableObject
     private readonly ISettingsService _settingsService;
     private readonly ISDCardService _sdCardService;
 
-    [ObservableProperty]
-    private List<OSImage> availableImages = new();
+    private List<OSImage> _availableImages = new();
+    public List<OSImage> AvailableImages
+    {
+        get => _availableImages;
+        set => SetProperty(ref _availableImages, value);
+    }
 
-    [ObservableProperty]
-    private OSImage? selectedImage;
+    private OSImage? _selectedImage;
+    public OSImage? SelectedImage
+    {
+        get => _selectedImage;
+        set => SetProperty(ref _selectedImage, value);
+    }
 
-    [ObservableProperty]
-    private SDCardInfo? selectedSDCard;
+    private ObservableCollection<SDCardInfo> _sdCards = new();
+    public ObservableCollection<SDCardInfo> SdCards
+    {
+        get => _sdCards;
+        set => SetProperty(ref _sdCards, value);
+    }
 
-    [ObservableProperty]
-    private string? customImagePath;
+    private SDCardInfo? _selectedSDCard;
+    public SDCardInfo? SelectedSDCard
+    {
+        get => _selectedSDCard;
+        set => SetProperty(ref _selectedSDCard, value);
+    }
 
-    [ObservableProperty]
-    private double installProgress;
+    private string? _customImagePath;
+    public string? CustomImagePath
+    {
+        get => _customImagePath;
+        set => SetProperty(ref _customImagePath, value);
+    }
 
-    [ObservableProperty]
-    private bool isInstalling;
+    private double _installProgress;
+    public double InstallProgress
+    {
+        get => _installProgress;
+        set => SetProperty(ref _installProgress, value);
+    }
 
-    [ObservableProperty]
-    private string statusMessage = string.Empty;
+    private bool _isInstalling;
+    public bool IsInstalling
+    {
+        get => _isInstalling;
+        set => SetProperty(ref _isInstalling, value);
+    }
 
-    [ObservableProperty]
-    private PiSettings? settingsToApply;
+    private string _statusMessage = string.Empty;
+    public string StatusMessage
+    {
+        get => _statusMessage;
+        set => SetProperty(ref _statusMessage, value);
+    }
+
+    private PiSettings? _settingsToApply;
+    public PiSettings? SettingsToApply
+    {
+        get => _settingsToApply;
+        set => SetProperty(ref _settingsToApply, value);
+    }
 
     public bool CanInstall => !IsInstalling && SelectedSDCard != null && (SelectedImage != null || !string.IsNullOrEmpty(CustomImagePath));
 
@@ -52,6 +92,7 @@ public partial class OSInstallViewModel : ObservableObject
         _settingsService = settingsService;
         _sdCardService = sdCardService;
         LoadAvailableImagesCommand.Execute(null);
+        LoadSDCardsCommand.Execute(null);
     }
 
     [RelayCommand]
@@ -64,6 +105,19 @@ public partial class OSInstallViewModel : ObservableObject
         catch (Exception ex)
         {
             StatusMessage = $"Error loading images: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task LoadSDCards()
+    {
+        try
+        {
+            SdCards = await _sdCardService.GetSDCardsAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error loading SD cards: {ex.Message}";
         }
     }
 

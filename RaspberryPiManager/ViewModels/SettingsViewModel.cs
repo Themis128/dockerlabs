@@ -10,14 +10,26 @@ public partial class SettingsViewModel : ObservableObject
     private readonly ISettingsService _settingsService;
     private readonly IProfileService _profileService;
 
-    [ObservableProperty]
-    private PiSettings currentSettings = new();
+    private PiSettings _currentSettings = new();
+    public PiSettings CurrentSettings
+    {
+        get => _currentSettings;
+        set => SetProperty(ref _currentSettings, value);
+    }
 
-    [ObservableProperty]
-    private SDCardInfo? selectedSDCard;
+    private SDCardInfo? _selectedSDCard;
+    public SDCardInfo? SelectedSDCard
+    {
+        get => _selectedSDCard;
+        set => SetProperty(ref _selectedSDCard, value);
+    }
 
-    [ObservableProperty]
-    private string statusMessage = string.Empty;
+    private string _statusMessage = string.Empty;
+    public string StatusMessage
+    {
+        get => _statusMessage;
+        set => SetProperty(ref _statusMessage, value);
+    }
 
     public SettingsViewModel(ISettingsService settingsService, IProfileService profileService)
     {

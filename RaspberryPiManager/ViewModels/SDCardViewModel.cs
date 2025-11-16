@@ -10,17 +10,33 @@ public partial class SDCardViewModel : ObservableObject
 {
     private readonly ISDCardService _sdCardService;
 
-    [ObservableProperty]
-    private ObservableCollection<SDCardInfo> sdCards = new();
+    private ObservableCollection<SDCardInfo> _sdCards = new();
+    public ObservableCollection<SDCardInfo> SdCards
+    {
+        get => _sdCards;
+        set => SetProperty(ref _sdCards, value);
+    }
 
-    [ObservableProperty]
-    private SDCardInfo? selectedSDCard;
+    private SDCardInfo? _selectedSDCard;
+    public SDCardInfo? SelectedSDCard
+    {
+        get => _selectedSDCard;
+        set => SetProperty(ref _selectedSDCard, value);
+    }
 
-    [ObservableProperty]
-    private bool isRefreshing;
+    private bool _isRefreshing;
+    public bool IsRefreshing
+    {
+        get => _isRefreshing;
+        set => SetProperty(ref _isRefreshing, value);
+    }
 
-    [ObservableProperty]
-    private string statusMessage = string.Empty;
+    private string _statusMessage = string.Empty;
+    public string StatusMessage
+    {
+        get => _statusMessage;
+        set => SetProperty(ref _statusMessage, value);
+    }
 
     public SDCardViewModel(ISDCardService sdCardService)
     {

@@ -10,23 +10,47 @@ public partial class ProfileViewModel : ObservableObject
     private readonly IProfileService _profileService;
     private readonly ISettingsService _settingsService;
 
-    [ObservableProperty]
-    private List<SettingsProfile> profiles = new();
+    private List<SettingsProfile> _profiles = new();
+    public List<SettingsProfile> Profiles
+    {
+        get => _profiles;
+        set => SetProperty(ref _profiles, value);
+    }
 
-    [ObservableProperty]
-    private SettingsProfile? selectedProfile;
+    private SettingsProfile? _selectedProfile;
+    public SettingsProfile? SelectedProfile
+    {
+        get => _selectedProfile;
+        set => SetProperty(ref _selectedProfile, value);
+    }
 
-    [ObservableProperty]
-    private List<ProfileTemplate> templates = new();
+    private List<ProfileTemplate> _templates = new();
+    public List<ProfileTemplate> Templates
+    {
+        get => _templates;
+        set => SetProperty(ref _templates, value);
+    }
 
-    [ObservableProperty]
-    private string statusMessage = string.Empty;
+    private string _statusMessage = string.Empty;
+    public string StatusMessage
+    {
+        get => _statusMessage;
+        set => SetProperty(ref _statusMessage, value);
+    }
 
-    [ObservableProperty]
-    private string newProfileName = string.Empty;
+    private string _newProfileName = string.Empty;
+    public string NewProfileName
+    {
+        get => _newProfileName;
+        set => SetProperty(ref _newProfileName, value);
+    }
 
-    [ObservableProperty]
-    private string newProfileDescription = string.Empty;
+    private string _newProfileDescription = string.Empty;
+    public string NewProfileDescription
+    {
+        get => _newProfileDescription;
+        set => SetProperty(ref _newProfileDescription, value);
+    }
 
     public ProfileViewModel(IProfileService profileService, ISettingsService settingsService)
     {

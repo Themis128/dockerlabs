@@ -11,32 +11,68 @@ public partial class BackupRestoreViewModel : ObservableObject
     private readonly IRestoreService _restoreService;
     private readonly ISDCardService _sdCardService;
 
-    [ObservableProperty]
-    private List<BackupProfile> backups = new();
+    private List<BackupProfile> _backups = new();
+    public List<BackupProfile> Backups
+    {
+        get => _backups;
+        set => SetProperty(ref _backups, value);
+    }
 
-    [ObservableProperty]
-    private BackupProfile? selectedBackup;
+    private BackupProfile? _selectedBackup;
+    public BackupProfile? SelectedBackup
+    {
+        get => _selectedBackup;
+        set => SetProperty(ref _selectedBackup, value);
+    }
 
-    [ObservableProperty]
-    private SDCardInfo? selectedSDCard;
+    private SDCardInfo? _selectedSDCard;
+    public SDCardInfo? SelectedSDCard
+    {
+        get => _selectedSDCard;
+        set => SetProperty(ref _selectedSDCard, value);
+    }
 
-    [ObservableProperty]
-    private double backupProgress;
+    private double _backupProgress;
+    public double BackupProgress
+    {
+        get => _backupProgress;
+        set => SetProperty(ref _backupProgress, value);
+    }
 
-    [ObservableProperty]
-    private double restoreProgress;
+    private double _restoreProgress;
+    public double RestoreProgress
+    {
+        get => _restoreProgress;
+        set => SetProperty(ref _restoreProgress, value);
+    }
 
-    [ObservableProperty]
-    private bool isBackingUp;
+    private bool _isBackingUp;
+    public bool IsBackingUp
+    {
+        get => _isBackingUp;
+        set => SetProperty(ref _isBackingUp, value);
+    }
 
-    [ObservableProperty]
-    private bool isRestoring;
+    private bool _isRestoring;
+    public bool IsRestoring
+    {
+        get => _isRestoring;
+        set => SetProperty(ref _isRestoring, value);
+    }
 
-    [ObservableProperty]
-    private string statusMessage = string.Empty;
+    private string _statusMessage = string.Empty;
+    public string StatusMessage
+    {
+        get => _statusMessage;
+        set => SetProperty(ref _statusMessage, value);
+    }
 
-    [ObservableProperty]
-    private RestoreOptions restoreOptions = new();
+    private RestoreOptions _restoreOptions = new();
+    public RestoreOptions RestoreOptions
+    {
+        get => _restoreOptions;
+        set => SetProperty(ref _restoreOptions, value);
+    }
 
     public BackupRestoreViewModel(
         IBackupService backupService,

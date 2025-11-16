@@ -38,7 +38,11 @@ public class ImageValidator : IImageValidator
                 // Basic validation - check file header
                 using var fs = File.OpenRead(imagePath);
                 var buffer = new byte[512];
-                fs.Read(buffer, 0, 512);
+                var bytesRead = fs.Read(buffer, 0, 512);
+                if (bytesRead < 512)
+                {
+                    return false;
+                }
 
                 // Check for common disk image signatures
                 // This is simplified - real validation would check partition tables, etc.

@@ -10,36 +10,36 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
         node-version: [20.x]
         python-version: ['3.11']
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Set up Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
-    
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-    
+
     - name: Install dependencies
       run: npm ci
-    
+
     - name: Install Playwright browsers
       run: npx playwright install --with-deps
-    
+
     - name: Run Playwright tests
       run: npm test
-    
+
     - name: Upload test results
       if: always()
       uses: actions/upload-artifact@v4
@@ -51,47 +51,46 @@ jobs:
   build-dotnet:
     name: Build .NET MAUI
     runs-on: windows-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '9.0.x'
-    
+
     - name: Install .NET MAUI workload
       run: dotnet workload install maui
-    
+
     - name: Restore dependencies
       run: dotnet restore RaspberryPiManager/RaspberryPiManager.csproj
-    
+
     - name: Build Windows
       run: dotnet build RaspberryPiManager/RaspberryPiManager.csproj -f net9.0-windows10.0.19041.0 -c Release --no-restore
 
   lint:
     name: Lint Code
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
         cache: 'npm'
-    
+
     - name: Install dependencies
       run: npm ci
-    
+
     - name: Check TypeScript
       run: npx tsc --noEmit --skipLibCheck || true
-    
+
     - name: Check Python syntax
       run: |
         python -m py_compile web-gui/server.py || true
         find . -name "*.py" -not -path "./node_modules/*" -not -path "./.git/*" -exec python -m py_compile {} \; || true
-
