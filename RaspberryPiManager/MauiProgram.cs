@@ -21,8 +21,28 @@ public static class MauiProgram
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
             });
 
+        // Configure verbose logging for debugging
+        builder.Logging.ClearProviders();
+
 #if DEBUG
+        // Add console logging for verbose output
+        builder.Logging.AddConsole(options =>
+        {
+            options.FormatterName = "simple";
+        });
         builder.Logging.AddDebug();
+
+        // Set minimum log level to Trace for maximum verbosity
+        builder.Logging.SetMinimumLevel(LogLevel.Trace);
+
+        // Configure specific categories for verbose logging
+        builder.Logging.AddFilter("Microsoft", LogLevel.Warning);
+        builder.Logging.AddFilter("System", LogLevel.Warning);
+        builder.Logging.AddFilter("RaspberryPiManager", LogLevel.Trace);
+        builder.Logging.AddFilter("Microsoft.Maui", LogLevel.Information);
+#else
+        builder.Logging.SetMinimumLevel(LogLevel.Information);
+        builder.Logging.AddConsole();
 #endif
 
         // Register Utilities first

@@ -16,7 +16,7 @@
 
         <CollectionView Grid.Row="1" ItemsSource="{Binding SdCards}">
             <CollectionView.ItemTemplate>
-                <DataTemplate>
+                <DataTemplate x:DataType="models:SDCardInfo" x:CompileBindings="False">
                     <Grid Padding="10" RowDefinitions="Auto,Auto,Auto,Auto">
                         <Label Grid.Row="0" Text="{Binding Label}" FontSize="18" FontAttributes="Bold" />
                         <Label Grid.Row="1" Text="{Binding DeviceId}" FontSize="14" />

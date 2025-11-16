@@ -8,7 +8,11 @@
     "test:headed": "playwright test --headed",
     "test:debug": "playwright test --debug",
     "test:gui": "playwright test tests/gui.spec.ts",
-    "start:server": "python web-gui/server.py"
+    "start:server": "python web-gui/server.py",
+    "cd:project": "powershell -ExecutionPolicy Bypass -File ./cd-project.ps1",
+    "cd:maui": "powershell -ExecutionPolicy Bypass -File ./cd-maui.ps1",
+    "maui:dev": "powershell -ExecutionPolicy Bypass -File ./run-maui-dev.ps1",
+    "maui:build": "powershell -ExecutionPolicy Bypass -File ./build-maui.ps1"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1"
