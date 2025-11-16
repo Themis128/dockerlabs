@@ -4,7 +4,7 @@
  */
 
 import { getHeader, setHeader, createError } from 'h3'
-import { callPythonApi } from '../utils/python-api'
+import { callPythonApi, API_TIMEOUTS } from '../utils/python-api'
 
 export default defineEventHandler(async (event) => {
   // Handle CORS preflight
@@ -22,6 +22,7 @@ export default defineEventHandler(async (event) => {
     const response = await callPythonApi(event, {
       endpoint: '/api/sdcards',
       method: 'GET',
+      timeout: API_TIMEOUTS.SIMPLE_READ, // Simple read operation should be fast
     })
 
     // Set CORS headers if Origin is present

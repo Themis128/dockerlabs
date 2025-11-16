@@ -28,6 +28,7 @@ export default defineEventHandler(async (event) => {
   throw createError({
     statusCode: 404,
     statusMessage: 'Not Found',
+    message: 'API endpoint not found',
     data: { success: false, error: 'API endpoint not found' },
   })
 })

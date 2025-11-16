@@ -4,7 +4,7 @@
  */
 
 import { getHeader, setHeader, createError } from 'h3'
-import { callPythonApi } from '../utils/python-api'
+import { callPythonApi, API_TIMEOUTS } from '../utils/python-api'
 
 export default defineEventHandler(async (event) => {
   // Handle CORS preflight
@@ -22,6 +22,7 @@ export default defineEventHandler(async (event) => {
     const response = await callPythonApi(event, {
       endpoint: '/api/pis',
       method: 'GET',
+      timeout: API_TIMEOUTS.SIMPLE_READ, // Simple read operation should be fast
     })
 
     // Set CORS headers if Origin is present
@@ -67,8 +68,10 @@ export default defineEventHandler(async (event) => {
       setHeader(event, 'Access-Control-Allow-Headers', 'Content-Type')
     }
     setHeader(event, 'Content-Type', 'application/json')
+    // Preserve the status code from the error (503 for connection errors, 504 for timeouts, etc.)
+    const statusCode = error.statusCode || error.status || 500
     throw createError({
-      statusCode: error.statusCode || 500,
+      statusCode,
       statusMessage: error.statusMessage || 'Failed to fetch Pis',
       data: error.data || { success: false, error: 'Failed to fetch Pis' },
     })

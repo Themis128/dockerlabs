@@ -12,6 +12,7 @@ import { createError } from 'h3'
  */
 export const API_TIMEOUTS = {
   DEFAULT: 30000, // 30 seconds - for most operations
+  SIMPLE_READ: 10000, // 10 seconds - for simple read operations like /api/pis, /api/sdcards, /api/os-images
   NETWORK_SCAN: 70000, // 70 seconds - Python server uses 60s, add 10s margin
   EXECUTE_REMOTE: 70000, // 70 seconds - Python server uses 60s, add 10s margin
   CONFIGURE_PI: 130000, // 130 seconds - Python server uses 120s (CONFIG_TIMEOUT), add 10s margin
