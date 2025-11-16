@@ -2,12 +2,12 @@
  * Composable for managing Pi connections and testing
  */
 
-import type { PiConnectionInfo, PiCommandResult } from '~/types'
+import type { PiConnectionInfo, PiCommandResult } from '~/types';
 
 export const useConnection = () => {
-  const { get, post } = useApi()
-  const connectionsStore = useConnectionsStore()
-  const notifications = useNotifications()
+  const { get, post } = useApi();
+  const connectionsStore = useConnectionsStore();
+  const notifications = useNotifications();
 
   /**
    * Test connection to a Pi
@@ -17,7 +17,7 @@ export const useConnection = () => {
     connectionType: 'ssh' | 'telnet' = 'ssh',
     networkType?: 'wifi' | 'ethernet'
   ) => {
-    connectionsStore.setTesting(true, piNumber)
+    connectionsStore.setTesting(true, piNumber);
 
     try {
       const response = await get(`/test-connection`, {
@@ -26,7 +26,7 @@ export const useConnection = () => {
           type: connectionType,
           network: networkType,
         },
-      })
+      });
 
       if (response.success) {
         const result = {
@@ -36,10 +36,10 @@ export const useConnection = () => {
           success: true,
           responseTime: response.data?.responseTime,
           timestamp: new Date(),
-        }
-        connectionsStore.addTestResult(result)
-        notifications.success(`Connection to Pi ${piNumber} successful`)
-        return result
+        };
+        connectionsStore.addTestResult(result);
+        notifications.success(`Connection to Pi ${piNumber} successful`);
+        return result;
       } else {
         const result = {
           piNumber,
@@ -48,10 +48,10 @@ export const useConnection = () => {
           success: false,
           error: response.error || 'Connection failed',
           timestamp: new Date(),
-        }
-        connectionsStore.addTestResult(result)
-        notifications.error(`Connection to Pi ${piNumber} failed: ${result.error}`)
-        return result
+        };
+        connectionsStore.addTestResult(result);
+        notifications.error(`Connection to Pi ${piNumber} failed: ${result.error}`);
+        return result;
       }
     } catch (error: any) {
       const result = {
@@ -61,40 +61,40 @@ export const useConnection = () => {
         success: false,
         error: error.message || 'Connection test failed',
         timestamp: new Date(),
-      }
-      connectionsStore.addTestResult(result)
-      notifications.error(`Connection test failed: ${result.error}`)
-      return result
+      };
+      connectionsStore.addTestResult(result);
+      notifications.error(`Connection test failed: ${result.error}`);
+      return result;
     } finally {
-      connectionsStore.setTesting(false)
+      connectionsStore.setTesting(false);
     }
-  }
+  };
 
   /**
    * Test SSH authentication
    */
   const testSshAuth = async (piNumber: string) => {
-    connectionsStore.setTesting(true, piNumber)
+    connectionsStore.setTesting(true, piNumber);
 
     try {
       const response = await get(`/test-ssh`, {
         params: { pi: piNumber },
-      })
+      });
 
       if (response.success) {
-        notifications.success(`SSH authentication successful for Pi ${piNumber}`)
-        return { success: true, data: response.data }
+        notifications.success(`SSH authentication successful for Pi ${piNumber}`);
+        return { success: true, data: response.data };
       } else {
-        notifications.error(`SSH authentication failed: ${response.error}`)
-        return { success: false, error: response.error }
+        notifications.error(`SSH authentication failed: ${response.error}`);
+        return { success: false, error: response.error };
       }
     } catch (error: any) {
-      notifications.error(`SSH test failed: ${error.message}`)
-      return { success: false, error: error.message }
+      notifications.error(`SSH test failed: ${error.message}`);
+      return { success: false, error: error.message };
     } finally {
-      connectionsStore.setTesting(false)
+      connectionsStore.setTesting(false);
     }
-  }
+  };
 
   /**
    * Execute remote command
@@ -103,11 +103,11 @@ export const useConnection = () => {
     piNumber: string,
     command: string,
     options?: {
-      connectionType?: string
-      networkType?: string
-      username?: string
-      password?: string
-      keyPath?: string
+      connectionType?: string;
+      networkType?: string;
+      username?: string;
+      password?: string;
+      keyPath?: string;
     }
   ): Promise<PiCommandResult> => {
     try {
@@ -115,41 +115,41 @@ export const useConnection = () => {
         pi_number: piNumber,
         command,
         ...options,
-      })
+      });
 
       if (response.success) {
         return {
           success: true,
           output: response.data?.output,
           exitCode: response.data?.exitCode,
-        }
+        };
       } else {
         return {
           success: false,
           error: response.error || 'Command execution failed',
-        }
+        };
       }
     } catch (error: any) {
       return {
         success: false,
         error: error.message || 'Command execution failed',
-      }
+      };
     }
-  }
+  };
 
   /**
    * Get connection info for a Pi
    */
   const getConnectionInfo = (piNumber: string): PiConnectionInfo[] => {
-    return connectionsStore.getConnectionsByPi(piNumber)
-  }
+    return connectionsStore.getConnectionsByPi(piNumber);
+  };
 
   /**
    * Get latest test result for a Pi
    */
   const getLatestTestResult = (piNumber: string) => {
-    return connectionsStore.getLatestTestResult(piNumber)
-  }
+    return connectionsStore.getLatestTestResult(piNumber);
+  };
 
   return {
     testConnection,
@@ -159,5 +159,5 @@ export const useConnection = () => {
     getLatestTestResult,
     isTesting: computed(() => connectionsStore.testing),
     testingPi: computed(() => connectionsStore.testingPi),
-  }
-}
+  };
+};

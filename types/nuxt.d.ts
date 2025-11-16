@@ -11,7 +11,7 @@ declare global {
       [key: string]: any;
     };
     [key: string]: any;
-  }
+  };
 
   function $fetch<T = any>(
     url: string,

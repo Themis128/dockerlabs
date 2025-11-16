@@ -3,8 +3,8 @@
  */
 
 export default defineNuxtPlugin(() => {
-  const settingsStore = useSettingsStore()
+  const settingsStore = useSettingsStore();
 
   // Load settings from localStorage
-  settingsStore.loadSettings()
-})
+  settingsStore.loadSettings();
+});

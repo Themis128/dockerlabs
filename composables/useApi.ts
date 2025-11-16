@@ -37,7 +37,7 @@ export const useApi = () => {
     // Create the request promise
     const requestPromise = (async () => {
       try {
-        const { force, logResponse, method, params, ...fetchOptions } = options || {}
+        const { force, logResponse, method, params, ...fetchOptions } = options || {};
         const response = await $fetch<ApiResponse<T>>(`${apiBase}${endpoint}`, {
           method: 'GET',
           params,
@@ -65,10 +65,15 @@ export const useApi = () => {
         }
 
         // Add more context for common errors
-        if (errorMessage.includes('fetch') || errorMessage.includes('network') || errorMessage.includes('ECONNREFUSED')) {
+        if (
+          errorMessage.includes('fetch') ||
+          errorMessage.includes('network') ||
+          errorMessage.includes('ECONNREFUSED')
+        ) {
           errorMessage = 'Cannot connect to backend server. Start it with: npm run start:server';
         } else if (error.statusCode === 504 || errorMessage.includes('timeout')) {
-          errorMessage = 'Backend server timeout. The Python server may be slow to respond or not running.';
+          errorMessage =
+            'Backend server timeout. The Python server may be slow to respond or not running.';
         } else if (error.statusCode === 500) {
           errorMessage = 'Backend server error. Check the Python server logs for details.';
         }
@@ -111,7 +116,7 @@ export const useApi = () => {
     // Create the request promise
     const requestPromise = (async () => {
       try {
-        const { force, logResponse, method, ...fetchOptions } = options || {}
+        const { force, logResponse, method, ...fetchOptions } = options || {};
         const response = await $fetch<ApiResponse<T>>(`${apiBase}${endpoint}`, {
           method: 'POST',
           body: data,
@@ -139,10 +144,15 @@ export const useApi = () => {
         }
 
         // Add more context for common errors
-        if (errorMessage.includes('fetch') || errorMessage.includes('network') || errorMessage.includes('ECONNREFUSED')) {
+        if (
+          errorMessage.includes('fetch') ||
+          errorMessage.includes('network') ||
+          errorMessage.includes('ECONNREFUSED')
+        ) {
           errorMessage = 'Cannot connect to backend server. Start it with: npm run start:server';
         } else if (error.statusCode === 504 || errorMessage.includes('timeout')) {
-          errorMessage = 'Backend server timeout. The Python server may be slow to respond or not running.';
+          errorMessage =
+            'Backend server timeout. The Python server may be slow to respond or not running.';
         } else if (error.statusCode === 500) {
           errorMessage = 'Backend server error. Check the Python server logs for details.';
         }
@@ -182,7 +192,12 @@ export const useApi = () => {
    * Scan network for Raspberry Pi devices
    */
   const scanNetwork = async () => {
-    return await get<{ devices: any[]; raspberry_pis: any[]; total_discovered: number; raspberry_pi_count: number }>('/scan-network');
+    return await get<{
+      devices: any[];
+      raspberry_pis: any[];
+      total_discovered: number;
+      raspberry_pi_count: number;
+    }>('/scan-network');
   };
 
   /**

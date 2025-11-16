@@ -135,8 +135,40 @@ const loadDashboard = async () => {
     status.value = 'Scanning network for devices...'
     const networkScanResponse = await scanNetwork()
 
+    // Check for backend connection errors
+    if (!networkScanResponse.success) {
+      const errorMsg = networkScanResponse.error || 'Failed to scan network'
+      if (errorMsg.includes('Cannot connect') || errorMsg.includes('Service Unavailable') || errorMsg.includes('503')) {
+        status.value = 'Error - Python backend not running. Start with: npm run start:server'
+        devices.value = []
+        totalPis.value = 0
+        onlineCount.value = 0
+        offlineCount.value = 0
+        ethernetCount.value = 0
+        wifiCount.value = 0
+        lastUpdateTime.value = new Date().toLocaleTimeString()
+        return
+      }
+    }
+
     // Step 2: Get configured Pis from config file
     const pisResponse = await getPis()
+
+    // Check for backend connection errors in Pis response
+    if (!pisResponse.success) {
+      const errorMsg = pisResponse.error || 'Failed to load Pis'
+      if (errorMsg.includes('Cannot connect') || errorMsg.includes('Service Unavailable') || errorMsg.includes('503')) {
+        status.value = 'Error - Python backend not running. Start with: npm run start:server'
+        devices.value = []
+        totalPis.value = 0
+        onlineCount.value = 0
+        offlineCount.value = 0
+        ethernetCount.value = 0
+        wifiCount.value = 0
+        lastUpdateTime.value = new Date().toLocaleTimeString()
+        return
+      }
+    }
 
     // Combine discovered devices with configured Pis
     const discoveredDevices: any[] = []
@@ -190,6 +222,15 @@ const loadDashboard = async () => {
     // Step 3: Test connections for configured Pis
     status.value = 'Testing connections...'
     const connectionsResponse = await testConnections()
+
+    // Check for backend connection errors in connections response
+    if (!connectionsResponse.success) {
+      const errorMsg = connectionsResponse.error || 'Failed to test connections'
+      if (errorMsg.includes('Cannot connect') || errorMsg.includes('Service Unavailable') || errorMsg.includes('503')) {
+        // Continue with available data, but mark connections as unknown
+        status.value = 'Partial data - Connection tests unavailable (backend not running)'
+      }
+    }
 
     // Map connection test results
     const connectionResults: Record<string, any> = {}

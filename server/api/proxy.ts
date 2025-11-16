@@ -7,60 +7,60 @@
  * during development. This endpoint is for server-side proxying scenarios.
  */
 
-import { getHeader, setHeader, createError } from 'h3'
-import { callPythonApi } from '../utils/python-api'
+import { getHeader, setHeader, createError } from 'h3';
+import { callPythonApi } from '../utils/python-api';
 
 export default defineEventHandler(async (event) => {
   // Handle CORS preflight
   if (getMethod(event) === 'OPTIONS') {
-    const origin = getHeader(event, 'origin')
+    const origin = getHeader(event, 'origin');
     if (origin) {
-      setHeader(event, 'Access-Control-Allow-Origin', origin)
-      setHeader(event, 'Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-      setHeader(event, 'Access-Control-Allow-Headers', 'Content-Type')
+      setHeader(event, 'Access-Control-Allow-Origin', origin);
+      setHeader(event, 'Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      setHeader(event, 'Access-Control-Allow-Headers', 'Content-Type');
     }
-    return {}
+    return {};
   }
 
-  const config = useRuntimeConfig()
-  const pythonServerUrl = config.public.pythonServerUrl || 'http://localhost:3000'
+  const config = useRuntimeConfig();
+  const pythonServerUrl = config.public.pythonServerUrl || 'http://localhost:3000';
 
   // Get the path from the request
-  const path = getRouterParam(event, 'path') || ''
-  const endpoint = path ? `/${path}` : '/api'
+  const path = getRouterParam(event, 'path') || '';
+  const endpoint = path ? `/${path}` : '/api';
 
   try {
-    const method = getMethod(event)
-    const body = method !== 'GET' ? await readBody(event).catch(() => ({})) : undefined
+    const method = getMethod(event);
+    const body = method !== 'GET' ? await readBody(event).catch(() => ({})) : undefined;
 
     const response = await callPythonApi(event, {
       endpoint,
       method: method as 'GET' | 'POST' | 'PUT' | 'DELETE',
       body,
-    })
+    });
 
     // Set CORS headers
-    const origin = getHeader(event, 'origin')
+    const origin = getHeader(event, 'origin');
     if (origin) {
-      setHeader(event, 'Access-Control-Allow-Origin', origin)
-      setHeader(event, 'Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-      setHeader(event, 'Access-Control-Allow-Headers', 'Content-Type')
+      setHeader(event, 'Access-Control-Allow-Origin', origin);
+      setHeader(event, 'Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      setHeader(event, 'Access-Control-Allow-Headers', 'Content-Type');
     }
 
-    setHeader(event, 'Content-Type', 'application/json')
-    return response
+    setHeader(event, 'Content-Type', 'application/json');
+    return response;
   } catch (error: any) {
-    const origin = getHeader(event, 'origin')
+    const origin = getHeader(event, 'origin');
     if (origin) {
-      setHeader(event, 'Access-Control-Allow-Origin', origin)
-      setHeader(event, 'Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-      setHeader(event, 'Access-Control-Allow-Headers', 'Content-Type')
+      setHeader(event, 'Access-Control-Allow-Origin', origin);
+      setHeader(event, 'Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      setHeader(event, 'Access-Control-Allow-Headers', 'Content-Type');
     }
-    setHeader(event, 'Content-Type', 'application/json')
+    setHeader(event, 'Content-Type', 'application/json');
     throw createError({
       statusCode: error.statusCode || 500,
       statusMessage: error.statusMessage || 'Proxy request failed',
       data: error.data || { success: false, error: 'Proxy request failed' },
-    })
+    });
   }
-})
+});

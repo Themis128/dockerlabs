@@ -2,23 +2,23 @@
  * Pinia store for UI state management
  */
 
-import { defineStore } from 'pinia'
+import { defineStore } from 'pinia';
 
 export interface Notification {
-  id: string
-  type: 'success' | 'error' | 'warning' | 'info'
-  message: string
-  title?: string
-  duration?: number
-  timestamp: Date
+  id: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+  message: string;
+  title?: string;
+  duration?: number;
+  timestamp: Date;
 }
 
 export interface UIState {
-  activeTab: string
-  sidebarOpen: boolean
-  notifications: Notification[]
-  loading: boolean
-  loadingMessage: string | null
+  activeTab: string;
+  sidebarOpen: boolean;
+  notifications: Notification[];
+  loading: boolean;
+  loadingMessage: string | null;
 }
 
 export const useUIStore = defineStore('ui', {
@@ -36,10 +36,10 @@ export const useUIStore = defineStore('ui', {
      */
     activeNotifications: (state) => {
       return state.notifications.filter((n) => {
-        const age = Date.now() - n.timestamp.getTime()
-        const duration = n.duration || 5000
-        return age < duration
-      })
+        const age = Date.now() - n.timestamp.getTime();
+        const duration = n.duration || 5000;
+        return age < duration;
+      });
     },
 
     /**
@@ -47,11 +47,11 @@ export const useUIStore = defineStore('ui', {
      */
     hasUnreadNotifications: (state) => {
       const active = state.notifications.filter((n) => {
-        const age = Date.now() - n.timestamp.getTime()
-        const duration = n.duration || 5000
-        return age < duration
-      })
-      return active.length > 0
+        const age = Date.now() - n.timestamp.getTime();
+        const duration = n.duration || 5000;
+        return age < duration;
+      });
+      return active.length > 0;
     },
   },
 
@@ -60,53 +60,53 @@ export const useUIStore = defineStore('ui', {
      * Set active tab
      */
     setActiveTab(tab: string) {
-      this.activeTab = tab
+      this.activeTab = tab;
     },
 
     /**
      * Toggle sidebar
      */
     toggleSidebar() {
-      this.sidebarOpen = !this.sidebarOpen
+      this.sidebarOpen = !this.sidebarOpen;
     },
 
     /**
      * Set sidebar state
      */
     setSidebarOpen(open: boolean) {
-      this.sidebarOpen = open
+      this.sidebarOpen = open;
     },
 
     /**
      * Add notification
      */
     addNotification(notification: Omit<Notification, 'id' | 'timestamp'>) {
-      const id = `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      const id = `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const newNotification: Notification = {
         id,
         timestamp: new Date(),
         duration: 5000,
         ...notification,
-      }
-      this.notifications.push(newNotification)
+      };
+      this.notifications.push(newNotification);
 
       // Auto-remove after duration
       if (newNotification.duration) {
         setTimeout(() => {
-          this.removeNotification(id)
-        }, newNotification.duration)
+          this.removeNotification(id);
+        }, newNotification.duration);
       }
 
-      return id
+      return id;
     },
 
     /**
      * Remove notification
      */
     removeNotification(id: string) {
-      const index = this.notifications.findIndex((n) => n.id === id)
+      const index = this.notifications.findIndex((n) => n.id === id);
       if (index >= 0) {
-        this.notifications.splice(index, 1)
+        this.notifications.splice(index, 1);
       }
     },
 
@@ -114,7 +114,7 @@ export const useUIStore = defineStore('ui', {
      * Clear all notifications
      */
     clearNotifications() {
-      this.notifications = []
+      this.notifications = [];
     },
 
     /**
@@ -126,7 +126,7 @@ export const useUIStore = defineStore('ui', {
         message,
         title,
         duration,
-      })
+      });
     },
 
     /**
@@ -138,7 +138,7 @@ export const useUIStore = defineStore('ui', {
         message,
         title,
         duration: duration || 10000, // Errors stay longer by default
-      })
+      });
     },
 
     /**
@@ -150,7 +150,7 @@ export const useUIStore = defineStore('ui', {
         message,
         title,
         duration,
-      })
+      });
     },
 
     /**
@@ -162,15 +162,15 @@ export const useUIStore = defineStore('ui', {
         message,
         title,
         duration,
-      })
+      });
     },
 
     /**
      * Set loading state
      */
     setLoading(loading: boolean, message?: string) {
-      this.loading = loading
-      this.loadingMessage = message || null
+      this.loading = loading;
+      this.loadingMessage = message || null;
     },
   },
-})
+});

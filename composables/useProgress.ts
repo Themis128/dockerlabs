@@ -4,10 +4,10 @@
  */
 
 export interface ProgressState {
-  percent: number | null
-  message: string | null
-  status: 'idle' | 'running' | 'success' | 'error'
-  error: string | null
+  percent: number | null;
+  message: string | null;
+  status: 'idle' | 'running' | 'success' | 'error';
+  error: string | null;
 }
 
 export const useProgress = () => {
@@ -16,7 +16,7 @@ export const useProgress = () => {
     message: null,
     status: 'idle',
     error: null,
-  })
+  });
 
   /**
    * Start progress tracking
@@ -27,20 +27,20 @@ export const useProgress = () => {
       message: message || 'Processing...',
       status: 'running',
       error: null,
-    }
-  }
+    };
+  };
 
   /**
    * Update progress
    */
   const update = (percent: number, message?: string) => {
     if (progress.value.status === 'running') {
-      progress.value.percent = Math.max(0, Math.min(100, percent))
+      progress.value.percent = Math.max(0, Math.min(100, percent));
       if (message) {
-        progress.value.message = message
+        progress.value.message = message;
       }
     }
-  }
+  };
 
   /**
    * Complete progress with success
@@ -51,8 +51,8 @@ export const useProgress = () => {
       message: message || 'Completed successfully',
       status: 'success',
       error: null,
-    }
-  }
+    };
+  };
 
   /**
    * Fail progress with error
@@ -63,8 +63,8 @@ export const useProgress = () => {
       message: message || 'Operation failed',
       status: 'error',
       error,
-    }
-  }
+    };
+  };
 
   /**
    * Reset progress
@@ -75,23 +75,23 @@ export const useProgress = () => {
       message: null,
       status: 'idle',
       error: null,
-    }
-  }
+    };
+  };
 
   /**
    * Check if progress is active
    */
-  const isActive = computed(() => progress.value.status === 'running')
+  const isActive = computed(() => progress.value.status === 'running');
 
   /**
    * Check if progress is complete
    */
-  const isComplete = computed(() => progress.value.status === 'success')
+  const isComplete = computed(() => progress.value.status === 'success');
 
   /**
    * Check if progress has error
    */
-  const hasError = computed(() => progress.value.status === 'error')
+  const hasError = computed(() => progress.value.status === 'error');
 
   return {
     progress: readonly(progress),
@@ -103,5 +103,5 @@ export const useProgress = () => {
     isActive,
     isComplete,
     hasError,
-  }
-}
+  };
+};

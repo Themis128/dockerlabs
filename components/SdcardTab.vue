@@ -47,10 +47,18 @@ const refreshSdcards = async () => {
   try {
     const response = await listSdcards()
 
-    if (response.success && response.data?.sdcards) {
-      sdcards.value = response.data.sdcards
+    // Handle both response formats: {success, data: {sdcards}} and {success, sdcards}
+    if (response.success) {
+      const sdcardsData = response.data?.sdcards || response.sdcards || []
+      if (Array.isArray(sdcardsData)) {
+        sdcards.value = sdcardsData
+      } else {
+        console.error('Failed to load SD cards: Invalid response format - sdcards data not found')
+        sdcards.value = []
+      }
     } else {
-      console.error('Failed to load SD cards:', response.error)
+      const errorMsg = response.error || 'Failed to load SD cards'
+      console.error('Failed to load SD cards:', errorMsg)
       sdcards.value = []
     }
   } catch (error) {

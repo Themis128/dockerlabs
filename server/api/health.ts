@@ -9,5 +9,5 @@ export default defineEventHandler(async (event) => {
     timestamp: new Date().toISOString(),
     service: 'nuxt-api',
     version: '1.0.0',
-  }
-})
+  };
+});
