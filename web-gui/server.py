@@ -539,7 +539,7 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
         self.send_json({"success": True, "images": images})
 
     def format_sdcard(self):
-        """Format SD card for Raspberry Pi"""
+        """Format SD card for Raspberry Pi with progress streaming"""
         try:
             content_length = int(self.headers.get("Content-Length", 0))
             if content_length == 0:
@@ -562,6 +562,104 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                 )
                 return
 
+            # Check if client wants progress streaming (SSE)
+            accept_header = self.headers.get("Accept", "")
+            stream_progress = "text/event-stream" in accept_header or data.get("stream", False)
+
+            if stream_progress:
+                # Stream progress via Server-Sent Events
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream")
+                self.send_header("Cache-Control", "no-cache")
+                self.send_header("Connection", "keep-alive")
+                self._send_cors_headers()
+                self.end_headers()
+
+                try:
+                    # Run script and capture output line by line
+                    process = subprocess.Popen(
+                        [sys.executable, script_path, device_id],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True,
+                        bufsize=1,
+                        cwd=os.path.dirname(os.path.dirname(__file__)),
+                    )
+
+                    final_result = None
+                    progress_messages = []
+
+                    # Read stdout line by line
+                    for line in iter(process.stdout.readline, ''):
+                        if not line:
+                            break
+                        line = line.strip()
+                        if not line:
+                            continue
+
+                        try:
+                            # Try to parse as JSON progress message
+                            progress_data = json.loads(line)
+                            if progress_data.get("type") == "progress":
+                                # Send progress update via SSE
+                                sse_data = json.dumps(progress_data)
+                                self.wfile.write(f"data: {sse_data}\n\n".encode())
+                                self.wfile.flush()
+                                progress_messages.append(progress_data)
+                        except json.JSONDecodeError:
+                            # Not a JSON progress message, might be final result
+                            if "{" in line and "}" in line:
+                                try:
+                                    final_result = json.loads(line)
+                                except:
+                                    pass
+
+                    # Wait for process to complete
+                    process.wait()
+
+                    # Read any remaining output
+                    remaining_stdout, stderr = process.communicate()
+                    if remaining_stdout:
+                        for line in remaining_stdout.strip().split('\n'):
+                            if line.strip():
+                                try:
+                                    data = json.loads(line)
+                                    if data.get("type") == "progress":
+                                        sse_data = json.dumps(data)
+                                        self.wfile.write(f"data: {sse_data}\n\n".encode())
+                                        self.wfile.flush()
+                                    else:
+                                        final_result = data
+                                except:
+                                    pass
+
+                    # Send final result
+                    if final_result:
+                        sse_data = json.dumps(final_result)
+                        self.wfile.write(f"data: {sse_data}\n\n".encode())
+                    else:
+                        # Check return code
+                        if process.returncode == 0:
+                            final_result = {
+                                "success": True,
+                                "message": f"SD card {device_id} formatted successfully"
+                            }
+                        else:
+                            error_msg = stderr or "Formatting failed"
+                            final_result = {"success": False, "error": error_msg}
+                        sse_data = json.dumps(final_result)
+                        self.wfile.write(f"data: {sse_data}\n\n".encode())
+
+                    self.wfile.flush()
+                    return
+
+                except Exception as e:
+                    error_data = json.dumps({"success": False, "error": str(e)})
+                    self.wfile.write(f"data: {error_data}\n\n".encode())
+                    self.wfile.flush()
+                    return
+
+            # Non-streaming mode (original behavior)
             # Note: Formatting requires admin/root privileges
             # The script will handle platform-specific formatting
             result = subprocess.run(
@@ -576,8 +674,24 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                 try:
                     # Try to parse JSON from stdout
                     if result.stdout.strip():
-                        data = json.loads(result.stdout)
-                        self.send_json(data)
+                        # Parse last JSON line (final result)
+                        lines = result.stdout.strip().split('\n')
+                        for line in reversed(lines):
+                            if line.strip() and ("{" in line and "}" in line):
+                                try:
+                                    data = json.loads(line)
+                                    if data.get("type") != "progress":  # Skip progress messages
+                                        self.send_json(data)
+                                        return
+                                except:
+                                    pass
+                        # If no final result found, use default success
+                        self.send_json(
+                            {
+                                "success": True,
+                                "message": f"SD card {device_id} formatted successfully for Raspberry Pi {pi_model}",
+                            }
+                        )
                     else:
                         self.send_json(
                             {
@@ -594,16 +708,23 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                 try:
                     # Try to parse error JSON from stdout
                     if result.stdout.strip():
-                        data = json.loads(result.stdout)
-                        self.send_json(data)
-                    else:
-                        self.send_json(
-                            {
-                                "success": False,
-                                "error": result.stderr or "Failed to format SD card",
-                            },
-                            500,
-                        )
+                        lines = result.stdout.strip().split('\n')
+                        for line in reversed(lines):
+                            if line.strip() and ("{" in line and "}" in line):
+                                try:
+                                    data = json.loads(line)
+                                    if data.get("type") != "progress":
+                                        self.send_json(data)
+                                        return
+                                except:
+                                    pass
+                    self.send_json(
+                        {
+                            "success": False,
+                            "error": result.stderr or "Failed to format SD card",
+                        },
+                        500,
+                    )
                 except json.JSONDecodeError:
                     self.send_json(
                         {

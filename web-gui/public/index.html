@@ -316,22 +316,100 @@
                                         <small class="form-hint">Allows compatibility with older devices while using WPA3 security</small>
                                     </div>
 
+                                    <div id="os-wifi-advanced-options" class="form-label" style="display: none;">
+                                        <label style="display: flex; align-items: center; gap: 8px;">
+                                            <input type="checkbox" id="os-wifi-hidden">
+                                            <span>Hidden Network</span>
+                                        </label>
+                                        <small class="form-hint">Enable if your network doesn't broadcast its SSID</small>
+
+                                        <label style="display: flex; align-items: center; gap: 8px; margin-top: 12px;">
+                                            <input type="checkbox" id="os-wifi-precomputed-psk">
+                                            <span>Use Pre-computed PSK</span>
+                                        </label>
+                                        <small class="form-hint">Pre-compute PSK for better security (matches wpa_passphrase output)</small>
+
+                                        <label class="form-label" style="margin-top: 12px;">
+                                            Frequency Band Preference:
+                                            <select id="os-wifi-band" class="form-input-full">
+                                                <option value="">Auto (Both 2.4GHz and 5GHz)</option>
+                                                <option value="2.4GHz">2.4GHz Only</option>
+                                                <option value="5GHz">5GHz Only</option>
+                                            </select>
+                                            <small class="form-hint">Prefer specific frequency band for this network</small>
+                                        </label>
+
+                                        <label class="form-label" style="margin-top: 12px;">
+                                            Network Priority:
+                                            <input type="number" id="os-wifi-priority" class="form-input-full" min="0" max="100" value="0">
+                                            <small class="form-hint">Higher priority networks are preferred (0 = default, 1-100 = priority)</small>
+                                        </label>
+                                    </div>
+
+                                    <div style="margin-top: 12px;">
+                                        <button type="button" id="os-wifi-advanced-toggle" class="btn-secondary" style="font-size: 0.9em;">
+                                            Show Advanced Options
+                                        </button>
+                                    </div>
+
                                     <div id="os-wifi-enterprise-settings" class="hidden nested-section">
                                         <label class="form-label">
                                             EAP Method:
                                             <select id="os-wifi-eap-method" class="form-input-full">
-                                                <option value="TLS">TLS</option>
-                                                <option value="TTLS">TTLS</option>
-                                                <option value="PEAP">PEAP</option>
+                                                <option value="TLS">TLS (Transport Layer Security)</option>
+                                                <option value="PEAP">PEAP (Protected EAP)</option>
+                                                <option value="TTLS">TTLS (Tunneled TLS)</option>
+                                                <option value="PWD">PWD (EAP-Password)</option>
+                                                <option value="SIM">SIM (EAP-SIM)</option>
+                                                <option value="AKA">AKA (EAP-AKA)</option>
                                             </select>
+                                            <small class="form-hint">Select the EAP method required by your network</small>
+                                        </label>
+                                        <label class="form-label">
+                                            Identity (Username):
+                                            <input type="text" id="os-wifi-identity" class="form-input-full" placeholder="username@domain.com">
+                                            <small class="form-hint">Your network username/identity</small>
+                                        </label>
+                                        <label class="form-label">
+                                            Anonymous Identity (Optional):
+                                            <input type="text" id="os-wifi-anonymous-identity" class="form-input-full" placeholder="anonymous@domain.com">
+                                            <small class="form-hint">Used for initial authentication (optional)</small>
                                         </label>
                                         <label class="form-label">
                                             CA Certificate Path:
                                             <input type="text" id="os-wifi-ca-cert" class="form-input-full" placeholder="/path/to/ca.pem">
+                                            <small class="form-hint">Path to CA certificate file</small>
                                         </label>
                                         <label class="form-label">
                                             Client Certificate Path:
                                             <input type="text" id="os-wifi-client-cert" class="form-input-full" placeholder="/path/to/client.pem">
+                                            <small class="form-hint">Path to client certificate file (for TLS/TTLS)</small>
+                                        </label>
+                                        <label class="form-label">
+                                            Private Key Path:
+                                            <input type="text" id="os-wifi-private-key" class="form-input-full" placeholder="/path/to/private.key">
+                                            <small class="form-hint">Path to private key file (for TLS/TTLS)</small>
+                                        </label>
+                                        <label class="form-label">
+                                            Private Key Passphrase:
+                                            <input type="password" id="os-wifi-private-key-passphrase" class="form-input-full" placeholder="Private key passphrase">
+                                            <small class="form-hint">Passphrase for encrypted private key (if applicable)</small>
+                                        </label>
+                                        <label class="form-label">
+                                            Phase 2 Authentication:
+                                            <select id="os-wifi-phase2" class="form-input-full">
+                                                <option value="">None</option>
+                                                <option value="auth=MSCHAPV2">MSCHAPV2</option>
+                                                <option value="auth=PAP">PAP</option>
+                                                <option value="auth=CHAP">CHAP</option>
+                                                <option value="auth=GTC">GTC</option>
+                                            </select>
+                                            <small class="form-hint">Inner authentication method (for PEAP/TTLS)</small>
+                                        </label>
+                                        <label class="form-label">
+                                            EAP Password:
+                                            <input type="password" id="os-wifi-eap-password" class="form-input-full" placeholder="EAP password">
+                                            <small class="form-hint">Password for EAP authentication (for PEAP/TTLS/PWD)</small>
                                         </label>
                                     </div>
 

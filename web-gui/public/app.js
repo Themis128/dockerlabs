@@ -403,33 +403,108 @@ document.getElementById('os-wifi-security')?.addEventListener('change', (e) => {
     }
 });
 
-// Password strength checker
-function checkPasswordStrength(password) {
-    if (!password) return { strength: 'none', score: 0 };
+// Enhanced password strength checker with WPA-specific requirements
+function checkPasswordStrength(password, securityType) {
+    if (!password) return { strength: 'none', score: 0, valid: false, message: '' };
 
     let score = 0;
-    if (password.length >= 8) score++;
-    if (password.length >= 12) score++;
-    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
-    if (/\d/.test(password)) score++;
-    if (/[^a-zA-Z\d]/.test(password)) score++;
+    let messages = [];
+    let valid = true;
 
-    if (score <= 2) return { strength: 'weak', score };
-    if (score <= 3) return { strength: 'medium', score };
-    return { strength: 'strong', score };
+    // WPA3 requires minimum 8 characters
+    const minLength = (securityType === 'WPA3_Personal' || securityType === 'WPA3_Enterprise') ? 8 : 8;
+
+    if (password.length < minLength) {
+        valid = false;
+        messages.push(`Password must be at least ${minLength} characters`);
+    } else {
+        if (password.length >= 8) score++;
+        if (password.length >= 12) score++;
+        if (password.length >= 16) score++;
+    }
+
+    // Character variety checks
+    const hasLower = /[a-z]/.test(password);
+    const hasUpper = /[A-Z]/.test(password);
+    const hasDigit = /\d/.test(password);
+    const hasSpecial = /[^a-zA-Z\d]/.test(password);
+
+    if (hasLower && hasUpper) score++;
+    if (hasDigit) score++;
+    if (hasSpecial) score++;
+
+    // WPA3 recommendations
+    if (securityType === 'WPA3_Personal' || securityType === 'WPA3_Enterprise') {
+        if (password.length < 12) {
+            messages.push('WPA3 recommends passwords of 12+ characters');
+        }
+        if (!hasSpecial) {
+            messages.push('WPA3 recommends including special characters');
+        }
+    }
+
+    let strength = 'weak';
+    if (score >= 5) strength = 'strong';
+    else if (score >= 3) strength = 'medium';
+
+    return {
+        strength,
+        score,
+        valid: valid && score >= 2,
+        message: messages.length > 0 ? messages.join('; ') : '',
+        hasLower,
+        hasUpper,
+        hasDigit,
+        hasSpecial
+    };
 }
 
-// Password strength indicator
+// Enhanced password strength indicator
 document.getElementById('os-wifi-password')?.addEventListener('input', (e) => {
     const password = e.target.value;
     const strengthDiv = document.getElementById('os-wifi-password-strength');
     if (!strengthDiv) return;
 
-    const result = checkPasswordStrength(password);
+    const securityType = document.getElementById('os-wifi-security')?.value || 'WPA3_Personal';
+    const result = checkPasswordStrength(password, securityType);
+
     strengthDiv.className = 'password-strength';
+    strengthDiv.innerHTML = '';
 
     if (result.strength !== 'none') {
         strengthDiv.classList.add(result.strength);
+
+        // Show detailed feedback
+        const feedback = document.createElement('div');
+        feedback.className = 'password-feedback';
+
+        if (result.message) {
+            feedback.innerHTML = `<small style="color: var(--color-warning);">${result.message}</small>`;
+        } else if (result.strength === 'strong') {
+            feedback.innerHTML = '<small style="color: var(--color-success);">✓ Strong password</small>';
+        }
+
+        strengthDiv.appendChild(feedback);
+    }
+});
+
+// Update password validation when security type changes
+document.getElementById('os-wifi-security')?.addEventListener('change', () => {
+    const passwordInput = document.getElementById('os-wifi-password');
+    if (passwordInput && passwordInput.value) {
+        passwordInput.dispatchEvent(new Event('input'));
+    }
+});
+
+// Advanced options toggle
+document.getElementById('os-wifi-advanced-toggle')?.addEventListener('click', (e) => {
+    const advancedOptions = document.getElementById('os-wifi-advanced-options');
+    const toggleButton = e.target;
+
+    if (advancedOptions) {
+        const isVisible = advancedOptions.style.display !== 'none';
+        advancedOptions.style.display = isVisible ? 'none' : 'block';
+        toggleButton.textContent = isVisible ? 'Show Advanced Options' : 'Hide Advanced Options';
     }
 });
 
@@ -547,9 +622,19 @@ document.getElementById('os-add-user')?.addEventListener('click', () => {
                 wifi_country: document.getElementById('os-wifi-country')?.value || 'US',
                 wifi_security_type: document.getElementById('os-wifi-security')?.value || 'WPA3_Personal',
                 wifi_transition_mode: document.getElementById('os-wifi-transition')?.checked ?? true,
+                wifi_hidden: document.getElementById('os-wifi-hidden')?.checked ?? false,
+                use_precomputed_psk: document.getElementById('os-wifi-precomputed-psk')?.checked ?? false,
+                wifi_band: document.getElementById('os-wifi-band')?.value || '',
+                priority: parseInt(document.getElementById('os-wifi-priority')?.value || '0', 10),
                 wifi_eap_method: document.getElementById('os-wifi-eap-method')?.value || '',
+                wifi_identity: document.getElementById('os-wifi-identity')?.value || '',
+                wifi_anonymous_identity: document.getElementById('os-wifi-anonymous-identity')?.value || '',
                 wifi_ca_cert: document.getElementById('os-wifi-ca-cert')?.value || '',
                 wifi_client_cert: document.getElementById('os-wifi-client-cert')?.value || '',
+                wifi_private_key: document.getElementById('os-wifi-private-key')?.value || '',
+                wifi_private_key_passphrase: document.getElementById('os-wifi-private-key-passphrase')?.value || '',
+                wifi_phase2: document.getElementById('os-wifi-phase2')?.value || '',
+                wifi_eap_password: document.getElementById('os-wifi-eap-password')?.value || '',
                 use_static_ip: document.getElementById('os-use-static-ip')?.checked ?? false,
                 static_ip: document.getElementById('os-static-ip')?.value || '',
                 gateway: document.getElementById('os-gateway')?.value || '',
@@ -692,7 +777,65 @@ document.getElementById('apply-settings')?.addEventListener('click', async () =>
     }
 });
 
-// Helper function for SD card formatting
+// Helper function to create format progress component
+function createFormatProgressComponent(deviceId, piModelName) {
+    const progressId = `format-progress-${deviceId.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    return `
+        <div id="${progressId}" class="format-progress-container">
+            <div class="format-progress-header">
+                <h3 class="format-progress-title">Formatting SD Card for ${piModelName}</h3>
+                <div class="format-progress-percent" id="${progressId}-percent">0%</div>
+            </div>
+            <div class="format-progress-bar-container">
+                <div class="format-progress-bar" id="${progressId}-bar" style="width: 0%"></div>
+            </div>
+            <div class="format-progress-log" id="${progressId}-log"></div>
+            <div class="format-progress-status processing" id="${progressId}-status" style="display: none;">
+                Processing...
+            </div>
+        </div>
+    `;
+}
+
+// Helper function to add log entry
+function addFormatLogEntry(progressId, message, type = 'info') {
+    const logContainer = document.getElementById(`${progressId}-log`);
+    if (!logContainer) return;
+
+    const timestamp = new Date().toLocaleTimeString();
+    const entry = document.createElement('div');
+    entry.className = `format-progress-log-entry ${type}`;
+    entry.innerHTML = `<span class="format-progress-log-timestamp">[${timestamp}]</span>${message}`;
+    logContainer.appendChild(entry);
+    logContainer.scrollTop = logContainer.scrollHeight;
+}
+
+// Helper function to update progress
+function updateFormatProgress(progressId, percent, message, type = 'info') {
+    const percentEl = document.getElementById(`${progressId}-percent`);
+    const barEl = document.getElementById(`${progressId}-bar`);
+    const statusEl = document.getElementById(`${progressId}-status`);
+
+    if (percentEl && percent !== null && percent !== undefined) {
+        percentEl.textContent = `${Math.round(percent)}%`;
+    }
+    if (barEl && percent !== null && percent !== undefined) {
+        barEl.style.width = `${percent}%`;
+        if (percent > 0) {
+            barEl.textContent = `${Math.round(percent)}%`;
+        }
+    }
+    if (message) {
+        addFormatLogEntry(progressId, message, type);
+    }
+    if (statusEl) {
+        statusEl.className = 'format-progress-status processing';
+        statusEl.style.display = 'block';
+        statusEl.textContent = message || 'Processing...';
+    }
+}
+
+// Helper function for SD card formatting with verbose progress
 async function formatSDCard(deviceId, elementId) {
     const modelSelect = document.getElementById(`pi-model-${elementId}`);
     const piModel = modelSelect ? modelSelect.value : 'pi5';
@@ -702,37 +845,105 @@ async function formatSDCard(deviceId, elementId) {
         return;
     }
 
-    // Show formatting status
+    // Show formatting progress component
     const sdcardList = document.getElementById('sdcard-list');
     const originalContent = sdcardList.innerHTML;
-    sdcardList.innerHTML = '<p class="loading" style="color: #667eea;">Formatting SD card for ' + piModelName + '... This may take a few minutes. Please wait...</p>';
+    const progressId = `format-progress-${deviceId.replace(/[^a-zA-Z0-9]/g, '_')}`;
+
+    sdcardList.innerHTML = createFormatProgressComponent(deviceId, piModelName);
+
+    // Initialize progress
+    updateFormatProgress(progressId, 0, 'Initializing formatting process...', 'info');
 
     try {
+        // Use fetch with streaming for Server-Sent Events
         const response = await fetch(`${API_BASE}/format-sdcard`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'text/event-stream'
+            },
             body: JSON.stringify({
                 device_id: deviceId,
-                pi_model: piModel
+                pi_model: piModel,
+                stream: true
             })
         });
 
-        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-        if (data.success) {
-            sdcardList.innerHTML = '<p class="loading" style="color: #28a745;">✓ ' + (data.message || 'SD card formatted successfully!') + '</p>';
-            // Refresh the SD card list after a short delay
-            setTimeout(() => {
-                refreshSDCards(true);
-            }, 2000);
-        } else {
-            sdcardList.innerHTML = `<p class="loading" style="color: #dc3545;">✗ Error: ${data.error || 'Formatting failed'}</p>`;
-            setTimeout(() => {
-                refreshSDCards(true);
-            }, 3000);
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    try {
+                        const data = JSON.parse(line.substring(6));
+
+                        if (data.type === 'progress') {
+                            // Update progress
+                            const percent = data.percent !== null && data.percent !== undefined ? data.percent : null;
+                            const message = data.message || '';
+                            let logType = 'info';
+
+                            if (message.toLowerCase().includes('error') || message.toLowerCase().includes('failed')) {
+                                logType = 'error';
+                            } else if (message.toLowerCase().includes('success') || message.toLowerCase().includes('completed')) {
+                                logType = 'success';
+                            } else if (message.toLowerCase().includes('warning')) {
+                                logType = 'warning';
+                            }
+
+                            updateFormatProgress(progressId, percent, message, logType);
+                        } else if (data.success !== undefined) {
+                            // Final result
+                            const statusEl = document.getElementById(`${progressId}-status`);
+                            if (data.success) {
+                                updateFormatProgress(progressId, 100, data.message || 'Formatting completed successfully!', 'success');
+                                if (statusEl) {
+                                    statusEl.className = 'format-progress-status success';
+                                    statusEl.textContent = '✓ ' + (data.message || 'SD card formatted successfully!');
+                                }
+                                // Refresh the SD card list after a short delay
+                                setTimeout(() => {
+                                    refreshSDCards(true);
+                                }, 2000);
+                            } else {
+                                updateFormatProgress(progressId, null, 'Error: ' + (data.error || 'Formatting failed'), 'error');
+                                if (statusEl) {
+                                    statusEl.className = 'format-progress-status error';
+                                    statusEl.textContent = '✗ Error: ' + (data.error || 'Formatting failed');
+                                }
+                                setTimeout(() => {
+                                    refreshSDCards(true);
+                                }, 3000);
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Error parsing SSE data:', e);
+                    }
+                }
+            }
         }
     } catch (error) {
-        sdcardList.innerHTML = `<p class="loading" style="color: #dc3545;">✗ Error: ${error.message}</p>`;
+        console.error('Formatting error:', error);
+        updateFormatProgress(progressId, null, 'Error: ' + error.message, 'error');
+        const statusEl = document.getElementById(`${progressId}-status`);
+        if (statusEl) {
+            statusEl.className = 'format-progress-status error';
+            statusEl.textContent = '✗ Error: ' + error.message;
+        }
         setTimeout(() => {
             refreshSDCards(true);
         }, 3000);

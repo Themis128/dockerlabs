@@ -25,13 +25,68 @@ public class NetworkSettings
     public string DNS { get; set; } = string.Empty;
     public bool EnableEthernet { get; set; } = true;
 
-    // WPA3 Support (2025 standards)
+    // WPA3 Support (2025 standards) - Enhanced
     public WPASecurityType SecurityType { get; set; } = WPASecurityType.WPA3_Personal;
     public bool UseTransitionMode { get; set; } = true; // WPA2/WPA3 compatibility
     public bool EnablePMF { get; set; } = true; // Protected Management Frames (required for WPA3)
-    public string? EAPMethod { get; set; } // For WPA3-Enterprise
-    public string? CAFilePath { get; set; } // For WPA3-Enterprise
-    public string? ClientCertPath { get; set; } // For WPA3-Enterprise
+
+    // Hidden network support
+    public bool IsHiddenNetwork { get; set; } = false;
+
+    // Network priority (higher = preferred)
+    public int Priority { get; set; } = 0;
+
+    // PSK pre-computation
+    public bool UsePrecomputedPSK { get; set; } = false;
+
+    // Frequency band preference
+    public string? FrequencyBand { get; set; } // "2.4GHz" or "5GHz"
+
+    // Advanced SAE options (WPA3-Personal)
+    public string? SAEPasswordId { get; set; }
+    public int? SAEAntiCloggingThreshold { get; set; }
+    public bool? SAESync { get; set; }
+
+    // Enterprise settings (WPA2/WPA3-Enterprise)
+    public string? EAPMethod { get; set; } // TLS, PEAP, TTLS, PWD, etc.
+    public string? CAFilePath { get; set; }
+    public string? ClientCertPath { get; set; }
+    public string? PrivateKeyPath { get; set; }
+    public string? PrivateKeyPassphrase { get; set; }
+    public string? Identity { get; set; }
+    public string? AnonymousIdentity { get; set; }
+    public string? Phase2Auth { get; set; } // "auth=MSCHAPV2", "auth=PAP", etc.
+    public string? EAPPassword { get; set; }
+
+    // Multiple networks support
+    public List<WiFiNetwork> Networks { get; set; } = new();
+}
+
+public class WiFiNetwork
+{
+    public string SSID { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+    public WPASecurityType SecurityType { get; set; } = WPASecurityType.WPA3_Personal;
+    public bool UseTransitionMode { get; set; } = true;
+    public bool EnablePMF { get; set; } = true;
+    public bool IsHiddenNetwork { get; set; } = false;
+    public int Priority { get; set; } = 0;
+    public bool UsePrecomputedPSK { get; set; } = false;
+    public string? FrequencyBand { get; set; }
+    public string? SAEPasswordId { get; set; }
+    public int? SAEAntiCloggingThreshold { get; set; }
+    public bool? SAESync { get; set; }
+
+    // Enterprise settings
+    public string? EAPMethod { get; set; }
+    public string? CAFilePath { get; set; }
+    public string? ClientCertPath { get; set; }
+    public string? PrivateKeyPath { get; set; }
+    public string? PrivateKeyPassphrase { get; set; }
+    public string? Identity { get; set; }
+    public string? AnonymousIdentity { get; set; }
+    public string? Phase2Auth { get; set; }
+    public string? EAPPassword { get; set; }
 }
 
 public enum WPASecurityType

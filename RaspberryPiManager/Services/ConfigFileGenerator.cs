@@ -1,4 +1,6 @@
+using System.Linq;
 using System.Text;
+using System.Security.Cryptography;
 using RaspberryPiManager.Models;
 
 namespace RaspberryPiManager.Services;
@@ -23,112 +25,278 @@ public class ConfigFileGenerator : IConfigFileGenerator
 
     public string GenerateWPASupplicantConf(NetworkSettings network)
     {
-        if (!network.EnableWiFi || string.IsNullOrEmpty(network.SSID))
+        if (!network.EnableWiFi)
             return string.Empty;
 
         var sb = new StringBuilder();
         sb.AppendLine("ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev");
         sb.AppendLine("update_config=1");
         sb.AppendLine($"country={network.CountryCode}");
-        sb.AppendLine();
-        sb.AppendLine("network={");
-        sb.AppendLine($"    ssid=\"{network.SSID}\"");
 
-        // WPA3 2025 Implementation
-        switch (network.SecurityType)
+        // Frequency band preference
+        if (!string.IsNullOrEmpty(network.FrequencyBand))
+        {
+            if (network.FrequencyBand == "5GHz")
+            {
+                sb.AppendLine("freq_list=5180 5200 5220 5240 5260 5280 5300 5320 5500 5520 5540 5560 5580 5600 5620 5640 5660 5680 5700 5720 5745 5765 5785 5805 5825");
+            }
+            else if (network.FrequencyBand == "2.4GHz")
+            {
+                sb.AppendLine("freq_list=2412 2417 2422 2427 2432 2437 2442 2447 2452 2457 2462 2467 2472 2484");
+            }
+        }
+
+        sb.AppendLine();
+
+        // Support multiple networks or single network (backward compatibility)
+        var networks = new List<WiFiNetwork>();
+        if (network.Networks.Count > 0)
+        {
+            networks.AddRange(network.Networks);
+        }
+        else if (!string.IsNullOrEmpty(network.SSID))
+        {
+            // Convert single network to WiFiNetwork for unified processing
+            networks.Add(new WiFiNetwork
+            {
+                SSID = network.SSID,
+                Password = network.Password,
+                SecurityType = network.SecurityType,
+                UseTransitionMode = network.UseTransitionMode,
+                EnablePMF = network.EnablePMF,
+                IsHiddenNetwork = network.IsHiddenNetwork,
+                Priority = network.Priority,
+                UsePrecomputedPSK = network.UsePrecomputedPSK,
+                FrequencyBand = network.FrequencyBand,
+                SAEPasswordId = network.SAEPasswordId,
+                SAEAntiCloggingThreshold = network.SAEAntiCloggingThreshold,
+                SAESync = network.SAESync,
+                EAPMethod = network.EAPMethod,
+                CAFilePath = network.CAFilePath,
+                ClientCertPath = network.ClientCertPath,
+                PrivateKeyPath = network.PrivateKeyPath,
+                PrivateKeyPassphrase = network.PrivateKeyPassphrase,
+                Identity = network.Identity,
+                AnonymousIdentity = network.AnonymousIdentity,
+                Phase2Auth = network.Phase2Auth,
+                EAPPassword = network.EAPPassword
+            });
+        }
+
+        // Sort by priority (higher first)
+        networks = networks.OrderByDescending(n => n.Priority).ToList();
+
+        foreach (var net in networks)
+        {
+            if (string.IsNullOrEmpty(net.SSID))
+                continue;
+
+            sb.AppendLine("network={");
+            sb.AppendLine($"    ssid=\"{net.SSID}\"");
+
+            // Hidden network support
+            if (net.IsHiddenNetwork)
+            {
+                sb.AppendLine("    scan_ssid=1");
+            }
+
+            // Network priority
+            if (net.Priority > 0)
+            {
+                sb.AppendLine($"    priority={net.Priority}");
+            }
+
+            // Generate network configuration
+            GenerateNetworkConfig(sb, net);
+
+            sb.AppendLine("}");
+        }
+
+        return sb.ToString();
+    }
+
+    private void GenerateNetworkConfig(StringBuilder sb, WiFiNetwork net)
+    {
+        switch (net.SecurityType)
         {
             case WPASecurityType.WPA3_Personal:
-                if (network.UseTransitionMode)
+                if (net.UseTransitionMode)
                 {
-                    // WPA2/WPA3 Transition Mode - Best compatibility (2025 recommended)
+                    // WPA2/WPA3 Transition Mode
                     sb.AppendLine("    key_mgmt=WPA-PSK SAE");
-                    sb.AppendLine("    psk=\"" + network.Password + "\"");
                     sb.AppendLine("    proto=RSN");
                     sb.AppendLine("    pairwise=CCMP");
                     sb.AppendLine("    group=CCMP");
                 }
                 else
                 {
-                    // Pure WPA3-Personal (SAE only) - Maximum security
+                    // Pure WPA3-Personal (SAE only)
                     sb.AppendLine("    key_mgmt=SAE");
-                    sb.AppendLine("    psk=\"" + network.Password + "\"");
                     sb.AppendLine("    proto=RSN");
                     sb.AppendLine("    pairwise=CCMP");
                     sb.AppendLine("    group=CCMP");
                 }
+
+                // PSK handling
+                AppendPSK(sb, net.SSID, net.Password, net.UsePrecomputedPSK);
+
                 // Protected Management Frames (PMF) - Required for WPA3
-                if (network.EnablePMF)
+                if (net.EnablePMF)
                 {
-                    sb.AppendLine("    ieee80211w=2"); // PMF required
+                    sb.AppendLine("    ieee80211w=2");
+                }
+
+                // Advanced SAE options
+                if (!string.IsNullOrEmpty(net.SAEPasswordId))
+                {
+                    sb.AppendLine($"    sae_password_id=\"{net.SAEPasswordId}\"");
+                }
+                if (net.SAEAntiCloggingThreshold.HasValue)
+                {
+                    sb.AppendLine($"    sae_anti_clogging_threshold={net.SAEAntiCloggingThreshold.Value}");
+                }
+                if (net.SAESync.HasValue)
+                {
+                    sb.AppendLine($"    sae_sync={(net.SAESync.Value ? 1 : 0)}");
                 }
                 break;
 
             case WPASecurityType.WPA2_Personal:
-                // WPA2-PSK (legacy support)
                 sb.AppendLine("    key_mgmt=WPA-PSK");
-                sb.AppendLine("    psk=\"" + network.Password + "\"");
                 sb.AppendLine("    proto=RSN");
                 sb.AppendLine("    pairwise=CCMP");
                 sb.AppendLine("    group=CCMP");
-                if (network.EnablePMF)
+
+                AppendPSK(sb, net.SSID, net.Password, net.UsePrecomputedPSK);
+
+                if (net.EnablePMF)
                 {
-                    sb.AppendLine("    ieee80211w=1"); // PMF optional for WPA2
+                    sb.AppendLine("    ieee80211w=1");
                 }
                 break;
 
             case WPASecurityType.WPA3_Enterprise:
-                // WPA3-Enterprise (192-bit security suite)
                 sb.AppendLine("    key_mgmt=WPA-EAP-SUITE-B-192");
                 sb.AppendLine("    proto=RSN");
                 sb.AppendLine("    pairwise=GCMP-256");
                 sb.AppendLine("    group=GCMP-256");
-                sb.AppendLine("    ieee80211w=2"); // PMF required
-                if (!string.IsNullOrEmpty(network.EAPMethod))
-                {
-                    sb.AppendLine($"    eap={network.EAPMethod}");
-                }
-                if (!string.IsNullOrEmpty(network.CAFilePath))
-                {
-                    sb.AppendLine($"    ca_cert=\"{network.CAFilePath}\"");
-                }
-                if (!string.IsNullOrEmpty(network.ClientCertPath))
-                {
-                    sb.AppendLine($"    client_cert=\"{network.ClientCertPath}\"");
-                }
+                sb.AppendLine("    ieee80211w=2");
+
+                AppendEnterpriseConfig(sb, net);
                 break;
 
             case WPASecurityType.WPA2_Enterprise:
-                // WPA2-Enterprise (legacy)
                 sb.AppendLine("    key_mgmt=WPA-EAP");
                 sb.AppendLine("    proto=RSN");
                 sb.AppendLine("    pairwise=CCMP");
                 sb.AppendLine("    group=CCMP");
-                if (!string.IsNullOrEmpty(network.EAPMethod))
-                {
-                    sb.AppendLine($"    eap={network.EAPMethod}");
-                }
+
+                AppendEnterpriseConfig(sb, net);
                 break;
 
             case WPASecurityType.Open:
-                // Open network (no security - not recommended)
                 sb.AppendLine("    key_mgmt=NONE");
                 break;
         }
 
-        // Static IP configuration
-        if (network.UseStaticIP && !string.IsNullOrEmpty(network.StaticIP))
+        // Frequency band preference (per network)
+        if (!string.IsNullOrEmpty(net.FrequencyBand))
         {
-            sb.AppendLine("    static_ip_address=");
-            sb.AppendLine($"    static_ip={network.StaticIP}");
-            if (!string.IsNullOrEmpty(network.Gateway))
-                sb.AppendLine($"    static_routers={network.Gateway}");
-            if (!string.IsNullOrEmpty(network.DNS))
-                sb.AppendLine($"    static_domain_name_servers={network.DNS}");
+            if (net.FrequencyBand == "5GHz")
+            {
+                sb.AppendLine("    freq_list=5180 5200 5220 5240 5260 5280 5300 5320 5500 5520 5540 5560 5580 5600 5620 5640 5660 5680 5700 5720 5745 5765 5785 5805 5825");
+            }
+            else if (net.FrequencyBand == "2.4GHz")
+            {
+                sb.AppendLine("    freq_list=2412 2417 2422 2427 2432 2437 2442 2447 2452 2457 2462 2467 2472 2484");
+            }
+        }
+    }
+
+    private void AppendPSK(StringBuilder sb, string ssid, string password, bool usePrecomputed)
+    {
+        if (usePrecomputed && !string.IsNullOrEmpty(password))
+        {
+            var pskHex = ComputePSK(ssid, password);
+            if (!string.IsNullOrEmpty(pskHex))
+            {
+                sb.AppendLine($"    psk={pskHex}");
+                return;
+            }
+        }
+        sb.AppendLine($"    psk=\"{password}\"");
+    }
+
+    private string? ComputePSK(string ssid, string password)
+    {
+        try
+        {
+            // PBKDF2 with SHA1, 4096 iterations, 32 bytes output (matches wpa_passphrase)
+            using var pbkdf2 = new Rfc2898DeriveBytes(
+                password,
+                Encoding.UTF8.GetBytes(ssid),
+                4096,
+                HashAlgorithmName.SHA1);
+
+            var pskBytes = pbkdf2.GetBytes(32);
+            return BitConverter.ToString(pskBytes).Replace("-", "").ToLowerInvariant();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private void AppendEnterpriseConfig(StringBuilder sb, WiFiNetwork net)
+    {
+        if (!string.IsNullOrEmpty(net.EAPMethod))
+        {
+            sb.AppendLine($"    eap={net.EAPMethod}");
         }
 
-        sb.AppendLine("}");
+        // Identity and anonymous identity
+        if (!string.IsNullOrEmpty(net.Identity))
+        {
+            sb.AppendLine($"    identity=\"{net.Identity}\"");
+        }
+        if (!string.IsNullOrEmpty(net.AnonymousIdentity))
+        {
+            sb.AppendLine($"    anonymous_identity=\"{net.AnonymousIdentity}\"");
+        }
 
-        return sb.ToString();
+        // Certificates (for TLS-based methods or WPA3-Enterprise)
+        if (net.SecurityType == WPASecurityType.WPA3_Enterprise ||
+            (net.EAPMethod == "TLS" || net.EAPMethod == "TTLS"))
+        {
+            if (!string.IsNullOrEmpty(net.CAFilePath))
+            {
+                sb.AppendLine($"    ca_cert=\"{net.CAFilePath}\"");
+            }
+            if (!string.IsNullOrEmpty(net.ClientCertPath))
+            {
+                sb.AppendLine($"    client_cert=\"{net.ClientCertPath}\"");
+            }
+            if (!string.IsNullOrEmpty(net.PrivateKeyPath))
+            {
+                sb.AppendLine($"    private_key=\"{net.PrivateKeyPath}\"");
+            }
+            if (!string.IsNullOrEmpty(net.PrivateKeyPassphrase))
+            {
+                sb.AppendLine($"    private_key_passwd=\"{net.PrivateKeyPassphrase}\"");
+            }
+        }
+
+        // Phase 2 authentication
+        if (!string.IsNullOrEmpty(net.Phase2Auth))
+        {
+            sb.AppendLine($"    phase2=\"{net.Phase2Auth}\"");
+        }
+
+        // Password for EAP methods that need it
+        if (!string.IsNullOrEmpty(net.EAPPassword))
+        {
+            sb.AppendLine($"    password=\"{net.EAPPassword}\"");
+        }
     }
 
     public string GenerateUserConf(UserSettings users)
