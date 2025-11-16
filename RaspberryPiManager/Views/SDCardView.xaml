@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="RaspberryPiManager.Views.SDCardView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:RaspberryPiManager.ViewModels"
+    xmlns:models="clr-namespace:RaspberryPiManager.Models"
+    x:DataType="vm:SDCardViewModel"
+    Title="SD Card Management">
+
+    <Grid RowDefinitions="Auto,*" Padding="20">
+        <StackLayout Grid.Row="0" Orientation="Horizontal" Spacing="10">
+            <Button Text="Refresh" Command="{Binding LoadSDCardsCommand}" />
+            <Label Text="{Binding StatusMessage}" VerticalOptions="Center" />
+        </StackLayout>
+
+        <CollectionView Grid.Row="1" ItemsSource="{Binding SdCards}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:SDCardInfo">
+                    <Grid Padding="10" RowDefinitions="Auto,Auto,Auto,Auto">
+                        <Label Grid.Row="0" Text="{Binding Label}" FontSize="18" FontAttributes="Bold" />
+                        <Label Grid.Row="1" Text="{Binding DeviceId}" FontSize="14" />
+                        <Label Grid.Row="2" Text="{Binding TotalSizeBytes, StringFormat='Size: {0:N0} bytes'}" FontSize="12" />
+                        <StackLayout Grid.Row="3" Orientation="Horizontal" Spacing="10">
+                            <Button Text="Format" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:SDCardViewModel}}, Path=FormatSDCardCommand}"
+                                    CommandParameter="{Binding .}" />
+                            <Button Text="Eject" Command="{Binding Source={RelativeSource AncestorType={x:Type vm:SDCardViewModel}}, Path=EjectSDCardCommand}"
+                                    CommandParameter="{Binding .}" />
+                        </StackLayout>
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+</ContentPage>

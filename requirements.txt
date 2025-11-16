@@ -1,0 +1,15 @@
+# Python dependencies for Raspberry Pi Management GUI
+# All dependencies are standard library modules:
+# - http.server
+# - socketserver
+# - json
+# - subprocess
+# - sys
+# - os
+# - urllib.parse
+# - threading
+# - platform
+# - argparse
+
+# No external dependencies required
+# Python 3.7+ recommended

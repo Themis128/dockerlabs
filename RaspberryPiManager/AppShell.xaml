@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="RaspberryPiManager.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:RaspberryPiManager.Views"
+    Title="Raspberry Pi Manager"
+    Shell.FlyoutBehavior="Flyout">
+
+    <TabBar>
+        <ShellContent
+            Title="SD Card"
+            ContentTemplate="{DataTemplate views:SDCardView}"
+            Icon="sdcard.png" />
+
+        <ShellContent
+            Title="OS Install"
+            ContentTemplate="{DataTemplate views:OSInstallView}"
+            Icon="install.png" />
+
+        <ShellContent
+            Title="Settings"
+            ContentTemplate="{DataTemplate views:SettingsView}"
+            Icon="settings.png" />
+
+        <ShellContent
+            Title="Backup/Restore"
+            ContentTemplate="{DataTemplate views:BackupRestoreView}"
+            Icon="backup.png" />
+
+        <ShellContent
+            Title="Profiles"
+            ContentTemplate="{DataTemplate views:ProfileView}"
+            Icon="profile.png" />
+    </TabBar>
+
+</Shell>

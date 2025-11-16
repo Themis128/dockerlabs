@@ -1,0 +1,35 @@
+{
+  "raspberry_pis": {
+    "pi-ethernet-1": {
+      "name": "pi",
+      "mac": "B8-27-EB-74-83-19",
+      "ip": "192.168.0.48",
+      "connection": "Wired",
+      "description": "First Raspberry Pi via Ethernet"
+    },
+    "pi-ethernet-2": {
+      "name": "pi",
+      "mac": "D8-3A-DD-AF-C9-2B",
+      "ip": "192.168.0.16",
+      "connection": "Wired",
+      "description": "Second Raspberry Pi via Ethernet"
+    },
+    "pi-wifi-1": {
+      "name": "pi1",
+      "mac": "D8-3A-DD-AF-C9-2C",
+      "ip": "192.168.0.17",
+      "connection": "2.4G",
+      "description": "First Raspberry Pi via WiFi"
+    },
+    "pi-wifi-2": {
+      "name": "pi2",
+      "mac": "B8-27-EB-21-D6-4C",
+      "ip": "192.168.0.41",
+      "connection": "2.4G",
+      "description": "Second Raspberry Pi via WiFi"
+    }
+  },
+  "default_username": "pi",
+  "default_ssh_port": 22,
+  "default_telnet_port": 23
+}

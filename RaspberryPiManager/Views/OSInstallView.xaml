@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="RaspberryPiManager.Views.OSInstallView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:RaspberryPiManager.ViewModels"
+    xmlns:models="clr-namespace:RaspberryPiManager.Models"
+    x:DataType="vm:OSInstallViewModel"
+    Title="OS Installation">
+
+    <ScrollView>
+        <StackLayout Padding="20" Spacing="15">
+            <Label Text="Select SD Card" FontSize="18" FontAttributes="Bold" />
+            <Picker SelectedItem="{Binding SelectedSDCard}"
+                    ItemDisplayBinding="{Binding Label}" />
+
+            <Label Text="Select OS Image" FontSize="18" FontAttributes="Bold" />
+            <CollectionView ItemsSource="{Binding AvailableImages}">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:OSImage">
+                        <Grid Padding="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackLayout Grid.Column="0">
+                                <Label Text="{Binding Name}" FontSize="16" FontAttributes="Bold" />
+                                <Label Text="{Binding Description}" FontSize="12" />
+                            </StackLayout>
+                            <Button Grid.Column="1" Text="Select" />
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+            <Button Text="Select Custom Image" Command="{Binding SelectCustomImageCommand}" />
+
+            <Label Text="{Binding StatusMessage}" />
+
+            <ProgressBar Progress="{Binding InstallProgress}" IsVisible="{Binding IsInstalling}" />
+
+            <Button Text="Install OS" Command="{Binding InstallOSCommand}"
+                    IsEnabled="{Binding CanInstall}" />
+        </StackLayout>
+    </ScrollView>
+</ContentPage>

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raspberry Pi Manager</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🍓 Raspberry Pi Manager</h1>
+            <p>Manage your Raspberry Pi devices</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-button active" data-tab="dashboard">Dashboard</button>
+            <button class="tab-button" data-tab="pis">Raspberry Pis</button>
+            <button class="tab-button" data-tab="sdcard">SD Card</button>
+            <button class="tab-button" data-tab="osinstall">OS Install</button>
+            <button class="tab-button" data-tab="settings">Settings</button>
+            <button class="tab-button" data-tab="connections">Test Connections</button>
+        </nav>
+
+        <main>
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content active">
+                <h2>Dashboard</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Total Pis</h3>
+                        <p class="stat-value" id="total-pis">-</p>
+                        <p style="font-size: 0.8em; opacity: 0.8; margin-top: 5px;">Physical devices</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Ethernet</h3>
+                        <p class="stat-value" id="ethernet-count">-</p>
+                        <p style="font-size: 0.8em; opacity: 0.8; margin-top: 5px;">Connections</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>WiFi</h3>
+                        <p class="stat-value" id="wifi-count">-</p>
+                        <p style="font-size: 0.8em; opacity: 0.8; margin-top: 5px;">Connections</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Status</h3>
+                        <p class="stat-value" id="status">Ready</p>
+                    </div>
+                </div>
+                <button id="refresh-dashboard" class="btn btn-primary">Refresh</button>
+            </div>
+
+            <!-- Raspberry Pis Tab -->
+            <div id="pis" class="tab-content">
+                <h2>Raspberry Pi Devices</h2>
+                <div id="pi-list" class="pi-list">
+                    <p class="loading">Loading Raspberry Pis...</p>
+                </div>
+                <button id="refresh-pis" class="btn btn-primary">Refresh List</button>
+            </div>
+
+            <!-- SD Card Management Tab -->
+            <div id="sdcard" class="tab-content">
+                <h2>SD Card Management</h2>
+                <div class="test-section">
+                    <h3>Detected SD Cards</h3>
+                    <button id="refresh-sdcards" class="btn btn-primary">Refresh SD Cards</button>
+                    <div id="sdcard-list" class="pi-list">
+                        <p class="loading">Click "Refresh SD Cards" to detect connected SD cards</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OS Installation Tab -->
+            <div id="osinstall" class="tab-content">
+                <h2>OS Installation</h2>
+                <div class="test-section">
+                    <h3>Select SD Card</h3>
+                    <select id="os-sdcard-select" style="width: 100%; padding: 10px; margin-bottom: 15px;">
+                        <option value="">-- Select SD Card --</option>
+                    </select>
+
+                    <h3>Select OS Image</h3>
+                    <div style="margin-bottom: 15px;">
+                        <label>
+                            <input type="radio" name="os-source" value="download" checked> Download Raspberry Pi OS
+                        </label><br>
+                        <label>
+                            <input type="radio" name="os-source" value="custom"> Use Custom Image File
+                        </label>
+                    </div>
+
+                    <div id="os-download-section">
+                        <select id="os-version-select" style="width: 100%; padding: 10px; margin-bottom: 15px;">
+                            <option value="raspios_lite_armhf">Raspberry Pi OS Lite (32-bit)</option>
+                            <option value="raspios_armhf">Raspberry Pi OS with Desktop (32-bit)</option>
+                            <option value="raspios_lite_arm64">Raspberry Pi OS Lite (64-bit)</option>
+                            <option value="raspios_arm64">Raspberry Pi OS with Desktop (64-bit)</option>
+                        </select>
+                    </div>
+
+                    <div id="os-custom-section" style="display: none;">
+                        <input type="file" id="os-custom-file" accept=".img,.zip" style="width: 100%; padding: 10px; margin-bottom: 15px;">
+                    </div>
+
+                    <button id="install-os" class="btn btn-primary" style="width: 100%;">Install OS to SD Card</button>
+                    <div id="os-install-progress" style="margin-top: 15px; display: none;">
+                        <div style="background: #f0f0f0; border-radius: 4px; padding: 10px;">
+                            <div id="os-progress-bar" style="background: #667eea; height: 20px; border-radius: 4px; width: 0%; transition: width 0.3s;"></div>
+                        </div>
+                        <p id="os-status-text" style="margin-top: 10px;"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings/Configuration Tab -->
+            <div id="settings" class="tab-content">
+                <h2>Pi Configuration</h2>
+                <div class="test-section">
+                    <h3>Select Pi to Configure</h3>
+                    <select id="settings-pi-select" style="width: 100%; padding: 10px; margin-bottom: 20px;">
+                        <option value="">-- Select Raspberry Pi --</option>
+                        <option value="1">Raspberry Pi 1</option>
+                        <option value="2">Raspberry Pi 2</option>
+                    </select>
+
+                    <form id="settings-form" style="display: none;" onsubmit="event.preventDefault(); return false;">
+                        <h3>SSH Settings</h3>
+                        <label style="display: block; margin: 10px 0;">
+                            <input type="checkbox" id="settings-ssh-enable" checked> Enable SSH
+                        </label>
+                        <label style="display: block; margin: 10px 0;">
+                            <input type="checkbox" id="settings-ssh-password-auth" checked> Enable Password Authentication
+                        </label>
+                        <label style="display: block; margin: 10px 0;">
+                            SSH Port: <input type="number" id="settings-ssh-port" value="22" autocomplete="off" style="width: 100px; padding: 5px;">
+                        </label>
+
+                        <h3>Telnet Settings</h3>
+                        <label style="display: block; margin: 10px 0;">
+                            <input type="checkbox" id="settings-telnet-enable"> Enable Telnet
+                        </label>
+                        <label style="display: block; margin: 10px 0;">
+                            Telnet Port: <input type="number" id="settings-telnet-port" value="23" autocomplete="off" style="width: 100px; padding: 5px;">
+                        </label>
+
+                        <h3>Network Settings</h3>
+                        <label style="display: block; margin: 10px 0;">
+                            Hostname: <input type="text" id="settings-hostname" placeholder="raspberrypi" autocomplete="off" style="width: 200px; padding: 5px;">
+                        </label>
+                        <label style="display: block; margin: 10px 0;">
+                            <input type="checkbox" id="settings-wifi-enable"> Enable WiFi
+                        </label>
+                        <label style="display: block; margin: 10px 0;">
+                            WiFi SSID: <input type="text" id="settings-wifi-ssid" autocomplete="off" style="width: 200px; padding: 5px;">
+                        </label>
+                        <label style="display: block; margin: 10px 0;">
+                            WiFi Password: <input type="password" id="settings-wifi-password" autocomplete="new-password" style="width: 200px; padding: 5px;">
+                        </label>
+
+                        <button type="button" id="apply-settings" class="btn btn-primary" style="margin-top: 20px;">Apply Settings to Pi</button>
+                        <div id="settings-status" style="margin-top: 15px;"></div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Test Connections Tab -->
+            <div id="connections" class="tab-content">
+                <h2>Test Connections</h2>
+                <div class="test-section">
+                    <h3>Test All Connections</h3>
+                    <p>Test connectivity to all Raspberry Pis (ping, SSH, telnet)</p>
+                    <button id="test-all" class="btn btn-primary">Test All Connections</button>
+                    <div id="test-results" class="test-results"></div>
+                </div>
+                <div class="test-section">
+                    <h3>Test SSH Authentication</h3>
+                    <label for="pi-select">Select Pi:</label>
+                    <select id="pi-select">
+                        <option value="1">Pi 1</option>
+                        <option value="2">Pi 2</option>
+                    </select>
+                    <button id="test-ssh" class="btn btn-primary">Test SSH Auth</button>
+                    <div id="ssh-results" class="test-results"></div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Raspberry Pi Management System</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

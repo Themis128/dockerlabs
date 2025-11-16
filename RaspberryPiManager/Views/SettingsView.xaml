@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="RaspberryPiManager.Views.SettingsView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:RaspberryPiManager.ViewModels"
+    x:DataType="vm:SettingsViewModel"
+    Title="Settings Configuration">
+
+    <ScrollView>
+        <StackLayout Padding="20" Spacing="15">
+            <Label Text="Raspberry Pi Settings" FontSize="20" FontAttributes="Bold" />
+
+            <Label Text="Network Settings" FontSize="18" FontAttributes="Bold" />
+            <Switch IsToggled="{Binding CurrentSettings.Network.EnableWiFi}" />
+            <Label Text="Enable WiFi" />
+            <Entry Text="{Binding CurrentSettings.Network.SSID}" Placeholder="WiFi SSID" />
+            <Entry Text="{Binding CurrentSettings.Network.Password}" Placeholder="WiFi Password" IsPassword="True" />
+
+            <Label Text="SSH Settings" FontSize="18" FontAttributes="Bold" />
+            <Switch IsToggled="{Binding CurrentSettings.SSH.EnableSSH}" />
+            <Label Text="Enable SSH" />
+            <Switch IsToggled="{Binding CurrentSettings.SSH.EnablePasswordAuth}" />
+            <Label Text="Enable Password Authentication" />
+            <Entry Text="{Binding CurrentSettings.SSH.Port, StringFormat='{0}'}" Placeholder="SSH Port" Keyboard="Numeric" />
+
+            <Label Text="System Settings" FontSize="18" FontAttributes="Bold" />
+            <Entry Text="{Binding CurrentSettings.System.Hostname}" Placeholder="Hostname" />
+            <Entry Text="{Binding CurrentSettings.System.Locale}" Placeholder="Locale" />
+            <Entry Text="{Binding CurrentSettings.System.Timezone}" Placeholder="Timezone" />
+
+            <Label Text="Packages" FontSize="18" FontAttributes="Bold" />
+            <CollectionView ItemsSource="{Binding CurrentSettings.Packages.PackagesToInstall}">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Padding="5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Label Grid.Column="0" Text="{Binding .}" />
+                            <Button Grid.Column="1" Text="Remove"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:SettingsViewModel}}, Path=RemovePackageCommand}"
+                                    CommandParameter="{Binding .}" />
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+            <Button Text="Add Package" Command="{Binding AddPackageCommand}" />
+
+            <Button Text="Apply Settings to SD Card" Command="{Binding ApplySettingsToSDCardCommand}" />
+            <Label Text="{Binding StatusMessage}" />
+        </StackLayout>
+    </ScrollView>
+</ContentPage>

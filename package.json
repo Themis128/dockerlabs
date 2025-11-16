@@ -1,0 +1,16 @@
+{
+  "name": "dockerlabs",
+  "version": "1.0.0",
+  "description": "Raspberry Pi management project with Playwright tests",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:gui": "playwright test tests/gui.spec.ts",
+    "start:server": "python web-gui/server.py"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1"
+  }
+}

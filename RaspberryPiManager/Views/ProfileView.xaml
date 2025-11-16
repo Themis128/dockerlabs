@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="RaspberryPiManager.Views.ProfileView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:RaspberryPiManager.ViewModels"
+    xmlns:models="clr-namespace:RaspberryPiManager.Models"
+    x:DataType="vm:ProfileViewModel"
+    Title="Settings Profiles">
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="20">
+        <StackLayout Grid.Row="0" Orientation="Horizontal" Spacing="10">
+            <Button Text="Refresh" Command="{Binding LoadProfilesCommand}" />
+            <Entry Text="{Binding NewProfileName}" Placeholder="New Profile Name" WidthRequest="200" />
+            <Button Text="Create" Command="{Binding CreateNewProfileCommand}" />
+        </StackLayout>
+
+        <CollectionView Grid.Row="1" ItemsSource="{Binding Profiles}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:SettingsProfile">
+                    <Grid Padding="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackLayout Grid.Column="0">
+                            <Label Text="{Binding Name}" FontSize="16" FontAttributes="Bold" />
+                            <Label Text="{Binding Description}" FontSize="12" />
+                            <Label Text="{Binding ModifiedDate, StringFormat='Modified: {0:g}'}" FontSize="10" />
+                        </StackLayout>
+                        <Button Grid.Column="1" Text="Load"
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:SettingsViewModel}}, Path=LoadProfileCommand}"
+                                CommandParameter="{Binding .}" />
+                        <Button Grid.Column="2" Text="Delete"
+                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ProfileViewModel}}, Path=DeleteProfileCommand}"
+                                CommandParameter="{Binding .}" />
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <Label Grid.Row="2" Text="{Binding StatusMessage}" />
+    </Grid>
+</ContentPage>
