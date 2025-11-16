@@ -528,9 +528,34 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
 
 
 def run_server():
-    with socketserver.TCPServer(("", PORT), PiManagementHandler) as httpd:
+    # Bind to all interfaces (0.0.0.0) to allow network access
+    host = os.environ.get("HOST", "0.0.0.0")
+    with socketserver.TCPServer((host, PORT), PiManagementHandler) as httpd:
         print(f"Server running at http://localhost:{PORT}/")
+        print(f"Server also accessible via network IP on port {PORT}")
         print("Press Ctrl+C to stop the server")
+
+        # Get network IP addresses
+        try:
+            import socket
+            # Get all network IPs (excluding localhost and APIPA)
+            hostname = socket.gethostname()
+            all_ips = socket.gethostbyname_ex(hostname)[2]
+            network_ips = [ip for ip in all_ips if not ip.startswith('127.') and not ip.startswith('169.254.')]
+
+            if network_ips:
+                print(f"\nNetwork IP addresses:")
+                for ip in network_ips:
+                    print(f"  http://{ip}:{PORT}/")
+            else:
+                # Fallback to first non-localhost IP
+                local_ip = socket.gethostbyname(hostname)
+                if not local_ip.startswith('127.'):
+                    print(f"\nNetwork IP: http://{local_ip}:{PORT}/")
+        except Exception as e:
+            print(f"\nNote: Could not detect network IPs automatically")
+            print(f"Server is accessible on all network interfaces on port {PORT}")
+
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:

@@ -33,23 +33,24 @@ test.describe('Raspberry Pi Configuration', () => {
     expect(Object.keys(pis).length).toBeGreaterThan(0);
 
     for (const [key, pi] of Object.entries(pis)) {
-      expect(pi).toHaveProperty('name');
-      expect(pi).toHaveProperty('ip');
-      expect(pi).toHaveProperty('mac');
-      expect(pi).toHaveProperty('connection');
+      const piConfig = pi as { name: string; ip: string; mac: string; connection: string };
+      expect(piConfig).toHaveProperty('name');
+      expect(piConfig).toHaveProperty('ip');
+      expect(piConfig).toHaveProperty('mac');
+      expect(piConfig).toHaveProperty('connection');
 
-      expect(typeof pi.name).toBe('string');
-      expect(typeof pi.ip).toBe('string');
-      expect(typeof pi.mac).toBe('string');
-      expect(typeof pi.connection).toBe('string');
+      expect(typeof piConfig.name).toBe('string');
+      expect(typeof piConfig.ip).toBe('string');
+      expect(typeof piConfig.mac).toBe('string');
+      expect(typeof piConfig.connection).toBe('string');
 
       // Validate IP format (basic check)
       const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
-      expect(pi.ip).toMatch(ipRegex);
+      expect(piConfig.ip).toMatch(ipRegex);
 
       // Validate MAC format (basic check)
       const macRegex = /^([0-9A-F]{2}-){5}[0-9A-F]{2}$/i;
-      expect(pi.mac).toMatch(macRegex);
+      expect(piConfig.mac).toMatch(macRegex);
     }
   });
 

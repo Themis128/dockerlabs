@@ -1,0 +1,10 @@
+echo "🧪 Running pre-push checks..."
+
+# Run Playwright tests
+echo "Running Playwright tests..."
+npm test || {
+  echo "❌ Tests failed. Push aborted."
+  exit 1
+}
+
+echo "✅ Pre-push checks passed"

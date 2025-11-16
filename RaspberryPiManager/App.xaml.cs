@@ -34,12 +34,18 @@ public partial class App : Application
         {
 #if WINDOWS
             System.Diagnostics.Debug.WriteLine("Window created - will bring to front");
+            Console.WriteLine("Window created! Bringing to front...");
+            Console.Out.Flush();
             // Force window to be visible and brought to front
             // Use a small delay to ensure handler is ready
-            Task.Delay(100).ContinueWith(_ =>
+            Task.Delay(200).ContinueWith(_ =>
             {
                 System.Diagnostics.Debug.WriteLine("Bringing window to front after creation");
+                Console.WriteLine("Bringing window to front...");
+                Console.Out.Flush();
                 BringWindowToFront(window);
+                Console.WriteLine("Window should now be visible!");
+                Console.Out.Flush();
             }, TaskScheduler.FromCurrentSynchronizationContext());
 #endif
         };

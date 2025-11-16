@@ -1,0 +1,29 @@
+echo "🔍 Running pre-commit checks..."
+
+# Check TypeScript syntax
+echo "Checking TypeScript..."
+npx tsc --noEmit --skipLibCheck || {
+  echo "❌ TypeScript check failed"
+  exit 1
+}
+
+# Check Python syntax
+echo "Checking Python syntax..."
+python -m py_compile web-gui/server.py || {
+  echo "❌ Python syntax check failed"
+  exit 1
+}
+
+# Check for common issues
+echo "Checking for common issues..."
+if git diff --cached --name-only | grep -q "\.json$"; then
+  echo "Validating JSON files..."
+  git diff --cached --name-only | grep "\.json$" | while read file; do
+    python -m json.tool "$file" > /dev/null || {
+      echo "❌ Invalid JSON: $file"
+      exit 1
+    }
+  done
+fi
+
+echo "✅ Pre-commit checks passed"

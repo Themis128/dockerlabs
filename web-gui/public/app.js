@@ -1,4 +1,5 @@
-const API_BASE = 'http://localhost:3000/api';
+// Use current host and port for API calls (works with localhost and network IP)
+const API_BASE = `${window.location.protocol}//${window.location.host}/api`;
 
 // Tab switching
 document.querySelectorAll('.tab-button').forEach(button => {
@@ -25,10 +26,9 @@ function switchTab(tabName) {
     if (tabName === 'dashboard' || tabName === 'pis') {
         loadPis();
     } else if (tabName === 'sdcard') {
-        // Auto-refresh SD cards when tab is opened
-        const refreshBtn = document.getElementById('refresh-sdcards');
-        if (refreshBtn) {
-            setTimeout(() => refreshBtn.click(), 100);
+        // Auto-refresh SD cards when tab is opened (only if auto-detection is not enabled)
+        if (!autoDetectEnabled) {
+            setTimeout(() => refreshSDCards(true), 100);
         }
     }
 }
@@ -188,10 +188,18 @@ function showError(message) {
     }
 }
 
-// SD Card Management
-document.getElementById('refresh-sdcards')?.addEventListener('click', async () => {
+// SD Card Management - Auto-detection state
+let autoDetectEnabled = false;
+let autoDetectInterval = null;
+let lastSDCardCount = 0;
+const AUTO_DETECT_INTERVAL = 2000; // Check every 2 seconds
+
+// Reusable function to refresh SD cards
+async function refreshSDCards(showLoading = true) {
     const sdcardList = document.getElementById('sdcard-list');
-    sdcardList.innerHTML = '<p class="loading">Detecting SD cards...</p>';
+    if (showLoading) {
+        sdcardList.innerHTML = '<p class="loading">Detecting SD cards...</p>';
+    }
 
     try {
         const response = await fetch(`${API_BASE}/sdcards`);
@@ -209,6 +217,10 @@ document.getElementById('refresh-sdcards')?.addEventListener('click', async () =
         const data = await response.json();
 
         if (data.success && data.sdcards && data.sdcards.length > 0) {
+            const currentCount = data.sdcards.length;
+            const wasEmpty = lastSDCardCount === 0;
+            lastSDCardCount = currentCount;
+
             sdcardList.innerHTML = data.sdcards.map(card => `
                 <div class="pi-card">
                     <h3>${card.label}</h3>
@@ -218,13 +230,96 @@ document.getElementById('refresh-sdcards')?.addEventListener('click', async () =
                     <button class="btn btn-secondary" onclick="formatSDCard('${card.device_id}')" style="margin-top: 10px;">Format</button>
                 </div>
             `).join('');
+
+            // Show notification if a new card was detected
+            if (wasEmpty && currentCount > 0 && autoDetectEnabled) {
+                updateAutoDetectStatus(`SD card detected! (${currentCount} card${currentCount > 1 ? 's' : ''})`, '#28a745');
+                setTimeout(() => updateAutoDetectStatus('', ''), 3000);
+            }
+
+            // Update OS install dropdown
+            updateOSInstallDropdown(data.sdcards);
         } else {
-            sdcardList.innerHTML = '<p class="loading">No SD cards detected. Please insert an SD card and try again.</p>';
+            lastSDCardCount = 0;
+            if (showLoading || !autoDetectEnabled) {
+                sdcardList.innerHTML = '<p class="loading">No SD cards detected. Please insert an SD card and try again.</p>';
+            }
         }
     } catch (error) {
-        sdcardList.innerHTML = `<p class="loading" style="color: #dc3545;">Error: ${error.message}</p>`;
+        if (showLoading || !autoDetectEnabled) {
+            sdcardList.innerHTML = `<p class="loading" style="color: #dc3545;">Error: ${error.message}</p>`;
+        }
     }
+}
+
+// Update OS install dropdown with SD cards
+function updateOSInstallDropdown(sdcards) {
+    const select = document.getElementById('os-sdcard-select');
+    if (select && sdcards) {
+        select.innerHTML = '<option value="">-- Select SD Card --</option>';
+        sdcards.forEach(card => {
+            const option = document.createElement('option');
+            option.value = card.device_id;
+            option.textContent = `${card.label} (${card.size_gb} GB)`;
+            select.appendChild(option);
+        });
+    }
+}
+
+// Update auto-detect status message
+function updateAutoDetectStatus(message, color = '#666') {
+    const statusEl = document.getElementById('auto-detect-status');
+    if (statusEl) {
+        statusEl.textContent = message;
+        statusEl.style.color = color;
+    }
+}
+
+// Toggle auto-detection
+function toggleAutoDetect() {
+    autoDetectEnabled = !autoDetectEnabled;
+    const toggleBtn = document.getElementById('toggle-auto-detect');
+    const textSpan = document.getElementById('auto-detect-text');
+    const indicatorSpan = document.getElementById('auto-detect-indicator');
+
+    if (autoDetectEnabled) {
+        toggleBtn.classList.add('active');
+        textSpan.textContent = 'Disable Auto-Detection';
+        indicatorSpan.style.display = 'inline';
+        updateAutoDetectStatus('Auto-detection active', '#28a745');
+
+        // Start polling
+        autoDetectInterval = setInterval(() => {
+            // Only poll if SD card tab is visible
+            const sdcardTab = document.getElementById('sdcard');
+            if (sdcardTab && sdcardTab.classList.contains('active')) {
+                refreshSDCards(false); // Don't show loading message during auto-detection
+            }
+        }, AUTO_DETECT_INTERVAL);
+
+        // Do an immediate check
+        refreshSDCards(true);
+    } else {
+        toggleBtn.classList.remove('active');
+        textSpan.textContent = 'Enable Auto-Detection';
+        indicatorSpan.style.display = 'none';
+        updateAutoDetectStatus('');
+
+        // Stop polling
+        if (autoDetectInterval) {
+            clearInterval(autoDetectInterval);
+            autoDetectInterval = null;
+        }
+    }
+}
+
+// Manual refresh button
+document.getElementById('refresh-sdcards')?.addEventListener('click', () => {
+    refreshSDCards(true);
 });
+
+// Auto-detection toggle button
+document.getElementById('toggle-auto-detect')?.addEventListener('click', toggleAutoDetect);
 
 // OS Installation
 document.querySelectorAll('input[name="os-source"]').forEach(radio => {
@@ -369,48 +464,36 @@ async function formatSDCard(deviceId) {
 
 // Update SD card list when OS install tab is opened
 document.querySelector('[data-tab="osinstall"]')?.addEventListener('click', async () => {
-    // Refresh SD cards when OS install tab is opened
-    const refreshBtn = document.getElementById('refresh-sdcards');
-    if (refreshBtn) {
-        refreshBtn.click();
+    // Refresh SD cards when OS install tab is opened (only if auto-detection is not enabled)
+    if (!autoDetectEnabled) {
+        setTimeout(() => refreshSDCards(true), 100);
     }
 });
 
-// Update SD card dropdown when cards are detected - separate handler
-document.getElementById('refresh-sdcards')?.addEventListener('click', async function() {
-    // Update OS install dropdown after SD cards are loaded
-    setTimeout(async () => {
-        try {
-            const response = await fetch(`${API_BASE}/sdcards`);
-            if (!response.ok) {
-                return; // Silently fail
+// Pause auto-detection when page is hidden, resume when visible
+document.addEventListener('visibilitychange', () => {
+    if (autoDetectEnabled) {
+        if (document.hidden) {
+            // Page is hidden, pause polling
+            if (autoDetectInterval) {
+                clearInterval(autoDetectInterval);
+                autoDetectInterval = null;
             }
-
-            // Check if response is JSON
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                return; // Silently fail if not JSON
-            }
-
-            const data = await response.json();
-            const select = document.getElementById('os-sdcard-select');
-            if (select && data.success && data.sdcards) {
-                select.innerHTML = '<option value="">-- Select SD Card --</option>';
-                data.sdcards.forEach(card => {
-                    const option = document.createElement('option');
-                    option.value = card.device_id;
-                    option.textContent = `${card.label} (${card.size_gb} GB)`;
-                    select.appendChild(option);
-                });
-            }
-        } catch (error) {
-            // Silently fail - this is just a convenience feature
-            // Only log if it's not a JSON parse error (which we already handle)
-            if (!error.message.includes('JSON')) {
-                console.debug('Could not update SD card dropdown:', error.message);
+            updateAutoDetectStatus('Auto-detection paused (tab hidden)', '#ffc107');
+        } else {
+            // Page is visible, resume polling
+            const sdcardTab = document.getElementById('sdcard');
+            if (sdcardTab && sdcardTab.classList.contains('active')) {
+                autoDetectInterval = setInterval(() => {
+                    const sdcardTab = document.getElementById('sdcard');
+                    if (sdcardTab && sdcardTab.classList.contains('active')) {
+                        refreshSDCards(false);
+                    }
+                }, AUTO_DETECT_INTERVAL);
+                updateAutoDetectStatus('Auto-detection active', '#28a745');
             }
         }
-    }, 1000);
+    }
 });
 
 // Load initial data

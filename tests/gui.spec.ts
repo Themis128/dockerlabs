@@ -201,30 +201,26 @@ test.describe('Raspberry Pi Manager GUI', () => {
     // Wait for the tab content to be visible
     await page.waitForSelector('#pis', { state: 'visible', timeout: 10000 });
 
-    // Wait for API response with longer timeout
-    try {
-      await page.waitForResponse(response =>
+    // Wait for API response and cards to be rendered
+    await Promise.race([
+      page.waitForResponse(response =>
         response.url().includes('/api/pis') && response.status() === 200,
         { timeout: 15000 }
-      );
-    } catch (e) {
-      // If API fails, just check that the tab is visible
-    }
+      ).catch(() => null),
+      page.waitForSelector('.pi-card', { state: 'visible', timeout: 15000 }).catch(() => null)
+    ]);
 
-    // Check if pi cards are displayed
+    // Wait for at least one pi card to be visible (more efficient than counting)
     const piCards = page.locator('.pi-card');
-    const count = await piCards.count();
+    await expect(piCards.first()).toBeVisible({ timeout: 5000 });
 
-    if (count > 0) {
-      // Check first card has required elements
-      const firstCard = piCards.first();
-      await expect(firstCard.locator('h3')).toBeVisible({ timeout: 10000 });
-      await expect(firstCard.locator('text=/IP Address:/')).toBeVisible({ timeout: 10000 });
-      await expect(firstCard.locator('text=/MAC Address:/')).toBeVisible({ timeout: 10000 });
-      await expect(firstCard.locator('text=/Connection:/')).toBeVisible({ timeout: 10000 });
-    } else {
-      // If no cards, at least verify the tab loaded
-      await expect(page.locator('#pis')).toBeVisible({ timeout: 10000 });
-    }
+    // Check first card has required elements in parallel
+    // Each card has both Ethernet and WiFi sections, so we check for at least one of each
+    const firstCard = piCards.first();
+    await Promise.all([
+      expect(firstCard.locator('h3')).toBeVisible({ timeout: 5000 }),
+      expect(firstCard.locator('text=/IP:/').first()).toBeVisible({ timeout: 5000 }),
+      expect(firstCard.locator('text=/MAC:/').first()).toBeVisible({ timeout: 5000 })
+    ]);
   });
 });

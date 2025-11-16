@@ -27,6 +27,9 @@ ENV/
 *~
 .deno_lsp/
 
+# Husky
+.husky/_
+
 # OS
 .DS_Store
 Thumbs.db

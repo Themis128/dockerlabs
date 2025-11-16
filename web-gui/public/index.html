@@ -64,7 +64,14 @@
                 <h2>SD Card Management</h2>
                 <div class="test-section">
                     <h3>Detected SD Cards</h3>
-                    <button id="refresh-sdcards" class="btn btn-primary">Refresh SD Cards</button>
+                    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 15px;">
+                        <button id="refresh-sdcards" class="btn btn-primary">Refresh SD Cards</button>
+                        <button id="toggle-auto-detect" class="btn btn-secondary" style="position: relative;">
+                            <span id="auto-detect-text">Enable Auto-Detection</span>
+                            <span id="auto-detect-indicator" style="display: none; margin-left: 8px; animation: pulse 2s infinite;">🔍</span>
+                        </button>
+                        <span id="auto-detect-status" style="color: #666; font-size: 0.9em; margin-left: 10px;"></span>
+                    </div>
                     <div id="sdcard-list" class="pi-list">
                         <p class="loading">Click "Refresh SD Cards" to detect connected SD cards</p>
                     </div>

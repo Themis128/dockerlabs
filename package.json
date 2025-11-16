@@ -9,12 +9,18 @@
     "test:debug": "playwright test --debug",
     "test:gui": "playwright test tests/gui.spec.ts",
     "start:server": "python web-gui/server.py",
+    "start:web": "python web-gui/server.py",
     "cd:project": "powershell -ExecutionPolicy Bypass -File ./cd-project.ps1",
     "cd:maui": "powershell -ExecutionPolicy Bypass -File ./cd-maui.ps1",
     "maui:dev": "powershell -ExecutionPolicy Bypass -File ./run-maui-dev.ps1",
-    "maui:build": "powershell -ExecutionPolicy Bypass -File ./build-maui.ps1"
+    "maui:build": "powershell -ExecutionPolicy Bypass -File ./build-maui.ps1",
+    "web:start": "powershell -ExecutionPolicy Bypass -File ./start-web-gui.ps1",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "@playwright/test": "^1.56.1"
+    "@playwright/test": "^1.56.1",
+    "@types/node": "^24.10.0",
+    "husky": "^9.1.7",
+    "typescript": "^5.9.3"
   }
 }
