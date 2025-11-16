@@ -16,15 +16,17 @@
 
         <CollectionView Grid.Row="1" ItemsSource="{Binding SdCards}">
             <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="models:SDCardInfo">
+                <DataTemplate>
                     <Grid Padding="10" RowDefinitions="Auto,Auto,Auto,Auto">
                         <Label Grid.Row="0" Text="{Binding Label}" FontSize="18" FontAttributes="Bold" />
                         <Label Grid.Row="1" Text="{Binding DeviceId}" FontSize="14" />
                         <Label Grid.Row="2" Text="{Binding TotalSizeBytes, StringFormat='Size: {0:N0} bytes'}" FontSize="12" />
                         <StackLayout Grid.Row="3" Orientation="Horizontal" Spacing="10">
-                            <Button Text="Format" Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.FormatSDCardCommand}"
+                            <Button Text="Format"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.FormatSDCardCommand}"
                                     CommandParameter="{Binding .}" />
-                            <Button Text="Eject" Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EjectSDCardCommand}"
+                            <Button Text="Eject"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.EjectSDCardCommand}"
                                     CommandParameter="{Binding .}" />
                         </StackLayout>
                     </Grid>

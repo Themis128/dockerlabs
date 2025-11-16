@@ -11,10 +11,12 @@ import socket
 import argparse
 import getpass
 
+
 def load_config():
     """Load Raspberry Pi configuration"""
-    with open('pi-config.json', 'r') as f:
+    with open("pi-config.json", "r") as f:
         return json.load(f)
+
 
 def test_port(ip, port, timeout=3):
     """Test if a port is open"""
@@ -27,15 +29,26 @@ def test_port(ip, port, timeout=3):
     except:
         return False
 
+
 def test_password_auth(ip, username, password):
     """Test password authentication using sshpass or expect"""
     # Try sshpass first (if available)
     try:
         result = subprocess.run(
-            ['sshpass', '-p', password, 'ssh', '-o', 'StrictHostKeyChecking=no',
-             '-o', 'ConnectTimeout=5', f'{username}@{ip}', 'echo test'],
+            [
+                "sshpass",
+                "-p",
+                password,
+                "ssh",
+                "-o",
+                "StrictHostKeyChecking=no",
+                "-o",
+                "ConnectTimeout=5",
+                f"{username}@{ip}",
+                "echo test",
+            ],
             capture_output=True,
-            timeout=10
+            timeout=10,
         )
         return result.returncode == 0
     except FileNotFoundError:
@@ -44,11 +57,13 @@ def test_password_auth(ip, username, password):
     except:
         return False
 
+
 def main():
-    parser = argparse.ArgumentParser(description='Test password authentication')
-    parser.add_argument('pi_number', type=int, nargs='?', default=1, choices=[1, 2],
-                       help='Pi number (1 or 2)')
-    parser.add_argument('-u', '--username', default='pi', help='SSH username')
+    parser = argparse.ArgumentParser(description="Test password authentication")
+    parser.add_argument(
+        "pi_number", type=int, nargs="?", default=1, choices=[1, 2], help="Pi number (1 or 2)"
+    )
+    parser.add_argument("-u", "--username", default="pi", help="SSH username")
 
     args = parser.parse_args()
 
@@ -59,11 +74,11 @@ def main():
         sys.exit(1)
 
     # Get Ethernet Pi (priority)
-    all_pis = config['raspberry_pis']
+    all_pis = config["raspberry_pis"]
     ethernet_pis = []
 
     for key, pi in all_pis.items():
-        if pi['connection'] == 'Wired':
+        if pi["connection"] == "Wired":
             ethernet_pis.append(pi)
 
     if args.pi_number > len(ethernet_pis):
@@ -79,7 +94,7 @@ def main():
     print()
 
     # Test SSH port
-    if not test_port(selected_pi['ip'], 22):
+    if not test_port(selected_pi["ip"], 22):
         print("ERROR: SSH port 22 is not accessible")
         sys.exit(1)
 
@@ -98,9 +113,15 @@ def main():
     try:
         # Try to connect interactively
         result = subprocess.run(
-            ['ssh', '-o', 'StrictHostKeyChecking=accept-new',
-             '-o', 'ConnectTimeout=10', f'{args.username}@{selected_pi["ip"]}'],
-            timeout=30
+            [
+                "ssh",
+                "-o",
+                "StrictHostKeyChecking=accept-new",
+                "-o",
+                "ConnectTimeout=10",
+                f'{args.username}@{selected_pi["ip"]}',
+            ],
+            timeout=30,
         )
 
         if result.returncode == 0:
@@ -139,5 +160,6 @@ def main():
     print("  - Provide them the command from: python get_pi_command.py")
     print("  - They can run it on the Pi for you")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

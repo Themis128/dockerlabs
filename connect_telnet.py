@@ -10,22 +10,25 @@ import subprocess
 import socket
 import argparse
 
+
 def load_config():
     """Load Raspberry Pi configuration"""
-    with open('pi-config.json', 'r') as f:
+    with open("pi-config.json", "r") as f:
         return json.load(f)
+
 
 def test_connectivity(ip, count=2):
     """Test network connectivity to IP"""
     try:
         result = subprocess.run(
-            ['ping', '-n' if sys.platform == 'win32' else '-c', str(count), ip],
+            ["ping", "-n" if sys.platform == "win32" else "-c", str(count), ip],
             capture_output=True,
-            timeout=10
+            timeout=10,
         )
         return result.returncode == 0
     except:
         return False
+
 
 def test_port(ip, port, timeout=3):
     """Test if a port is open"""
@@ -38,22 +41,23 @@ def test_port(ip, port, timeout=3):
     except:
         return False
 
-def select_pi(config, pi_number, connection_type='auto'):
+
+def select_pi(config, pi_number, connection_type="auto"):
     """Select Raspberry Pi based on number and connection type"""
-    all_pis = config['raspberry_pis']
+    all_pis = config["raspberry_pis"]
     ethernet_pis = []
     wifi_pis = []
 
     for key, pi in all_pis.items():
-        if pi['connection'] == 'Wired':
+        if pi["connection"] == "Wired":
             ethernet_pis.append(pi)
-        elif pi['connection'] == '2.4G':
+        elif pi["connection"] == "2.4G":
             wifi_pis.append(pi)
 
     selected_pi = None
     connection_method = ""
 
-    if connection_type == 'auto':
+    if connection_type == "auto":
         # ALWAYS try Ethernet first (priority)
         if ethernet_pis:
             idx = pi_number - 1
@@ -69,13 +73,13 @@ def select_pi(config, pi_number, connection_type='auto'):
                 connection_method = "WiFi"
                 print(f"WARNING: Ethernet Pi #{pi_number} not found, using WiFi fallback")
 
-    elif connection_type == 'ethernet':
+    elif connection_type == "ethernet":
         idx = pi_number - 1
         if 0 <= idx < len(ethernet_pis):
             selected_pi = ethernet_pis[idx]
             connection_method = "Ethernet"
 
-    elif connection_type == 'wifi':
+    elif connection_type == "wifi":
         idx = pi_number - 1
         if 0 <= idx < len(wifi_pis):
             selected_pi = wifi_pis[idx]
@@ -83,13 +87,20 @@ def select_pi(config, pi_number, connection_type='auto'):
 
     return selected_pi, connection_method
 
+
 def main():
-    parser = argparse.ArgumentParser(description='Connect to Raspberry Pi via Telnet')
-    parser.add_argument('pi_number', type=int, nargs='?', default=1, choices=[1, 2],
-                       help='Pi number (1 or 2)')
-    parser.add_argument('-p', '--port', type=int, default=23, help='Telnet port')
-    parser.add_argument('-c', '--connection', choices=['ethernet', 'wifi', 'auto'],
-                       default='auto', help='Connection type (default: auto, prioritizes Ethernet)')
+    parser = argparse.ArgumentParser(description="Connect to Raspberry Pi via Telnet")
+    parser.add_argument(
+        "pi_number", type=int, nargs="?", default=1, choices=[1, 2], help="Pi number (1 or 2)"
+    )
+    parser.add_argument("-p", "--port", type=int, default=23, help="Telnet port")
+    parser.add_argument(
+        "-c",
+        "--connection",
+        choices=["ethernet", "wifi", "auto"],
+        default="auto",
+        help="Connection type (default: auto, prioritizes Ethernet)",
+    )
 
     args = parser.parse_args()
 
@@ -120,16 +131,16 @@ def main():
     print()
 
     # Test connectivity
-    print("Testing connectivity...", end=' ', flush=True)
-    if not test_connectivity(selected_pi['ip']):
+    print("Testing connectivity...", end=" ", flush=True)
+    if not test_connectivity(selected_pi["ip"]):
         print("FAILED")
         print(f"ERROR: Cannot reach {selected_pi['ip']}")
         sys.exit(1)
     print("OK")
 
     # Test Telnet port
-    print(f"Testing Telnet port {args.port}...", end=' ', flush=True)
-    telnet_open = test_port(selected_pi['ip'], args.port)
+    print(f"Testing Telnet port {args.port}...", end=" ", flush=True)
+    telnet_open = test_port(selected_pi["ip"], args.port)
 
     if telnet_open:
         print("Port is open")
@@ -150,7 +161,7 @@ def main():
 
     # Try to use telnet command
     try:
-        subprocess.run(['telnet', selected_pi['ip'], str(args.port)])
+        subprocess.run(["telnet", selected_pi["ip"], str(args.port)])
     except FileNotFoundError:
         print("Telnet client not found.")
         print()
@@ -160,8 +171,9 @@ def main():
         print()
         print("Or use Python telnetlib:")
         import telnetlib
+
         try:
-            tn = telnetlib.Telnet(selected_pi['ip'], args.port)
+            tn = telnetlib.Telnet(selected_pi["ip"], args.port)
             print("Connected! Type commands (Ctrl+] to exit)")
             tn.interact()
         except Exception as e:
@@ -170,5 +182,6 @@ def main():
     except KeyboardInterrupt:
         print("\nConnection interrupted")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

@@ -32,7 +32,7 @@
             <Label Text="Packages" FontSize="18" FontAttributes="Bold" />
             <CollectionView ItemsSource="{Binding CurrentSettings.Packages.PackagesToInstall}">
                 <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="x:String">
+                    <DataTemplate>
                         <Grid Padding="5">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />

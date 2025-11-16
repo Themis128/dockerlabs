@@ -16,7 +16,7 @@
 
         <CollectionView Grid.Row="1" ItemsSource="{Binding Backups}">
             <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="models:BackupProfile">
+                <DataTemplate>
                     <Grid Padding="10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />

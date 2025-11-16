@@ -17,10 +17,12 @@ except ImportError:
     print("Install it with: pip install paramiko")
     sys.exit(1)
 
+
 def load_config():
     """Load Raspberry Pi configuration"""
-    with open('pi-config.json', 'r') as f:
+    with open("pi-config.json", "r") as f:
         return json.load(f)
+
 
 def test_port(ip, port, timeout=3):
     """Test if a port is open"""
@@ -33,11 +35,13 @@ def test_port(ip, port, timeout=3):
     except:
         return False
 
+
 def test_key_auth(ip, username, key_file=None):
     """Test SSH key authentication"""
     import os
+
     if not key_file:
-        key_file = os.path.join(os.path.expanduser('~'), '.ssh', 'id_rsa')
+        key_file = os.path.join(os.path.expanduser("~"), ".ssh", "id_rsa")
 
     if not os.path.exists(key_file):
         return False, "Key file not found"
@@ -53,6 +57,7 @@ def test_key_auth(ip, username, key_file=None):
         return False, "Key not authorized on server"
     except Exception as e:
         return False, str(e)
+
 
 def test_password_auth(ip, username, password=None):
     """Test password authentication"""
@@ -71,12 +76,14 @@ def test_password_auth(ip, username, password=None):
     except Exception as e:
         return False, str(e)
 
+
 def main():
-    parser = argparse.ArgumentParser(description='Test SSH authentication with Paramiko')
-    parser.add_argument('pi_number', type=int, nargs='?', default=1, choices=[1, 2],
-                       help='Pi number (1 or 2)')
-    parser.add_argument('-u', '--username', default='pi', help='SSH username')
-    parser.add_argument('-p', '--password', help='SSH password (will prompt if not provided)')
+    parser = argparse.ArgumentParser(description="Test SSH authentication with Paramiko")
+    parser.add_argument(
+        "pi_number", type=int, nargs="?", default=1, choices=[1, 2], help="Pi number (1 or 2)"
+    )
+    parser.add_argument("-u", "--username", default="pi", help="SSH username")
+    parser.add_argument("-p", "--password", help="SSH password (will prompt if not provided)")
 
     args = parser.parse_args()
 
@@ -87,11 +94,11 @@ def main():
         sys.exit(1)
 
     # Get Ethernet Pi (priority)
-    all_pis = config['raspberry_pis']
+    all_pis = config["raspberry_pis"]
     ethernet_pis = []
 
     for key, pi in all_pis.items():
-        if pi['connection'] == 'Wired':
+        if pi["connection"] == "Wired":
             ethernet_pis.append(pi)
 
     if args.pi_number > len(ethernet_pis):
@@ -107,7 +114,7 @@ def main():
     print()
 
     # Test SSH port
-    if not test_port(selected_pi['ip'], 22):
+    if not test_port(selected_pi["ip"], 22):
         print("ERROR: SSH port 22 is not accessible")
         sys.exit(1)
 
@@ -118,12 +125,15 @@ def main():
     print("Test 1: SSH Key Authentication")
     print("-" * 60)
     import os
-    key_file = os.path.join(os.path.expanduser('~'), '.ssh', 'id_rsa')
+
+    key_file = os.path.join(os.path.expanduser("~"), ".ssh", "id_rsa")
     if os.path.exists(key_file):
-        success, message = test_key_auth(selected_pi['ip'], args.username, key_file)
+        success, message = test_key_auth(selected_pi["ip"], args.username, key_file)
         if success:
             print(f"SUCCESS: {message}")
-            print(f"You can connect with: python connect_ssh_paramiko.py {args.pi_number} -k {key_file}")
+            print(
+                f"You can connect with: python connect_ssh_paramiko.py {args.pi_number} -k {key_file}"
+            )
         else:
             print(f"FAILED: {message}")
     else:
@@ -133,7 +143,7 @@ def main():
     # Test password authentication
     print("Test 2: Password Authentication")
     print("-" * 60)
-    success, message = test_password_auth(selected_pi['ip'], args.username, args.password)
+    success, message = test_password_auth(selected_pi["ip"], args.username, args.password)
     if success:
         print(f"SUCCESS: {message}")
         print(f"You can connect with: python connect_ssh_paramiko.py {args.pi_number}")
@@ -154,5 +164,6 @@ def main():
     print("Execute single command:")
     print(f"  python connect_ssh_paramiko.py {args.pi_number} --command 'ls -la'")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

@@ -7,10 +7,11 @@ Usage: python setup_via_sdcard.py
 import os
 import sys
 
+
 def get_ssh_public_key():
     """Get SSH public key"""
     home = os.path.expanduser("~")
-    ssh_key_path = os.path.join(home, '.ssh', 'id_rsa.pub')
+    ssh_key_path = os.path.join(home, ".ssh", "id_rsa.pub")
 
     if not os.path.exists(ssh_key_path):
         print("ERROR: SSH public key not found!")
@@ -19,8 +20,9 @@ def get_ssh_public_key():
         print("  ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa")
         return None
 
-    with open(ssh_key_path, 'r') as f:
+    with open(ssh_key_path, "r") as f:
         return f.read().strip()
+
 
 def main():
     print("=" * 60)
@@ -150,5 +152,6 @@ echo "Setup complete!"
     print("Or use the complete script above in /etc/rc.local")
     print()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

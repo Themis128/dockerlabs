@@ -17,7 +17,7 @@
 
         <CollectionView Grid.Row="1" ItemsSource="{Binding Profiles}">
             <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="models:SettingsProfile">
+                <DataTemplate>
                     <Grid Padding="10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />

@@ -7,10 +7,11 @@ Usage: python get_pi_command.py
 import os
 import sys
 
+
 def get_ssh_public_key():
     """Get SSH public key from user's .ssh directory"""
     home = os.path.expanduser("~")
-    ssh_key_path = os.path.join(home, '.ssh', 'id_rsa.pub')
+    ssh_key_path = os.path.join(home, ".ssh", "id_rsa.pub")
 
     if not os.path.exists(ssh_key_path):
         print("ERROR: SSH public key not found!")
@@ -19,8 +20,9 @@ def get_ssh_public_key():
         print("  ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa")
         sys.exit(1)
 
-    with open(ssh_key_path, 'r') as f:
+    with open(ssh_key_path, "r") as f:
         return f.read().strip()
+
 
 def main():
     public_key = get_ssh_public_key()
@@ -53,5 +55,6 @@ def main():
     print("  python test_ssh_auth.py 1  # For 192.168.0.48")
     print("  python connect_ssh.py 1    # For 192.168.0.48")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

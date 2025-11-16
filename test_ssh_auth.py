@@ -10,10 +10,12 @@ import subprocess
 import socket
 import argparse
 
+
 def load_config():
     """Load Raspberry Pi configuration"""
-    with open('pi-config.json', 'r') as f:
+    with open("pi-config.json", "r") as f:
         return json.load(f)
+
 
 def test_port(ip, port, timeout=3):
     """Test if a port is open"""
@@ -26,24 +28,36 @@ def test_port(ip, port, timeout=3):
     except:
         return False
 
+
 def test_ssh_key_auth(ip, username):
     """Test SSH key authentication"""
     try:
         result = subprocess.run(
-            ['ssh', '-o', 'ConnectTimeout=5', '-o', 'StrictHostKeyChecking=no',
-             '-o', 'BatchMode=yes', f'{username}@{ip}', 'echo test'],
+            [
+                "ssh",
+                "-o",
+                "ConnectTimeout=5",
+                "-o",
+                "StrictHostKeyChecking=no",
+                "-o",
+                "BatchMode=yes",
+                f"{username}@{ip}",
+                "echo test",
+            ],
             capture_output=True,
-            timeout=10
+            timeout=10,
         )
         return result.returncode == 0
     except:
         return False
 
+
 def main():
-    parser = argparse.ArgumentParser(description='Test SSH authentication')
-    parser.add_argument('pi_number', type=int, nargs='?', default=1, choices=[1, 2],
-                       help='Pi number (1 or 2)')
-    parser.add_argument('-u', '--username', default='pi', help='SSH username')
+    parser = argparse.ArgumentParser(description="Test SSH authentication")
+    parser.add_argument(
+        "pi_number", type=int, nargs="?", default=1, choices=[1, 2], help="Pi number (1 or 2)"
+    )
+    parser.add_argument("-u", "--username", default="pi", help="SSH username")
 
     args = parser.parse_args()
 
@@ -54,11 +68,11 @@ def main():
         sys.exit(1)
 
     # Get Ethernet Pi (priority)
-    all_pis = config['raspberry_pis']
+    all_pis = config["raspberry_pis"]
     ethernet_pis = []
 
     for key, pi in all_pis.items():
-        if pi['connection'] == 'Wired':
+        if pi["connection"] == "Wired":
             ethernet_pis.append(pi)
 
     if args.pi_number > len(ethernet_pis):
@@ -76,7 +90,7 @@ def main():
     # Test 1: SSH Key Authentication
     print("Test 1: SSH Key Authentication")
     print("-" * 30)
-    if test_ssh_key_auth(selected_pi['ip'], args.username):
+    if test_ssh_key_auth(selected_pi["ip"], args.username):
         print("SSH key authentication WORKS!")
         print(f"  You can connect with: python connect_ssh.py {args.pi_number}")
         sys.exit(0)
@@ -97,10 +111,13 @@ def main():
     print()
     print("Option B: Enable Password Authentication")
     print("  On the Pi (physical access), run:")
-    print("    sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/; s/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config")
+    print(
+        "    sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/; s/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config"
+    )
     print("    sudo systemctl restart ssh")
     print("  Then test: python test_ssh_auth.py", args.pi_number)
     print()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

@@ -9,10 +9,12 @@ import sys
 import subprocess
 import socket
 
+
 def load_config():
     """Load Raspberry Pi configuration"""
-    with open('pi-config.json', 'r') as f:
+    with open("pi-config.json", "r") as f:
         return json.load(f)
+
 
 def test_port(ip, port, timeout=2):
     """Test if a port is open"""
@@ -24,6 +26,7 @@ def test_port(ip, port, timeout=2):
         return result == 0
     except:
         return False
+
 
 def main():
     try:
@@ -37,21 +40,21 @@ def main():
     print("=" * 60)
     print()
 
-    all_pis = config['raspberry_pis']
+    all_pis = config["raspberry_pis"]
     ethernet_pis = []
     wifi_pis = []
 
     for key, pi in all_pis.items():
-        if pi['connection'] == 'Wired':
+        if pi["connection"] == "Wired":
             ethernet_pis.append(pi)
-        elif pi['connection'] == '2.4G':
+        elif pi["connection"] == "2.4G":
             wifi_pis.append(pi)
 
     print("Current Status:")
     print("-" * 60)
     for pi in ethernet_pis + wifi_pis:
-        ssh_open = test_port(pi['ip'], 22)
-        telnet_open = test_port(pi['ip'], 23)
+        ssh_open = test_port(pi["ip"], 22)
+        telnet_open = test_port(pi["ip"], 23)
         print(f"{pi['name']} ({pi['ip']}):")
         print(f"  SSH (22): {'OPEN' if ssh_open else 'CLOSED'}")
         print(f"  Telnet (23): {'OPEN' if telnet_open else 'CLOSED'}")
@@ -169,5 +172,6 @@ def main():
     print("  python get_pi_command.py")
     print()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

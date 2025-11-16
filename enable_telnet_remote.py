@@ -11,22 +11,25 @@ import socket
 import argparse
 import time
 
+
 def load_config():
     """Load Raspberry Pi configuration"""
-    with open('pi-config.json', 'r') as f:
+    with open("pi-config.json", "r") as f:
         return json.load(f)
+
 
 def test_ping(ip):
     """Test ping connectivity"""
     try:
         result = subprocess.run(
-            ['ping', '-n' if sys.platform == 'win32' else '-c', '2', ip],
+            ["ping", "-n" if sys.platform == "win32" else "-c", "2", ip],
             capture_output=True,
-            timeout=10
+            timeout=10,
         )
         return result.returncode == 0
     except:
         return False
+
 
 def test_port(ip, port, timeout=3):
     """Test if a port is open"""
@@ -38,6 +41,7 @@ def test_port(ip, port, timeout=3):
         return result == 0
     except:
         return False
+
 
 def enable_telnet_on_pi(pi_name, ip, connection_type, username):
     """Enable telnet on a single Pi"""
@@ -57,7 +61,7 @@ def enable_telnet_on_pi(pi_name, ip, connection_type, username):
 
     # Remove old host key
     try:
-        subprocess.run(['ssh-keygen', '-R', ip], capture_output=True, timeout=5)
+        subprocess.run(["ssh-keygen", "-R", ip], capture_output=True, timeout=5)
     except:
         pass
 
@@ -74,10 +78,17 @@ def enable_telnet_on_pi(pi_name, ip, connection_type, username):
     try:
         print("    Installing and configuring telnet...")
         result = subprocess.run(
-            ['ssh', '-o', 'StrictHostKeyChecking=accept-new',
-             '-o', 'ConnectTimeout=15', f'{username}@{ip}', telnet_cmd],
+            [
+                "ssh",
+                "-o",
+                "StrictHostKeyChecking=accept-new",
+                "-o",
+                "ConnectTimeout=15",
+                f"{username}@{ip}",
+                telnet_cmd,
+            ],
             capture_output=True,
-            timeout=60
+            timeout=60,
         )
 
         if result.returncode == 0:
@@ -105,9 +116,10 @@ def enable_telnet_on_pi(pi_name, ip, connection_type, username):
         print(f"  Error: {e}")
         return False
 
+
 def main():
-    parser = argparse.ArgumentParser(description='Enable telnet on all Raspberry Pis')
-    parser.add_argument('-u', '--username', default='pi', help='SSH username')
+    parser = argparse.ArgumentParser(description="Enable telnet on all Raspberry Pis")
+    parser.add_argument("-u", "--username", default="pi", help="SSH username")
 
     args = parser.parse_args()
 
@@ -122,28 +134,28 @@ def main():
     print("=" * 40)
     print()
 
-    all_pis = config['raspberry_pis']
+    all_pis = config["raspberry_pis"]
     ethernet_pis = []
     wifi_pis = []
 
     for key, pi in all_pis.items():
-        if pi['connection'] == 'Wired':
+        if pi["connection"] == "Wired":
             ethernet_pis.append(pi)
-        elif pi['connection'] == '2.4G':
+        elif pi["connection"] == "2.4G":
             wifi_pis.append(pi)
 
     # Process Ethernet Pis first (priority)
     print("ETHERNET CONNECTIONS (Priority):")
     print("-" * 33)
     for pi in ethernet_pis:
-        enable_telnet_on_pi(pi['name'], pi['ip'], pi['connection'], args.username)
+        enable_telnet_on_pi(pi["name"], pi["ip"], pi["connection"], args.username)
         print()
 
     # Process WiFi Pis
     print("WIFI CONNECTIONS:")
     print("-" * 17)
     for pi in wifi_pis:
-        enable_telnet_on_pi(pi['name'], pi['ip'], pi['connection'], args.username)
+        enable_telnet_on_pi(pi["name"], pi["ip"], pi["connection"], args.username)
         print()
 
     print("=" * 40)
@@ -154,7 +166,8 @@ def main():
     print()
 
     # Run test script
-    subprocess.run([sys.executable, 'test_connections.py'])
+    subprocess.run([sys.executable, "test_connections.py"])
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

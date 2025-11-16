@@ -17,23 +17,27 @@ except ImportError:
     print("Install it with: pip install paramiko")
     sys.exit(1)
 
+
 def load_config():
     """Load Raspberry Pi configuration"""
-    with open('pi-config.json', 'r') as f:
+    with open("pi-config.json", "r") as f:
         return json.load(f)
+
 
 def test_connectivity(ip, count=2):
     """Test network connectivity to IP"""
     try:
         import subprocess
+
         result = subprocess.run(
-            ['ping', '-n' if sys.platform == 'win32' else '-c', str(count), ip],
+            ["ping", "-n" if sys.platform == "win32" else "-c", str(count), ip],
             capture_output=True,
-            timeout=10
+            timeout=10,
         )
         return result.returncode == 0
     except:
         return False
+
 
 def test_port(ip, port, timeout=3):
     """Test if a port is open"""
@@ -46,22 +50,23 @@ def test_port(ip, port, timeout=3):
     except:
         return False
 
-def select_pi(config, pi_number, connection_type='auto'):
+
+def select_pi(config, pi_number, connection_type="auto"):
     """Select Raspberry Pi based on number and connection type"""
-    all_pis = config['raspberry_pis']
+    all_pis = config["raspberry_pis"]
     ethernet_pis = []
     wifi_pis = []
 
     for key, pi in all_pis.items():
-        if pi['connection'] == 'Wired':
+        if pi["connection"] == "Wired":
             ethernet_pis.append(pi)
-        elif pi['connection'] == '2.4G':
+        elif pi["connection"] == "2.4G":
             wifi_pis.append(pi)
 
     selected_pi = None
     connection_method = ""
 
-    if connection_type == 'auto':
+    if connection_type == "auto":
         # ALWAYS try Ethernet first (priority)
         if ethernet_pis:
             idx = pi_number - 1
@@ -77,19 +82,20 @@ def select_pi(config, pi_number, connection_type='auto'):
                 connection_method = "WiFi"
                 print(f"WARNING: Ethernet Pi #{pi_number} not found, using WiFi fallback")
 
-    elif connection_type == 'ethernet':
+    elif connection_type == "ethernet":
         idx = pi_number - 1
         if 0 <= idx < len(ethernet_pis):
             selected_pi = ethernet_pis[idx]
             connection_method = "Ethernet"
 
-    elif connection_type == 'wifi':
+    elif connection_type == "wifi":
         idx = pi_number - 1
         if 0 <= idx < len(wifi_pis):
             selected_pi = wifi_pis[idx]
             connection_method = "WiFi"
 
     return selected_pi, connection_method
+
 
 def connect_with_paramiko(ip, username, password=None, key_file=None):
     """Connect to Pi using Paramiko"""
@@ -133,6 +139,7 @@ def connect_with_paramiko(ip, username, password=None, key_file=None):
         print(f"ERROR: Connection failed: {e}")
         return None
 
+
 def interactive_shell(client):
     """Start interactive shell session"""
     try:
@@ -144,20 +151,20 @@ def interactive_shell(client):
         while True:
             try:
                 command = input("$ ")
-                if command.lower() in ['exit', 'quit', 'logout']:
+                if command.lower() in ["exit", "quit", "logout"]:
                     break
 
                 if not command.strip():
                     continue
 
                 stdin, stdout, stderr = client.exec_command(command)
-                output = stdout.read().decode('utf-8', errors='ignore')
-                error = stderr.read().decode('utf-8', errors='ignore')
+                output = stdout.read().decode("utf-8", errors="ignore")
+                error = stderr.read().decode("utf-8", errors="ignore")
 
                 if output:
-                    print(output, end='')
+                    print(output, end="")
                 if error:
-                    print(error, end='', file=sys.stderr)
+                    print(error, end="", file=sys.stderr)
 
             except KeyboardInterrupt:
                 print("\n\nType 'exit' to disconnect")
@@ -173,26 +180,34 @@ def interactive_shell(client):
     finally:
         client.close()
 
+
 def execute_command(client, command):
     """Execute a single command and return output"""
     try:
         stdin, stdout, stderr = client.exec_command(command)
-        output = stdout.read().decode('utf-8')
-        error = stderr.read().decode('utf-8')
+        output = stdout.read().decode("utf-8")
+        error = stderr.read().decode("utf-8")
         return output, error, stdout.channel.recv_exit_status()
     except Exception as e:
         return "", str(e), -1
 
+
 def main():
-    parser = argparse.ArgumentParser(description='Connect to Raspberry Pi via SSH using Paramiko')
-    parser.add_argument('pi_number', type=int, nargs='?', default=1, choices=[1, 2],
-                       help='Pi number (1 or 2)')
-    parser.add_argument('-u', '--username', default='pi', help='SSH username')
-    parser.add_argument('-p', '--password', help='SSH password (will prompt if not provided)')
-    parser.add_argument('-k', '--key', help='Path to SSH private key file')
-    parser.add_argument('-c', '--connection', choices=['ethernet', 'wifi', 'auto'],
-                       default='auto', help='Connection type (default: auto, prioritizes Ethernet)')
-    parser.add_argument('--command', help='Execute single command and exit (non-interactive)')
+    parser = argparse.ArgumentParser(description="Connect to Raspberry Pi via SSH using Paramiko")
+    parser.add_argument(
+        "pi_number", type=int, nargs="?", default=1, choices=[1, 2], help="Pi number (1 or 2)"
+    )
+    parser.add_argument("-u", "--username", default="pi", help="SSH username")
+    parser.add_argument("-p", "--password", help="SSH password (will prompt if not provided)")
+    parser.add_argument("-k", "--key", help="Path to SSH private key file")
+    parser.add_argument(
+        "-c",
+        "--connection",
+        choices=["ethernet", "wifi", "auto"],
+        default="auto",
+        help="Connection type (default: auto, prioritizes Ethernet)",
+    )
+    parser.add_argument("--command", help="Execute single command and exit (non-interactive)")
 
     args = parser.parse_args()
 
@@ -223,16 +238,16 @@ def main():
     print()
 
     # Test connectivity
-    print("Testing connectivity...", end=' ', flush=True)
-    if not test_connectivity(selected_pi['ip']):
+    print("Testing connectivity...", end=" ", flush=True)
+    if not test_connectivity(selected_pi["ip"]):
         print("FAILED")
         print(f"ERROR: Cannot reach {selected_pi['ip']}")
         sys.exit(1)
     print("OK")
 
     # Test SSH port
-    print("Testing SSH port...", end=' ', flush=True)
-    if not test_port(selected_pi['ip'], 22):
+    print("Testing SSH port...", end=" ", flush=True)
+    if not test_port(selected_pi["ip"], 22):
         print("FAILED")
         print("ERROR: SSH port 22 is not accessible")
         sys.exit(1)
@@ -243,12 +258,7 @@ def main():
     print("Connecting via SSH (Paramiko)...")
     print()
 
-    client = connect_with_paramiko(
-        selected_pi['ip'],
-        args.username,
-        args.password,
-        args.key
-    )
+    client = connect_with_paramiko(selected_pi["ip"], args.username, args.password, args.key)
 
     if not client:
         print("\nConnection failed. Please check:")
@@ -272,5 +282,6 @@ def main():
         # Interactive session
         interactive_shell(client)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

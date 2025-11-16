@@ -11,18 +11,20 @@ import socket
 import time
 import argparse
 
+
 def load_config():
     """Load Raspberry Pi configuration"""
-    with open('pi-config.json', 'r') as f:
+    with open("pi-config.json", "r") as f:
         return json.load(f)
+
 
 def test_connectivity(ip, count=2):
     """Test network connectivity to IP"""
     try:
         result = subprocess.run(
-            ['ping', '-n' if sys.platform == 'win32' else '-c', str(count), ip],
+            ["ping", "-n" if sys.platform == "win32" else "-c", str(count), ip],
             capture_output=True,
-            timeout=10
+            timeout=10,
         )
         return result.returncode == 0
     except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as e:
@@ -32,6 +34,7 @@ def test_connectivity(ip, count=2):
         # Log unexpected errors but don't crash
         print(f"Warning: Unexpected error in connectivity test: {e}", file=sys.stderr)
         return False
+
 
 def test_port(ip, port, timeout=3):
     """Test if a port is open"""
@@ -49,22 +52,23 @@ def test_port(ip, port, timeout=3):
         print(f"Warning: Unexpected error in port test: {e}", file=sys.stderr)
         return False
 
-def select_pi(config, pi_number, connection_type='auto'):
+
+def select_pi(config, pi_number, connection_type="auto"):
     """Select Raspberry Pi based on number and connection type"""
-    all_pis = config['raspberry_pis']
+    all_pis = config["raspberry_pis"]
     ethernet_pis = []
     wifi_pis = []
 
     for key, pi in all_pis.items():
-        if pi['connection'] == 'Wired':
+        if pi["connection"] == "Wired":
             ethernet_pis.append(pi)
-        elif pi['connection'] == '2.4G':
+        elif pi["connection"] == "2.4G":
             wifi_pis.append(pi)
 
     selected_pi = None
     connection_method = ""
 
-    if connection_type == 'auto':
+    if connection_type == "auto":
         # ALWAYS try Ethernet first (priority)
         if ethernet_pis:
             idx = pi_number - 1
@@ -80,13 +84,13 @@ def select_pi(config, pi_number, connection_type='auto'):
                 connection_method = "WiFi"
                 print(f"WARNING: Ethernet Pi #{pi_number} not found, using WiFi fallback")
 
-    elif connection_type == 'ethernet':
+    elif connection_type == "ethernet":
         idx = pi_number - 1
         if 0 <= idx < len(ethernet_pis):
             selected_pi = ethernet_pis[idx]
             connection_method = "Ethernet"
 
-    elif connection_type == 'wifi':
+    elif connection_type == "wifi":
         idx = pi_number - 1
         if 0 <= idx < len(wifi_pis):
             selected_pi = wifi_pis[idx]
@@ -94,13 +98,20 @@ def select_pi(config, pi_number, connection_type='auto'):
 
     return selected_pi, connection_method
 
+
 def main():
-    parser = argparse.ArgumentParser(description='Connect to Raspberry Pi via SSH')
-    parser.add_argument('pi_number', type=int, nargs='?', default=1, choices=[1, 2],
-                       help='Pi number (1 or 2)')
-    parser.add_argument('-u', '--username', default='pi', help='SSH username')
-    parser.add_argument('-c', '--connection', choices=['ethernet', 'wifi', 'auto'],
-                       default='auto', help='Connection type (default: auto, prioritizes Ethernet)')
+    parser = argparse.ArgumentParser(description="Connect to Raspberry Pi via SSH")
+    parser.add_argument(
+        "pi_number", type=int, nargs="?", default=1, choices=[1, 2], help="Pi number (1 or 2)"
+    )
+    parser.add_argument("-u", "--username", default="pi", help="SSH username")
+    parser.add_argument(
+        "-c",
+        "--connection",
+        choices=["ethernet", "wifi", "auto"],
+        default="auto",
+        help="Connection type (default: auto, prioritizes Ethernet)",
+    )
 
     args = parser.parse_args()
 
@@ -131,8 +142,8 @@ def main():
     print()
 
     # Test connectivity
-    print("Testing connectivity...", end=' ', flush=True)
-    if not test_connectivity(selected_pi['ip']):
+    print("Testing connectivity...", end=" ", flush=True)
+    if not test_connectivity(selected_pi["ip"]):
         print("FAILED")
         print(f"ERROR: Cannot reach {selected_pi['ip']}")
         if connection_method == "Ethernet":
@@ -149,8 +160,8 @@ def main():
     print("OK")
 
     # Test SSH port
-    print("Testing SSH port...", end=' ', flush=True)
-    if not test_port(selected_pi['ip'], 22):
+    print("Testing SSH port...", end=" ", flush=True)
+    if not test_port(selected_pi["ip"], 22):
         print("FAILED")
         print("WARNING: SSH port 22 is not accessible")
         print("  The SSH service may not be running on the Pi")
@@ -165,8 +176,7 @@ def main():
 
     try:
         # Remove old host key to avoid warnings
-        subprocess.run(['ssh-keygen', '-R', selected_pi['ip']],
-                      capture_output=True, timeout=5)
+        subprocess.run(["ssh-keygen", "-R", selected_pi["ip"]], capture_output=True, timeout=5)
     except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError, FileNotFoundError):
         # ssh-keygen may not be available or may fail - this is non-critical
         pass
@@ -176,9 +186,16 @@ def main():
 
     # Connect
     try:
-        subprocess.run(['ssh', '-o', 'StrictHostKeyChecking=accept-new',
-                       '-o', 'ConnectTimeout=10',
-                       f"{args.username}@{selected_pi['ip']}"])
+        subprocess.run(
+            [
+                "ssh",
+                "-o",
+                "StrictHostKeyChecking=accept-new",
+                "-o",
+                "ConnectTimeout=10",
+                f"{args.username}@{selected_pi['ip']}",
+            ]
+        )
     except KeyboardInterrupt:
         print("\nConnection interrupted")
     except Exception as e:
@@ -192,5 +209,6 @@ def main():
         print("  - Enable password auth: See FIX-AUTHENTICATION.md")
         sys.exit(1)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

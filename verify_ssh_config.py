@@ -10,10 +10,12 @@ import subprocess
 import socket
 import argparse
 
+
 def load_config():
     """Load Raspberry Pi configuration"""
-    with open('pi-config.json', 'r') as f:
+    with open("pi-config.json", "r") as f:
         return json.load(f)
+
 
 def test_port(ip, port, timeout=3):
     """Test if a port is open"""
@@ -26,11 +28,13 @@ def test_port(ip, port, timeout=3):
     except:
         return False
 
+
 def main():
-    parser = argparse.ArgumentParser(description='Verify SSH configuration')
-    parser.add_argument('pi_number', type=int, nargs='?', default=1, choices=[1, 2],
-                       help='Pi number (1 or 2)')
-    parser.add_argument('-u', '--username', default='pi', help='SSH username')
+    parser = argparse.ArgumentParser(description="Verify SSH configuration")
+    parser.add_argument(
+        "pi_number", type=int, nargs="?", default=1, choices=[1, 2], help="Pi number (1 or 2)"
+    )
+    parser.add_argument("-u", "--username", default="pi", help="SSH username")
 
     args = parser.parse_args()
 
@@ -41,11 +45,11 @@ def main():
         sys.exit(1)
 
     # Get Ethernet Pi (priority)
-    all_pis = config['raspberry_pis']
+    all_pis = config["raspberry_pis"]
     ethernet_pis = []
 
     for key, pi in all_pis.items():
-        if pi['connection'] == 'Wired':
+        if pi["connection"] == "Wired":
             ethernet_pis.append(pi)
 
     if args.pi_number > len(ethernet_pis):
@@ -61,7 +65,7 @@ def main():
     print()
 
     # Test SSH port
-    if not test_port(selected_pi['ip'], 22):
+    if not test_port(selected_pi["ip"], 22):
         print("ERROR: SSH port 22 is not accessible")
         sys.exit(1)
 
@@ -72,13 +76,22 @@ def main():
     print()
 
     # Test SSH key auth
-    print("1. SSH Key Authentication:", end=' ', flush=True)
+    print("1. SSH Key Authentication:", end=" ", flush=True)
     try:
         result = subprocess.run(
-            ['ssh', '-o', 'ConnectTimeout=5', '-o', 'StrictHostKeyChecking=no',
-             '-o', 'BatchMode=yes', f'{args.username}@{selected_pi["ip"]}', 'echo test'],
+            [
+                "ssh",
+                "-o",
+                "ConnectTimeout=5",
+                "-o",
+                "StrictHostKeyChecking=no",
+                "-o",
+                "BatchMode=yes",
+                f'{args.username}@{selected_pi["ip"]}',
+                "echo test",
+            ],
             capture_output=True,
-            timeout=10
+            timeout=10,
         )
         if result.returncode == 0:
             print("WORKS")
@@ -88,20 +101,30 @@ def main():
         print("FAILED")
 
     # Test password auth
-    print("2. Password Authentication:", end=' ', flush=True)
+    print("2. Password Authentication:", end=" ", flush=True)
     try:
         # Try with PreferredAuthentications=password
         result = subprocess.run(
-            ['ssh', '-o', 'ConnectTimeout=5', '-o', 'StrictHostKeyChecking=no',
-             '-o', 'PreferredAuthentications=password', '-o', 'PubkeyAuthentication=no',
-             f'{args.username}@{selected_pi["ip"]}', 'echo test'],
+            [
+                "ssh",
+                "-o",
+                "ConnectTimeout=5",
+                "-o",
+                "StrictHostKeyChecking=no",
+                "-o",
+                "PreferredAuthentications=password",
+                "-o",
+                "PubkeyAuthentication=no",
+                f'{args.username}@{selected_pi["ip"]}',
+                "echo test",
+            ],
             capture_output=True,
-            timeout=10
+            timeout=10,
         )
-        output = result.stderr.decode() if result.stderr else ''
-        if 'password' in output.lower() or result.returncode == 0:
+        output = result.stderr.decode() if result.stderr else ""
+        if "password" in output.lower() or result.returncode == 0:
             print("ENABLED (will prompt for password)")
-        elif 'permission denied' in output.lower() and 'publickey' in output.lower():
+        elif "permission denied" in output.lower() and "publickey" in output.lower():
             print("DISABLED (only publickey allowed)")
         else:
             print("UNKNOWN (may be disabled)")
@@ -132,6 +155,6 @@ def main():
     print("If you still see 'Permission denied', the SSH service")
     print("may need to be restarted on the Pi.")
 
-if __name__ == '__main__':
-    main()
 
+if __name__ == "__main__":
+    main()

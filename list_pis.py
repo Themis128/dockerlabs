@@ -7,10 +7,12 @@ Usage: python list_pis.py
 import json
 import sys
 
+
 def load_config():
     """Load Raspberry Pi configuration"""
-    with open('pi-config.json', 'r') as f:
+    with open("pi-config.json", "r") as f:
         return json.load(f)
+
 
 def main():
     try:
@@ -24,14 +26,14 @@ def main():
     print("=" * 40)
     print()
 
-    all_pis = config['raspberry_pis']
+    all_pis = config["raspberry_pis"]
     ethernet_pis = []
     wifi_pis = []
 
     for key, pi in all_pis.items():
-        if pi['connection'] == 'Wired':
+        if pi["connection"] == "Wired":
             ethernet_pis.append(pi)
-        elif pi['connection'] == '2.4G':
+        elif pi["connection"] == "2.4G":
             wifi_pis.append(pi)
 
     # Display Ethernet connections
@@ -68,5 +70,6 @@ def main():
     print("  Telnet Ethernet: python connect_telnet.py 1 -c ethernet")
     print("  Telnet WiFi:     python connect_telnet.py 1 -c wifi")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

@@ -9,18 +9,20 @@ import subprocess
 import socket
 import sys
 
+
 def load_config():
     """Load Raspberry Pi configuration"""
-    with open('pi-config.json', 'r') as f:
+    with open("pi-config.json", "r") as f:
         return json.load(f)
+
 
 def test_ping(ip, count=2):
     """Test ping connectivity"""
     try:
         result = subprocess.run(
-            ['ping', '-n' if sys.platform == 'win32' else '-c', str(count), ip],
+            ["ping", "-n" if sys.platform == "win32" else "-c", str(count), ip],
             capture_output=True,
-            timeout=10
+            timeout=10,
         )
         return result.returncode == 0
     except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as e:
@@ -30,6 +32,7 @@ def test_ping(ip, count=2):
         # Log unexpected errors but don't crash
         print(f"Warning: Unexpected error in ping test: {e}", file=sys.stderr)
         return False
+
 
 def test_port(ip, port, timeout=2):
     """Test if a port is open"""
@@ -47,12 +50,13 @@ def test_port(ip, port, timeout=2):
         print(f"Warning: Unexpected error in port test: {e}", file=sys.stderr)
         return False
 
+
 def test_pi(pi_name, ip, connection_type):
     """Test connectivity to a single Pi"""
     print(f"Testing: {pi_name} ({ip}) via {connection_type}")
 
     # Test ping
-    print("  [Ping] ", end='', flush=True)
+    print("  [Ping] ", end="", flush=True)
     if test_ping(ip):
         print("OK")
     else:
@@ -60,20 +64,21 @@ def test_pi(pi_name, ip, connection_type):
         return
 
     # Test SSH
-    print("  [SSH]  ", end='', flush=True)
+    print("  [SSH]  ", end="", flush=True)
     if test_port(ip, 22):
         print(f"Port 22 open")
     else:
         print("Port 22 closed/timeout")
 
     # Test Telnet
-    print("  [Telnet] ", end='', flush=True)
+    print("  [Telnet] ", end="", flush=True)
     if test_port(ip, 23):
         print(f"Port 23 open")
     else:
         print("Port 23 closed (telnet not enabled)")
 
     print()
+
 
 def main():
     try:
@@ -87,31 +92,32 @@ def main():
     print("=" * 40)
     print()
 
-    all_pis = config['raspberry_pis']
+    all_pis = config["raspberry_pis"]
     ethernet_pis = []
     wifi_pis = []
 
     for key, pi in all_pis.items():
-        if pi['connection'] == 'Wired':
+        if pi["connection"] == "Wired":
             ethernet_pis.append(pi)
-        elif pi['connection'] == '2.4G':
+        elif pi["connection"] == "2.4G":
             wifi_pis.append(pi)
 
     # Test Ethernet Pis first (priority)
     print("ETHERNET CONNECTIONS:")
     print("-" * 20)
     for pi in ethernet_pis:
-        test_pi(pi['name'], pi['ip'], pi['connection'])
+        test_pi(pi["name"], pi["ip"], pi["connection"])
 
     # Test WiFi Pis
     print("WIFI CONNECTIONS:")
     print("-" * 17)
     for pi in wifi_pis:
-        test_pi(pi['name'], pi['ip'], pi['connection'])
+        test_pi(pi["name"], pi["ip"], pi["connection"])
 
     print("=" * 40)
     print("Test Complete!")
     print("=" * 40)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
