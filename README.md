@@ -1,242 +1,249 @@
-# Raspberry Pi SSH and Telnet Connection Scripts
+# DockerLabs - Raspberry Pi Management Suite
 
-This project provides PowerShell scripts to easily connect to your Raspberry Pis via SSH and Telnet, using both Ethernet and WiFi connections.
+A comprehensive Raspberry Pi management solution featuring a .NET MAUI desktop application, web-based GUI, and automated connection scripts for SSH and Telnet.
 
-## Raspberry Pi Configuration
+## 🚀 Features
 
-### Ethernet Connections
-1. **Pi 1 (Ethernet)**
-   - IP: `192.168.0.48`
-   - MAC: `B8-27-EB-74-83-19`
-   - Name: `pi`
+- **.NET MAUI Desktop App**: Cross-platform desktop application for managing Raspberry Pi devices
+- **Web GUI**: Browser-based interface for monitoring and managing Pis
+- **Automated Scripts**: PowerShell and Python scripts for SSH/Telnet connections
+- **Comprehensive Testing**: 81 Playwright tests covering all functionality
+- **Cross-Platform Support**: Windows, macOS, Linux, Android, iOS
 
-2. **Pi 2 (Ethernet)**
-   - IP: `192.168.0.16`
-   - MAC: `D8-3A-DD-AF-C9-2B`
-   - Name: `pi`
+## 📋 Project Structure
 
-### WiFi Connections
-1. **Pi 1 (WiFi)**
-   - IP: `192.168.0.17`
-   - MAC: `D8-3A-DD-AF-C9-2C`
-   - Name: `pi1`
-
-2. **Pi 2 (WiFi)**
-   - IP: `192.168.0.41`
-   - MAC: `B8-27-EB-21-D6-4C`
-   - Name: `pi2`
-
-## Prerequisites
-
-### SSH
-- SSH should be enabled on your Raspberry Pis
-- Default username is `pi` (can be changed via script parameter)
-- SSH is typically enabled by default on modern Raspberry Pi OS
-- **Important**: If you get "Permission denied (publickey)" errors, you need physical access to enable password authentication
-  - See [SSH-SETUP.md](SSH-SETUP.md) for detailed instructions
-  - See [PHYSICAL-ACCESS-SETUP.md](PHYSICAL-ACCESS-SETUP.md) for physical access methods
-  - Quick reference: `.\quick-fix-pi.ps1`
-
-### Telnet
-- Telnet must be enabled on your Raspberry Pis (disabled by default for security)
-- **Quick Setup**: Run the automated setup script:
-  ```powershell
-  .\setup-telnet.ps1
-  ```
-- **Manual Setup**: If automated setup doesn't work, SSH into each Pi and run:
-  ```bash
-  sudo apt-get update -y
-  sudo apt-get install -y telnetd inetutils-inetd
-  sudo systemctl enable inetd
-  sudo systemctl start inetd
-  ```
-- Alternatively, copy `enable-telnet-on-pi.sh` to each Pi and run:
-  ```bash
-  bash enable-telnet-on-pi.sh
-  ```
-
-### Windows Telnet Client
-If telnet is not available on Windows, enable it:
-```powershell
-# Run PowerShell as Administrator
-Enable-WindowsOptionalFeature -Online -FeatureName TelnetClient
+```
+dockerlabs/
+├── RaspberryPiManager/     # .NET MAUI desktop application
+├── web-gui/                # Python web server and frontend
+├── tests/                  # Playwright test suite
+├── *.ps1                   # PowerShell connection scripts
+├── *.py                    # Python utilities
+└── *.sh                    # Shell scripts for Pi setup
 ```
 
-## Usage
+## 🛠️ Technologies
 
-### Test Connectivity
-Test all Raspberry Pi connections (ping, SSH, telnet):
-```powershell
-.\test-connections.ps1
-```
+- **.NET MAUI 9.0**: Cross-platform desktop/mobile framework
+- **Playwright 1.56.1**: End-to-end testing framework
+- **Python 3.14**: Web server and utilities
+- **Node.js 20.19**: Test runner and tooling
+- **TypeScript**: Test configuration
 
-### Open Ports 22 and 23
-Open ports 22 (SSH) and 23 (Telnet) on all Raspberry Pis:
-```powershell
-.\open-ports.ps1
-```
+## 📦 Prerequisites
 
-### Enable Telnet on All Pis
-Automatically enable telnet on all accessible Raspberry Pis:
-```powershell
-.\setup-telnet.ps1
-```
+### Required
+- **.NET SDK 9.0** or later ([Download](https://dotnet.microsoft.com/download))
+- **Node.js 20.x** or later ([Download](https://nodejs.org/))
+- **Python 3.7+** ([Download](https://www.python.org/downloads/))
+- **Git** ([Download](https://git-scm.com/downloads))
 
-### List All Raspberry Pis
-```powershell
-.\list-pis.ps1
-```
+### Optional (for cross-platform builds)
+- **Android SDK** (for Android builds)
+- **Xcode** (for iOS/macOS builds, macOS only)
+- **Visual Studio 2022** or **Visual Studio Code**
 
-### SSH Connections
+## 🚀 Quick Start
 
-**Primary Method (Ethernet First - Recommended):**
-```powershell
-# Automatically tries Ethernet first, falls back to WiFi if needed
-.\connect-ssh.ps1 1              # Connect to Pi 1 (Ethernet preferred)
-.\connect-ssh.ps1 2              # Connect to Pi 2 (Ethernet preferred)
-.\connect-ssh.ps1 1 -Username "myuser"  # With custom username
-
-# Force Ethernet connection
-.\connect-ssh.ps1 1 -ConnectionType ethernet
-
-# Force WiFi connection
-.\connect-ssh.ps1 1 -ConnectionType wifi
-```
-
-**Legacy Methods (Specific Connection Type):**
-```powershell
-# Ethernet only
-.\connect-ssh-ethernet.ps1 1
-.\connect-ssh-ethernet.ps1 2
-
-# WiFi only
-.\connect-ssh-wifi.ps1 1
-.\connect-ssh-wifi.ps1 2
-```
-
-### Telnet Connections
-
-**Primary Method (Ethernet First - Recommended):**
-```powershell
-# Automatically tries Ethernet first, falls back to WiFi if needed
-.\connect-telnet.ps1 1           # Connect to Pi 1 (Ethernet preferred)
-.\connect-telnet.ps1 2           # Connect to Pi 2 (Ethernet preferred)
-.\connect-telnet.ps1 1 -Port 2323  # With custom port
-
-# Force Ethernet connection
-.\connect-telnet.ps1 1 -ConnectionType ethernet
-
-# Force WiFi connection
-.\connect-telnet.ps1 1 -ConnectionType wifi
-```
-
-**Legacy Methods (Specific Connection Type):**
-```powershell
-# Ethernet only
-.\connect-telnet-ethernet.ps1 1
-.\connect-telnet-ethernet.ps1 2
-
-# WiFi only
-.\connect-telnet-wifi.ps1 1
-.\connect-telnet-wifi.ps1 2
-```
-
-## Direct Connection Commands
-
-If you prefer to connect directly without scripts:
-
-### SSH
-```powershell
-# Ethernet Pi 1
-ssh pi@192.168.0.48
-
-# Ethernet Pi 2
-ssh pi@192.168.0.16
-
-# WiFi Pi 1
-ssh pi@192.168.0.17
-
-# WiFi Pi 2
-ssh pi@192.168.0.41
-```
-
-### Telnet
-```powershell
-# Ethernet Pi 1
-telnet 192.168.0.48 23
-
-# Ethernet Pi 2
-telnet 192.168.0.16 23
-
-# WiFi Pi 1
-telnet 192.168.0.17 23
-
-# WiFi Pi 2
-telnet 192.168.0.41 23
-```
-
-## Firewall Configuration
-
-### Open Ports 22 and 23
-To allow SSH (port 22) and Telnet (port 23) through the firewall:
-
-**Automated (via SSH):**
-```powershell
-.\open-ports.ps1
-```
-
-**Manual (on each Pi):**
+### 1. Clone the Repository
 ```bash
-# Copy open-ports-manual.sh to the Pi and run:
-bash open-ports-manual.sh
-
-# Or manually:
-sudo ufw allow 22/tcp
-sudo ufw allow 23/tcp
-sudo ufw enable
+git clone https://github.com/Themis128/dockerlabs.git
+cd dockerlabs
 ```
 
-The script automatically detects and configures:
-- UFW (Uncomplicated Firewall) - most common on Raspberry Pi OS
-- firewalld - alternative firewall
-- iptables - fallback option
+### 2. Install Dependencies
 
-## Troubleshooting
+**Node.js dependencies:**
+```bash
+npm install
+npx playwright install
+```
 
-### Cannot Connect via SSH
+**Python dependencies:**
+```bash
+# Python uses standard library only - no external packages needed
+```
 
-**"Permission denied (publickey)" Error:**
-- Your Pi is configured for SSH key authentication only
-- **Quick Fix**: Set up SSH keys: `.\setup-ssh-keys.ps1`
-- **Alternative**: Enable password authentication (see [SSH-SETUP.md](SSH-SETUP.md))
+**.NET MAUI workload:**
+```bash
+dotnet workload install maui
+```
 
-**Other SSH Issues:**
-1. Verify the Raspberry Pi is powered on
-2. Check network connectivity: `ping <pi-ip-address>`
-3. Ensure SSH is enabled on the Pi: `sudo systemctl status ssh`
-4. Verify you're on the same network
-5. Check firewall settings on both devices
-6. Remove old host keys: `ssh-keygen -R <pi-ip-address>`
+### 3. Configure Raspberry Pis
 
-### Cannot Connect via Telnet
-1. Verify telnet is installed and running on the Raspberry Pi
-2. Check if telnet service is active: `sudo systemctl status inetd`
-3. Verify the port is open: `netstat -tuln | grep 23`
-4. Check firewall rules on the Raspberry Pi
+Edit `pi-config.json` with your Raspberry Pi network information:
+```json
+{
+  "raspberry_pis": {
+    "1": {
+      "name": "Pi 1",
+      "ip": "192.168.0.48",
+      "mac": "B8-27-EB-74-83-19",
+      "connection": "Wired"
+    }
+  }
+}
+```
 
-### Network Issues
-- **Ethernet**: Ensure the cable is properly connected and the network interface is up
-- **WiFi**: Verify WiFi is connected and signal strength is adequate
-- Check IP addresses haven't changed (DHCP may assign new IPs)
+### 4. Run Tests
+```bash
+npm test
+```
 
-## Security Notes
+### 5. Start Web Server
+```bash
+npm run start:server
+# Or directly:
+python web-gui/server.py
+```
 
-⚠️ **Warning**: Telnet transmits data in plain text and is not secure. Use SSH for production environments.
+Visit http://localhost:3000 in your browser.
 
-- SSH is encrypted and recommended for all connections
-- Telnet should only be used for testing or in isolated networks
-- Consider using SSH keys instead of passwords for better security
+### 6. Build Desktop App
+```bash
+cd RaspberryPiManager
+dotnet build -f net9.0-windows10.0.19041.0
+```
 
-## Configuration File
+## 📖 Usage
 
-The `pi-config.json` file contains all Raspberry Pi network information. You can modify this file to update IP addresses, add new Pis, or change connection details.
+### Web GUI
+
+Start the server and access the web interface:
+```bash
+python web-gui/server.py
+```
+
+Features:
+- Dashboard with Pi statistics
+- Raspberry Pi list and management
+- Connection testing (SSH, Telnet)
+- SD card management
+- OS installation tools
+
+### Desktop Application
+
+Build and run the .NET MAUI application:
+```bash
+cd RaspberryPiManager
+dotnet run -f net9.0-windows10.0.19041.0
+```
+
+### Connection Scripts
+
+**SSH Connection:**
+```powershell
+.\connect-ssh.ps1 1              # Connect to Pi 1
+.\connect-ssh.ps1 2              # Connect to Pi 2
+```
+
+**Telnet Connection:**
+```powershell
+.\connect-telnet.ps1 1           # Connect to Pi 1 via Telnet
+.\connect-telnet.ps1 2           # Connect to Pi 2 via Telnet
+```
+
+**Test Connections:**
+```powershell
+.\test-connections.ps1           # Test all Pi connections
+.\test-ssh-auth.ps1 1            # Test SSH authentication for Pi 1
+```
+
+See [README.md](README.md) for detailed connection documentation.
+
+## 🧪 Testing
+
+### Run All Tests
+```bash
+npm test
+```
+
+### Run Specific Test Suites
+```bash
+npm run test:gui                 # GUI tests only
+npm run test:ui                  # Interactive test UI
+npm run test:headed              # Run with browser visible
+npm run test:debug               # Debug mode
+```
+
+### Test Coverage
+- **81 tests** across 4 test files
+- **3 browsers**: Chromium, Firefox, WebKit
+- **Test types**: Configuration, Connectivity, GUI, Scripts
+
+## 🏗️ Building
+
+### Windows
+```bash
+cd RaspberryPiManager
+dotnet build -f net9.0-windows10.0.19041.0
+```
+
+### Android (requires Android SDK)
+```bash
+dotnet build -f net9.0-android
+```
+
+### iOS (requires macOS and Xcode)
+```bash
+dotnet build -f net9.0-ios
+```
+
+### Release Build
+```bash
+dotnet build -c Release -f net9.0-windows10.0.19041.0
+```
+
+## 📚 Documentation
+
+- [UPGRADE_SUMMARY.md](UPGRADE_SUMMARY.md) - Framework upgrade details
+- [SSH-SETUP.md](SSH-SETUP.md) - SSH configuration guide
+- [QUICK-SETUP.md](QUICK-SETUP.md) - Quick setup instructions
+- [FIX-AUTHENTICATION.md](FIX-AUTHENTICATION.md) - Authentication troubleshooting
+
+## 🔧 Configuration
+
+### Raspberry Pi Configuration
+Edit `pi-config.json` to configure your Raspberry Pi devices:
+- IP addresses
+- MAC addresses
+- Connection types (Ethernet/WiFi)
+- Default usernames and ports
+
+### Playwright Configuration
+Edit `playwright.config.ts` to customize test settings:
+- Browser configurations
+- Timeouts
+- Test directories
+- Web server settings
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- .NET MAUI team for the cross-platform framework
+- Playwright team for the excellent testing framework
+- Raspberry Pi Foundation for the amazing hardware
+
+## 📞 Support
+
+For issues and questions:
+- Open an issue on [GitHub](https://github.com/Themis128/dockerlabs/issues)
+- Check the documentation in the `docs/` directory
+- Review troubleshooting guides in the repository
+
+---
+
+**Made with ❤️ for Raspberry Pi enthusiasts**
