@@ -34,6 +34,7 @@ CONFIG_TIMEOUT = 120
 MAX_REQUEST_SIZE = 10 * 1024 * 1024  # 10MB max request size
 RATE_LIMIT_REQUESTS = 100  # Max requests per window
 RATE_LIMIT_WINDOW = 60  # Time window in seconds
+RATE_LIMIT_LOCALHOST_REQUESTS = 500  # Higher limit for localhost (for development)
 STATIC_CACHE_MAX_AGE = 3600  # 1 hour cache for static files
 
 # Allowed CORS origins (for production, restrict this list)
@@ -63,6 +64,10 @@ _shutdown_timeout = 30  # Maximum time to wait for requests to complete
 # In production, consider using Redis or similar for distributed systems
 _rate_limit_store: Dict[str, List[float]] = defaultdict(list)
 _rate_limit_lock = threading.Lock()
+
+# Track active subprocesses for graceful shutdown
+_active_subprocesses: set = set()
+_active_subprocesses_lock = threading.Lock()
 
 # Server start time for metrics
 server_start_time: float = 0.0
@@ -111,6 +116,10 @@ def check_rate_limit(client_ip: str) -> Tuple[bool, Optional[int]]:
     Returns: (allowed, retry_after_seconds)
     """
     if not ENABLE_RATE_LIMITING:
+        return True, None
+
+    # Allow unlimited requests from localhost (for development)
+    if client_ip in ("127.0.0.1", "localhost", "::1"):
         return True, None
 
     current_time = time.time()
@@ -403,6 +412,9 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
             elif self.path == "/api/scan-wifi":
                 # Allow POST for scan-wifi as well (test script uses POST)
                 self.scan_wifi_networks()
+            elif self.path.startswith("/api/get-pi-info"):
+                # Allow POST for get-pi-info as well
+                self.get_pi_info()
             else:
                 warning_log(f"404 Not Found: {self.path}", self.request_id)
                 self.send_json({
@@ -449,9 +461,25 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
             # This is important on Windows where buffering can cause delays
             self.wfile.flush()
             self.response_code = status
-        except (BrokenPipeError, ConnectionAbortedError):
-            # Client disconnected, ignore
+        except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError) as e:
+            # Client disconnected or connection was reset, ignore silently
             pass
+        except OSError as e:
+            # On Windows, connection resets can be raised as OSError with error code 10054
+            # Only ignore connection-related errors, not other OSErrors
+            if hasattr(e, 'winerror') and e.winerror == 10054:
+                # Windows connection reset error
+                pass
+            elif hasattr(e, 'errno') and e.errno in (10054, 104, 32, 107):
+                # Connection reset errors on various platforms
+                # 10054: Windows WSAECONNRESET
+                # 104: Linux ECONNRESET
+                # 32: EPIPE (broken pipe)
+                # 107: ENOTCONN (not connected)
+                pass
+            else:
+                # Re-raise other OSErrors as they might be legitimate errors
+                raise
 
     def _get_config_path(self) -> str:
         """Get the path to pi-config.json in project root"""
@@ -1861,12 +1889,14 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                 }, 500)
         except subprocess.TimeoutExpired:
             error_msg = "Network scan timed out after 60 seconds"
-            error_log(error_msg, request_id=self.request_id)
+            # Log as warning since timeouts can be expected on slow networks
+            warning_log(f"{error_msg} - This may be normal on large or slow networks", request_id=self.request_id)
             self.send_json({
                 "success": False,
                 "error": error_msg,
                 "devices": [],
-                "raspberry_pis": []
+                "raspberry_pis": [],
+                "note": "Scan may have found some devices before timing out. Try again or check network connectivity."
             }, 500)
         except (OSError, subprocess.SubprocessError) as e:
             error_log(f"Error scanning network: {str(e)}", e, request_id=self.request_id)
@@ -2029,8 +2059,28 @@ def signal_handler(signum, frame):
 
         time.sleep(0.5)  # Check every 500ms
 
+    # Clean up resources (kill subprocesses, etc.)
+    cleanup_resources()
+
 def cleanup_resources():
     """Clean up resources on shutdown"""
+    try:
+        # Kill all active subprocesses
+        with _active_subprocesses_lock:
+            for proc in list(_active_subprocesses):
+                try:
+                    if proc.poll() is None:  # Process is still running
+                        proc.kill()
+                        proc.wait(timeout=2)
+                except (OSError, subprocess.TimeoutExpired):
+                    pass
+            _active_subprocesses.clear()
+        if VERBOSE:
+            debug_log("Active subprocesses terminated")
+    except Exception as e:
+        if VERBOSE:
+            debug_log(f"Error cleaning up subprocesses: {e}")
+
     try:
         # Clear rate limit store
         with _rate_limit_lock:
@@ -2050,32 +2100,60 @@ def run_subprocess_safe(cmd_args, timeout=None, cwd=None, check_shutdown=True):
     if check_shutdown and shutdown_event.is_set():
         return None
 
+    process = None
     try:
-        result = subprocess.run(
+        # Use Popen instead of run to have better control over the process
+        process = subprocess.Popen(
             cmd_args,
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
-            timeout=timeout,
             cwd=cwd,
-            check=False,
         )
-        return result
-    except subprocess.TimeoutExpired as e:
-        # Try to kill the process if it times out
-        if hasattr(e, 'process') and e.process:
+
+        # Track the process
+        with _active_subprocesses_lock:
+            _active_subprocesses.add(process)
+
+        try:
+            # Wait for process with timeout
+            stdout, stderr = process.communicate(timeout=timeout)
+
+            # Create a CompletedProcess-like result
+            result = subprocess.CompletedProcess(
+                cmd_args,
+                process.returncode,
+                stdout=stdout,
+                stderr=stderr
+            )
+            return result
+        except subprocess.TimeoutExpired:
+            # Kill the process if it times out
             try:
-                e.process.kill()
-                e.process.wait(timeout=5)
+                process.kill()
+                process.wait(timeout=5)
             except (OSError, subprocess.TimeoutExpired):
                 pass
-        raise
+            raise
     except KeyboardInterrupt:
+        # Kill process on KeyboardInterrupt
+        if process:
+            try:
+                process.kill()
+                process.wait(timeout=2)
+            except (OSError, subprocess.TimeoutExpired):
+                pass
         # Re-raise KeyboardInterrupt to allow proper shutdown
         raise
     except Exception as e:
         # Log and re-raise other exceptions
         error_log(f"Subprocess error: {str(e)}", e)
         raise
+    finally:
+        # Remove from tracking
+        if process:
+            with _active_subprocesses_lock:
+                _active_subprocesses.discard(process)
 
 
 def run_server():

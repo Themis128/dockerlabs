@@ -2,6 +2,7 @@
  * Helper functions for Nuxt-specific testing
  */
 
+import { expect } from '@playwright/test';
 import type { Page, Locator } from '@playwright/test';
 
 export const NUXT_BASE_URL = 'http://localhost:3001';
@@ -12,7 +13,7 @@ export const NUXT_BASE_URL = 'http://localhost:3001';
 const DEFAULT_TIMEOUTS = {
   navigation: 60000,
   layoutReady: 30000,
-  tabVisible: 15000,
+  tabVisible: 5000, // Reduced from 15000 for faster tests
   tabClick: 5000,
   uiUpdate: 200,
 } as const;
@@ -113,27 +114,20 @@ export async function clickTab(
     await tab.click({ force: true, timeout: DEFAULT_TIMEOUTS.tabClick });
   }
 
-  // Wait for tab to become active with polling
-  const maxRetries = 10; // Increased from 5 to 10
-  let isActive = false;
-
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    isActive = await isTabActive(page, tabLabel);
-    if (isActive) {
-      break;
+  // Wait for tab to become active using Playwright's built-in waiting
+  // This is more efficient than manual polling
+  try {
+    await expect(tab).toHaveClass(/active/, { timeout: timeout });
+  } catch (error) {
+    // Fallback: check if tab is active using our helper
+    const isActive = await isTabActive(page, tabLabel);
+    if (!isActive) {
+      const currentActiveTab = await getActiveTab(page);
+      throw new Error(
+        `Tab "${tabLabel}" did not become active after clicking. ` +
+          `Current active tab: ${currentActiveTab || 'none'}`
+      );
     }
-    // Wait before next attempt (except on last attempt) - respect retryDelay parameter
-    if (attempt < maxRetries - 1) {
-      await page.waitForTimeout(retryDelay);
-    }
-  }
-
-  if (!isActive) {
-    const currentActiveTab = await getActiveTab(page);
-    throw new Error(
-      `Tab "${tabLabel}" did not become active after clicking (checked ${maxRetries} times). ` +
-        `Current active tab: ${currentActiveTab || 'none'}`
-    );
   }
 
   // Small delay to ensure UI updates complete - reduced from 200ms to 50ms

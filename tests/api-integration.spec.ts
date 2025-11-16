@@ -93,8 +93,8 @@ test.describe('API Integration through Nuxt Proxy', () => {
       retries: 0,
     });
 
-    // Should return 200, 400, 404, 500, 503, or 504 (timeout) or handle error gracefully
-    expect([200, 400, 404, 500, 503, 504]).toContain(result.status);
+    // Should return 200, 400, 404, 429 (rate limiting), 500, 503, or 504 (timeout) or handle error gracefully
+    expect([200, 400, 404, 429, 500, 503, 504]).toContain(result.status);
     // Response should be an object (even if it's an error)
     expect(result.data).toBeDefined();
     expect(typeof result.data === 'object').toBeTruthy();

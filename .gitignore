@@ -31,6 +31,8 @@ yarn-error.log*
 # IDE
 .idea
 .vscode
+.vscode-insiders
+.cursor
 *.swp
 *.swo
 *~
@@ -64,3 +66,138 @@ Thumbs.db
 # Lock files (keep package-lock.json, ignore others)
 yarn.lock
 pnpm-lock.yaml
+
+# Tool caches and configs
+.docker/
+.dotnet/
+.nuget/
+.ollama/
+.aws/
+.azure/
+.pm2/
+.rustup/
+.serverless/
+.slack/
+.ssh/
+.deno/
+.cache/
+.chocolatey/
+.config/
+.quokka/
+.redhat/
+.sonarlint/
+.templateengine/
+.wakatime/
+.npmrc
+.gitconfig
+.nanorc
+.lesshst
+.python_history
+.viminfo
+.wslconfig
+.git-for-windows-updater
+.bedrockrc
+.serverlessrc
+.claude.json
+.claude.json.backup
+.claude/
+.codemod/
+.console-ninja/
+.continue/
+.cspell.json
+.data/
+.dbclient/
+.influxdbv2/
+.matplotlib/
+.packettracer
+.rest-client/
+.snmpb/
+.th-client/
+.tobii/
+.tsbuildinfo
+.u2net/
+.zenmap/
+.nuxtrc
+
+# User directories (Windows)
+Desktop/
+Documents/
+Downloads/
+Music/
+Pictures/
+Videos/
+AppData/
+Contacts/
+CrossDevice/
+Favorites/
+Links/
+Searches/
+"Saved Games/"
+"Application Data/"
+Cookies/
+"Local Settings/"
+"My Documents/"
+NetHood/
+PrintHood/
+Recent/
+SendTo/
+"Start Menu/"
+Templates/
+NTUSER.DAT*
+ntuser.dat*
+ntuser.ini
+
+# System and application directories
+.VirtualBox/
+"VirtualBox VMs/"
+.aitk/
+.ciscoSA/
+GNS3/
+"Cisco Packet Tracer 8.2.2/"
+Cisco-CLI-Analyzer_Session_Logs/
+MSIAfterburner-Backups/
+Nextcloud/
+Nextcloud2/
+Nextcloud3/
+Nextcloud4/
+OneDrive/
+"OneDrive - New York College/"
+"OneDrive - University of Bolton/"
+"OneDrive - *"
+"New folder/"
+SuperPuTTY.settings
+
+# Build artifacts and generated files
+dist/
+.output/
+.nuxt/
+.nitro/
+*.tsbuildinfo
+index-*.js
+index-*.css
+
+# Development scripts (if not needed in repo)
+clean.ps1
+cleanup.bat
+dev-cleanup.ps1
+emergency-recovery.ps1
+health-check.ps1
+setup-proxmox-vm.ps1
+system-scripts/
+
+# Worktrees (embedded git repos)
+.cursor/worktrees/
+
+# Scoop
+scoop/
+
+# Go
+go/
+
+# Dotnet
+dotnet/
+
+# Temporary files
+*.log
+*.tmp
+*.temp

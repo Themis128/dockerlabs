@@ -241,8 +241,13 @@ def test_port(ip: str, port: int, timeout: float = 1.0) -> bool:
         return False
 
 
-def scan_ip_range(network: str) -> List[str]:
-    """Scan IP range for responsive hosts (quick ping scan)"""
+def scan_ip_range(network: str, max_ips: int = 30) -> List[str]:
+    """Scan IP range for responsive hosts (quick ping scan)
+
+    Args:
+        network: Network CIDR notation (e.g., "192.168.1.0/24")
+        max_ips: Maximum number of IPs to scan (reduced for speed)
+    """
     responsive_ips = []
 
     try:
@@ -252,13 +257,13 @@ def scan_ip_range(network: str) -> List[str]:
             print(f"Warning: Network {network} is too large, limiting scan", file=sys.stderr)
             return []
 
-        # Scan first 50 IPs (excluding network and broadcast)
-        hosts = list(net.hosts())[:50]
+        # Scan fewer IPs for speed (reduced from 50 to 30)
+        hosts = list(net.hosts())[:max_ips]
 
         for ip in hosts:
             ip_str = str(ip)
-            # Quick ping test
-            success, _ = test_ping(ip_str, count=1, timeout=1)
+            # Quick ping test with shorter timeout
+            success, _ = test_ping(ip_str, count=1, timeout=0.5)  # Reduced from 1 to 0.5
             if success:
                 responsive_ips.append(ip_str)
     except Exception as e:
@@ -267,8 +272,14 @@ def scan_ip_range(network: str) -> List[str]:
     return responsive_ips
 
 
-def identify_device(ip: str, mac: Optional[str] = None) -> Dict[str, any]:
-    """Identify device type and gather information"""
+def identify_device(ip: str, mac: Optional[str] = None, quick_mode: bool = False) -> Dict[str, any]:
+    """Identify device type and gather information
+
+    Args:
+        ip: IP address to identify
+        mac: Optional MAC address
+        quick_mode: If True, skip port scanning and use faster timeouts
+    """
     device = {
         'ip': ip,
         'mac': mac or 'Unknown',
@@ -280,28 +291,38 @@ def identify_device(ip: str, mac: Optional[str] = None) -> Dict[str, any]:
         'connection_type': 'Unknown'
     }
 
-    # Test ping
-    is_online, ping_time = test_ping(ip, count=2, timeout=2)
+    # Check if MAC indicates Raspberry Pi first (fast check)
+    if mac and is_raspberry_pi_mac(mac):
+        device['is_raspberry_pi'] = True
+        device['name'] = f'Raspberry Pi ({ip})'
+
+    # Test ping with shorter timeout in quick mode
+    ping_timeout = 1 if quick_mode else 2
+    ping_count = 1 if quick_mode else 2
+    is_online, ping_time = test_ping(ip, count=ping_count, timeout=ping_timeout)
     device['is_online'] = is_online
     device['ping_time'] = ping_time
 
     if not is_online:
         return device
 
-    # Check if MAC indicates Raspberry Pi
-    if mac and is_raspberry_pi_mac(mac):
-        device['is_raspberry_pi'] = True
-        device['name'] = f'Raspberry Pi ({ip})'
-
-    # Check for common Raspberry Pi ports
-    for port in RPI_PORTS:
-        if test_port(ip, port, timeout=1.0):
-            device['open_ports'].append(port)
-            # If SSH (22) is open, likely a Raspberry Pi
-            if port == 22:
-                device['is_raspberry_pi'] = True
-                if not device['name'].startswith('Raspberry Pi'):
-                    device['name'] = f'Raspberry Pi ({ip})'
+    # In quick mode, only check SSH port (most important for Pi detection)
+    if quick_mode:
+        if test_port(ip, 22, timeout=0.5):
+            device['open_ports'].append(22)
+            device['is_raspberry_pi'] = True
+            if not device['name'].startswith('Raspberry Pi'):
+                device['name'] = f'Raspberry Pi ({ip})'
+    else:
+        # Check for common Raspberry Pi ports
+        for port in RPI_PORTS:
+            if test_port(ip, port, timeout=0.5):  # Reduced from 1.0 to 0.5
+                device['open_ports'].append(port)
+                # If SSH (22) is open, likely a Raspberry Pi
+                if port == 22:
+                    device['is_raspberry_pi'] = True
+                    if not device['name'].startswith('Raspberry Pi'):
+                        device['name'] = f'Raspberry Pi ({ip})'
 
     # Determine connection type based on network
     if ip.startswith('192.168.') or ip.startswith('10.') or ip.startswith('172.'):
@@ -312,15 +333,22 @@ def identify_device(ip: str, mac: Optional[str] = None) -> Dict[str, any]:
 
 
 def main():
-    """Main scanning function"""
+    """Main scanning function with timeout protection"""
     discovered_devices = []
+    scan_start_time = time.time()
+    max_scan_time = 50  # Maximum time to spend scanning (seconds)
 
     # Method 1: Read ARP table (fastest, shows recently active devices)
     print("Scanning ARP table...", file=sys.stderr)
     arp_devices = get_arp_table()
 
-    # Process ARP entries
+    # Process ARP entries with timeout check
     for arp_entry in arp_devices:
+        # Check if we're running out of time
+        if time.time() - scan_start_time > max_scan_time:
+            print("Warning: Scan timeout approaching, returning partial results", file=sys.stderr)
+            break
+
         ip = arp_entry.get('ip')
         mac = arp_entry.get('mac')
 
@@ -331,26 +359,34 @@ def main():
         if ip.startswith('127.') or ip.startswith('169.254.'):
             continue
 
-        device = identify_device(ip, mac)
+        # Use quick mode for ARP entries to speed things up
+        device = identify_device(ip, mac, quick_mode=True)
         if device['is_online']:
             discovered_devices.append(device)
 
     # Method 2: Scan local network (slower but more thorough)
-    print("Scanning local network...", file=sys.stderr)
-    network_info = get_local_network()
-    if network_info:
-        _, network = network_info
-        # Only scan if we haven't found many devices from ARP
-        if len(discovered_devices) < 5:
-            responsive_ips = scan_ip_range(network)
-            for ip in responsive_ips:
-                # Skip if already discovered
-                if any(d['ip'] == ip for d in discovered_devices):
-                    continue
+    # Only do this if we have time and haven't found many devices
+    elapsed_time = time.time() - scan_start_time
+    if elapsed_time < max_scan_time - 10:  # Leave 10 seconds buffer
+        print("Scanning local network...", file=sys.stderr)
+        network_info = get_local_network()
+        if network_info:
+            _, network = network_info
+            # Only scan if we haven't found many devices from ARP
+            if len(discovered_devices) < 5:
+                # Reduce max IPs to scan for speed
+                responsive_ips = scan_ip_range(network, max_ips=20)
+                for ip in responsive_ips:
+                    # Check timeout before each device
+                    if time.time() - scan_start_time > max_scan_time:
+                        break
+                    # Skip if already discovered
+                    if any(d['ip'] == ip for d in discovered_devices):
+                        continue
 
-                device = identify_device(ip)
-                if device['is_online']:
-                    discovered_devices.append(device)
+                    device = identify_device(ip, quick_mode=True)
+                    if device['is_online']:
+                        discovered_devices.append(device)
 
     # Filter and prioritize Raspberry Pi devices
     rpi_devices = [d for d in discovered_devices if d['is_raspberry_pi']]
@@ -366,7 +402,8 @@ def main():
         'raspberry_pis': rpi_devices,
         'total_discovered': len(all_devices),
         'raspberry_pi_count': len(rpi_devices),
-        'scan_timestamp': time.time()
+        'scan_timestamp': time.time(),
+        'scan_duration': round(time.time() - scan_start_time, 2)
     }
 
     print(json.dumps(result, indent=2))
