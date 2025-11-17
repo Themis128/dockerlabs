@@ -573,7 +573,7 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                 )
                 return
 
-            script_path = os.path.join(os.path.dirname(__file__), "..", "test_ssh_auth.py")
+            script_path = os.path.join(os.path.dirname(__file__), "..", "scripts", "python", "test_ssh_auth.py")
             if not os.path.exists(script_path):
                 self.send_json({"success": False, "error": "test_ssh_auth.py not found"}, 404)
                 return
@@ -1738,19 +1738,174 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                     self.send_json({"success": False, "error": error_msg}, 501)
                 return
             elif download_url:
-                # Download the image first (this would need to be implemented)
-                error_msg = "Image download not yet implemented. Please use a pre-downloaded image path."
+                # Download the image first
+                download_script_path = os.path.join(os.path.dirname(__file__), "scripts", "download_os_image.py")
+                if not os.path.exists(download_script_path):
+                    error_msg = "download_os_image.py not found"
+                    if stream_progress:
+                        self.send_response(404)
+                        self.send_header("Content-Type", "text/event-stream")
+                        self._send_cors_headers()
+                        self.end_headers()
+                        error_data = json.dumps({"success": False, "error": error_msg})
+                        self.wfile.write(f"data: {error_data}\n\n".encode())
+                        self.wfile.flush()
+                    else:
+                        self.send_json({"success": False, "error": error_msg}, 404)
+                    return
+
+                # Download the image with progress streaming
                 if stream_progress:
-                    self.send_response(501)
-                    self.send_header("Content-Type", "text/event-stream")
-                    self._send_cors_headers()
-                    self.end_headers()
-                    error_data = json.dumps({"success": False, "error": error_msg})
-                    self.wfile.write(f"data: {error_data}\n\n".encode())
-                    self.wfile.flush()
+                    # Send download progress updates
+                    download_process = subprocess.Popen(
+                        [sys.executable, download_script_path, download_url],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True,
+                        bufsize=1,
+                        cwd=os.path.dirname(os.path.dirname(__file__)),
+                    )
+
+                    download_result = None
+                    stdout_lines = []
+
+                    # Read all stdout lines
+                    for line in iter(download_process.stdout.readline, ''):
+                        if not line:
+                            break
+                        line = line.strip()
+                        if line:
+                            stdout_lines.append(line)
+                            try:
+                                data = json.loads(line)
+                                if data.get("type") == "progress":
+                                    # Scale download progress to 50-80% of total (formatting is 0-50%, download+install is 50-100%)
+                                    # Download takes 50-80%, installation takes 80-100%
+                                    percent = data.get("percent", 0)
+                                    scaled_percent = 50 + int(percent * 0.3)  # 50-80% for download
+                                    sse_data = json.dumps({
+                                        "type": "progress",
+                                        "message": f"Downloading OS image: {data.get('message', '')}",
+                                        "percent": scaled_percent
+                                    })
+                                    try:
+                                        self.wfile.write(f"data: {sse_data}\n\n".encode())
+                                        self.wfile.flush()
+                                    except (ConnectionResetError, BrokenPipeError, ConnectionAbortedError, OSError) as e:
+                                        # Client disconnected during download
+                                        if VERBOSE:
+                                            debug_log(f"Client disconnected during download: {type(e).__name__}", self.request_id)
+                                        # Terminate download process
+                                        try:
+                                            download_process.terminate()
+                                            download_process.wait(timeout=5)
+                                        except (subprocess.TimeoutExpired, OSError):
+                                            try:
+                                                download_process.kill()
+                                            except OSError:
+                                                pass
+                                        return
+                                elif data.get("success") is not None:
+                                    download_result = data
+                            except json.JSONDecodeError:
+                                # If not JSON, might be error output - log it
+                                if VERBOSE:
+                                    debug_log(f"Non-JSON line from download script: {line[:100]}", self.request_id)
+                                pass
+
+                    # Wait for process to complete and read any remaining output
+                    download_process.wait()
+
+                    # If we didn't get a result yet, try to parse the last JSON line from stdout
+                    if download_result is None and stdout_lines:
+                        # Look for the last JSON object in the output
+                        for line in reversed(stdout_lines):
+                            try:
+                                data = json.loads(line)
+                                if data.get("success") is not None:
+                                    download_result = data
+                                    break
+                            except json.JSONDecodeError:
+                                continue
+
+                    # Check process return code
+                    if download_process.returncode != 0:
+                        # Process failed, get stderr for error details
+                        stderr_output = download_process.stderr.read() if download_process.stderr else b""
+                        stderr_text = stderr_output.decode('utf-8', errors='ignore') if stderr_output else "Unknown error"
+                        error_msg = f"Download process failed (exit code {download_process.returncode}): {stderr_text[:200]}"
+                        try:
+                            error_data = json.dumps({"success": False, "error": error_msg})
+                            self.wfile.write(f"data: {error_data}\n\n".encode())
+                            self.wfile.flush()
+                        except (ConnectionResetError, BrokenPipeError, ConnectionAbortedError, OSError):
+                            pass
+                        return
+
+                    if download_result and download_result.get("success"):
+                        image_path = download_result.get("image_path")
+                        if not image_path or not os.path.exists(image_path):
+                            try:
+                                error_data = json.dumps({"success": False, "error": "Downloaded image file not found"})
+                                self.wfile.write(f"data: {error_data}\n\n".encode())
+                                self.wfile.flush()
+                            except (ConnectionResetError, BrokenPipeError, ConnectionAbortedError, OSError):
+                                # Client disconnected, ignore
+                                pass
+                            return
+                        # image_path is now set, continue with installation below
+                    else:
+                        # Get error message from download_result or use default
+                        if download_result:
+                            error_msg = download_result.get("error", "Image download failed")
+                            # Ensure error_msg is a string
+                            if not isinstance(error_msg, str):
+                                error_msg = f"Image download failed: {str(error_msg)}"
+                        else:
+                            error_msg = "Image download failed: No response from download script"
+                        try:
+                            error_data = json.dumps({"success": False, "error": error_msg})
+                            self.wfile.write(f"data: {error_data}\n\n".encode())
+                            self.wfile.flush()
+                        except (ConnectionResetError, BrokenPipeError, ConnectionAbortedError, OSError):
+                            # Client disconnected, ignore
+                            pass
+                        return
                 else:
-                    self.send_json({"success": False, "error": error_msg}, 501)
-                return
+                    # Non-streaming download
+                    result = run_subprocess_safe(
+                        [sys.executable, download_script_path, download_url],
+                        timeout=3600,  # 1 hour timeout for downloads
+                        cwd=os.path.dirname(os.path.dirname(__file__)),
+                        check_shutdown=True
+                    )
+
+                    if result["success"]:
+                        try:
+                            output = result.get("stdout", "")
+                            if "{" in output and "}" in output:
+                                start = output.find("{")
+                                end = output.rfind("}") + 1
+                                json_str = output[start:end]
+                                download_result = json.loads(json_str)
+                                if download_result.get("success"):
+                                    image_path = download_result.get("image_path")
+                                    if not image_path or not os.path.exists(image_path):
+                                        self.send_json({"success": False, "error": "Downloaded image file not found"}, 500)
+                                        return
+                                    # image_path is now set, continue with installation below
+                                else:
+                                    self.send_json({"success": False, "error": download_result.get("error", "Download failed")}, 500)
+                                    return
+                            else:
+                                self.send_json({"success": False, "error": "Invalid download response"}, 500)
+                                return
+                        except (json.JSONDecodeError, KeyError) as e:
+                            self.send_json({"success": False, "error": f"Failed to parse download result: {str(e)}"}, 500)
+                            return
+                    else:
+                        self.send_json({"success": False, "error": result.get("error", "Image download failed")}, 500)
+                        return
             else:
                 # For now, require image_path to be provided directly in the request
                 # In production, this would be determined from download_url or custom_image
@@ -1817,13 +1972,13 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                     max_silence_timeout = 1800  # 30 minutes max silence before timeout
                     read_timeout = 1.0  # Check every second for shutdown/timeout
 
-                    # Read stdout line by line with timeout protection
+                    # Read stdout and stderr line by line with timeout protection
                     # Use a queue-based approach for non-blocking reads
                     output_queue = queue.Queue()
                     read_thread_running = True
 
                     def read_output():
-                        """Thread to read process output"""
+                        """Thread to read process stdout"""
                         try:
                             for line in iter(process.stdout.readline, ''):
                                 if not read_thread_running:
@@ -1833,9 +1988,29 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                         except Exception as e:
                             output_queue.put(('error', str(e)))
 
+                    def read_stderr():
+                        """Thread to read process stderr"""
+                        try:
+                            for line in iter(process.stderr.readline, ''):
+                                if not read_thread_running:
+                                    break
+                                if line.strip():
+                                    # Send stderr as error_debug message
+                                    error_debug_data = {
+                                        "type": "error_debug",
+                                        "message": f"stderr: {line.strip()}",
+                                        "source": "stderr"
+                                    }
+                                    output_queue.put(('stderr', json.dumps(error_debug_data)))
+                            output_queue.put(('stderr', None))  # EOF marker
+                        except Exception as e:
+                            output_queue.put(('error', f"stderr read error: {str(e)}"))
+
                     import threading
                     read_thread = threading.Thread(target=read_output, daemon=True)
+                    read_stderr_thread = threading.Thread(target=read_stderr, daemon=True)
                     read_thread.start()
+                    read_stderr_thread.start()
 
                     # Read from queue with timeout
                     while True:
@@ -1883,7 +2058,30 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                             if source == 'error':
                                 raise Exception(f"Error reading output: {line}")
                             if line is None:  # EOF
-                                break
+                                if source == 'stdout':
+                                    # Wait for stderr to finish too
+                                    continue
+                                else:
+                                    break
+                            if source == 'stderr':
+                                # Handle stderr line (already JSON formatted)
+                                try:
+                                    stderr_data = json.loads(line)
+                                    sse_data = json.dumps(stderr_data)
+                                    self.wfile.write(f"data: {sse_data}\n\n".encode())
+                                    self.wfile.flush()
+                                    progress_messages.append(stderr_data)
+                                except json.JSONDecodeError:
+                                    # If not JSON, send as plain error_debug
+                                    error_debug_data = {
+                                        "type": "error_debug",
+                                        "message": f"stderr: {line}",
+                                        "source": "stderr"
+                                    }
+                                    sse_data = json.dumps(error_debug_data)
+                                    self.wfile.write(f"data: {sse_data}\n\n".encode())
+                                    self.wfile.flush()
+                                continue
 
                             last_output_time = time.time()  # Reset timeout on output
 
@@ -1895,7 +2093,23 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                                 # Try to parse as JSON progress message
                                 progress_data = json.loads(line)
                                 if progress_data.get("type") == "progress":
+                                    # Scale installation progress to 80-100% (download was 50-80% if it happened)
+                                    percent = progress_data.get("percent", 0)
+                                    if percent is not None:
+                                        # If download happened, installation is 80-100%, otherwise 50-100%
+                                        if download_url:
+                                            scaled_percent = 80 + int(percent * 0.2)  # 80-100% for installation
+                                        else:
+                                            scaled_percent = 50 + int(percent * 0.5)  # 50-100% for installation
+                                        progress_data["percent"] = scaled_percent
+                                    progress_data["message"] = f"Installing: {progress_data.get('message', '')}"
                                     # Send progress update via SSE
+                                    sse_data = json.dumps(progress_data)
+                                    self.wfile.write(f"data: {sse_data}\n\n".encode())
+                                    self.wfile.flush()
+                                    progress_messages.append(progress_data)
+                                elif progress_data.get("type") == "error_debug":
+                                    # Send verbose error debugging info
                                     sse_data = json.dumps(progress_data)
                                     self.wfile.write(f"data: {sse_data}\n\n".encode())
                                     self.wfile.flush()
@@ -1938,6 +2152,11 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
 
                         # Send final result
                         if final_result:
+                            # Include stderr in final result if available
+                            if stderr and stderr.strip():
+                                if "debug_info" not in final_result:
+                                    final_result["debug_info"] = {}
+                                final_result["debug_info"]["stderr"] = stderr
                             sse_data = json.dumps(final_result)
                             self.wfile.write(f"data: {sse_data}\n\n".encode())
                         else:
@@ -1949,7 +2168,15 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                                 }
                             else:
                                 error_msg = stderr or "Installation failed"
-                                final_result = {"success": False, "error": error_msg}
+                                final_result = {
+                                    "success": False,
+                                    "error": error_msg,
+                                    "debug_info": {
+                                        "returncode": process.returncode,
+                                        "stderr": stderr if stderr else None,
+                                        "stdout": remaining_stdout if remaining_stdout else None
+                                    }
+                                }
                             sse_data = json.dumps(final_result)
                             self.wfile.write(f"data: {sse_data}\n\n".encode())
 
@@ -1983,14 +2210,37 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                     return
 
                 except (OSError, subprocess.SubprocessError, json.JSONDecodeError) as e:
-                    error_log(f"Error in streaming install_os: {str(e)}", e, request_id=self.request_id)
-                    try:
-                        error_data = json.dumps({"success": False, "error": str(e)})
-                        self.wfile.write(f"data: {error_data}\n\n".encode())
-                        self.wfile.flush()
-                    except (BrokenPipeError, ConnectionAbortedError, OSError):
-                        # Client already disconnected
-                        pass
+                    # Check if it's a connection error - check string first as it's most reliable
+                    is_connection_error = False
+                    error_str = str(e)
+
+                    # Check error message string first (most reliable on Windows)
+                    if "[WinError 10054]" in error_str or "10054" in error_str:
+                        is_connection_error = True
+                    elif "connection was forcibly closed" in error_str.lower() or "connection reset" in error_str.lower():
+                        is_connection_error = True
+                    elif isinstance(e, (ConnectionResetError, BrokenPipeError, ConnectionAbortedError)):
+                        is_connection_error = True
+                    elif isinstance(e, OSError):
+                        if hasattr(e, 'winerror') and e.winerror == 10054:
+                            is_connection_error = True
+                        elif hasattr(e, 'errno') and e.errno in (10054, 104, 32, 107):
+                            is_connection_error = True
+
+                    if is_connection_error:
+                        # Connection error - don't log as error
+                        if VERBOSE:
+                            debug_log(f"Connection reset during streaming install_os: {type(e).__name__}", self.request_id)
+                    else:
+                        # Real error - log it
+                        error_log(f"Error in streaming install_os: {str(e)}", e, request_id=self.request_id)
+                        try:
+                            error_data = json.dumps({"success": False, "error": str(e)})
+                            self.wfile.write(f"data: {error_data}\n\n".encode())
+                            self.wfile.flush()
+                        except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError, OSError):
+                            # Client already disconnected
+                            pass
                     return
 
             # Non-streaming mode (fallback)
@@ -2013,10 +2263,50 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
 
         except json.JSONDecodeError as e:
             error_log(f"Invalid JSON in install_os request: {str(e)}", e, request_id=self.request_id)
-            self.send_json({"success": False, "error": f"Invalid JSON: {str(e)}"}, 400)
+            try:
+                self.send_json({"success": False, "error": f"Invalid JSON: {str(e)}"}, 400)
+            except (ConnectionResetError, BrokenPipeError, ConnectionAbortedError, OSError):
+                # Client disconnected, ignore
+                pass
+        except (ConnectionResetError, BrokenPipeError, ConnectionAbortedError) as e:
+            # Client disconnected during operation - this is normal, don't log as error
+            if VERBOSE:
+                debug_log(f"Client disconnected during install_os: {type(e).__name__}", self.request_id)
+            # Don't try to send response, connection is closed
         except (OSError, ValueError) as e:
-            error_log(f"Error in install_os: {str(e)}", e, request_id=self.request_id)
-            self.send_json({"success": False, "error": str(e)}, 500)
+            # Check if it's a connection error that we should handle gracefully
+            # ConnectionResetError on Windows is a subclass of OSError, so check for it here too
+            is_connection_error = False
+            error_str = str(e)
+
+            # Check error message string first (most reliable on Windows)
+            if "[WinError 10054]" in error_str or "10054" in error_str:
+                is_connection_error = True
+            elif "connection was forcibly closed" in error_str.lower() or "connection reset" in error_str.lower():
+                is_connection_error = True
+            elif isinstance(e, (ConnectionResetError, BrokenPipeError, ConnectionAbortedError)):
+                is_connection_error = True
+            elif isinstance(e, OSError):
+                # Check for Windows error code 10054 (connection reset)
+                if hasattr(e, 'winerror') and e.winerror == 10054:
+                    is_connection_error = True
+                # Check for common connection error codes
+                elif hasattr(e, 'errno') and e.errno in (10054, 104, 32, 107):
+                    is_connection_error = True
+
+            if is_connection_error:
+                # Connection was reset, don't log as error - just debug log if verbose
+                if VERBOSE:
+                    debug_log(f"Connection reset during install_os: {type(e).__name__} - {str(e)}", self.request_id)
+                # Silently handle - don't try to send response
+            else:
+                # Real error, log it
+                error_log(f"Error in install_os: {str(e)}", e, request_id=self.request_id)
+                try:
+                    self.send_json({"success": False, "error": str(e)}, 500)
+                except (ConnectionResetError, BrokenPipeError, ConnectionAbortedError, OSError):
+                    # Client disconnected while sending error response, ignore
+                    pass
 
     def configure_pi(self):
         """Configure Pi settings"""

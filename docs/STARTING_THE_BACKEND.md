@@ -44,6 +44,25 @@ Or with verbose logging:
 .\scripts\powershell\start-server-verbose.ps1
 ```
 
+### Option 5: Start as Administrator (Windows - Required for SD Card Formatting)
+
+**⚠️ Important for Windows Users:** SD card formatting operations require Administrator privileges on Windows.
+
+To start the server with Administrator privileges:
+
+```powershell
+.\scripts\powershell\start-server-as-admin.ps1
+```
+
+Or manually:
+
+1. Right-click on PowerShell
+2. Select "Run as administrator"
+3. Navigate to the project directory
+4. Run: `python web-gui/server.py`
+
+**Note:** You can run the server normally (without admin) for most features, but SD card formatting will not work without Administrator privileges.
+
 ## Verifying the Server is Running
 
 Once started, you should see output like:
@@ -101,6 +120,25 @@ Should show Python 3.7 or higher.
 3. Check Python version: `python --version`
 4. Try running with verbose mode: `VERBOSE=true python web-gui/server.py`
 
+### SD Card Formatting Fails on Windows
+
+If you see "Administrator privileges required" when formatting SD cards:
+
+**Solution:** Run the Python server as Administrator:
+
+1. **Using PowerShell Script (Easiest):**
+   ```powershell
+   .\scripts\powershell\start-server-as-admin.ps1
+   ```
+
+2. **Manually:**
+   - Right-click on PowerShell or Command Prompt
+   - Select "Run as administrator"
+   - Navigate to project directory
+   - Run: `python web-gui/server.py`
+
+**Why is this needed?** Windows requires Administrator privileges to format disks and create partitions. This is a Windows security requirement, not a limitation of the application.
+
 ## Development Workflow
 
 ### Recommended Setup
@@ -149,5 +187,3 @@ To access from another device:
 ## Stopping the Server
 
 Press `Ctrl+C` in the terminal where the server is running.
-
-

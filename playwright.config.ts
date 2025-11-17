@@ -47,11 +47,17 @@ export default defineConfig({
     '**/node_modules/**',
     '**/.cursor/**',
     '**/.vscode/**',
+    '**/.vscode-insiders/**',
     '**/Downloads/**',
     '**/AppData/**',
     '**/.*/**',
     '**/.*',
     '**/../**',
+    // Only run tests from the tests directory
+    '**/tests/**/*.spec.js', // Exclude .js files (we use .ts)
+    // Exclude external worktrees and extensions
+    '**/worktrees/**',
+    '**/extensions/**',
   ],
 
   /* Configure projects for major browsers */

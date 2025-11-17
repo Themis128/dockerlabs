@@ -10,6 +10,7 @@ import json
 import os
 import argparse
 import time
+import traceback
 
 
 def progress(message, percent=None):
@@ -18,6 +19,21 @@ def progress(message, percent=None):
     if percent is not None:
         progress_data["percent"] = percent
     print(json.dumps(progress_data), flush=True)
+
+
+def error_debug(message, exception=None, context=None):
+    """Output verbose error debugging information"""
+    error_data = {
+        "type": "error_debug",
+        "message": message,
+    }
+    if exception:
+        error_data["exception_type"] = type(exception).__name__
+        error_data["exception_message"] = str(exception)
+        error_data["traceback"] = ''.join(traceback.format_exception(type(exception), exception, exception.__traceback__))
+    if context:
+        error_data["context"] = context
+    print(json.dumps(error_data), flush=True)
 
 
 def install_os_windows(image_path, device_id):
@@ -97,7 +113,24 @@ def install_os_windows(image_path, device_id):
         }
 
     except Exception as e:
-        return {"success": False, "error": f"Error installing OS: {str(e)}"}
+        error_debug(
+            "Windows installation failed",
+            exception=e,
+            context={
+                "image_path": image_path,
+                "device_id": device_id,
+                "platform": platform.system(),
+                "python_version": sys.version
+            }
+        )
+        return {
+            "success": False,
+            "error": f"Error installing OS: {str(e)}",
+            "debug_info": {
+                "exception_type": type(e).__name__,
+                "traceback": ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+            }
+        }
 
 
 def install_os_linux(image_path, device_id):
@@ -157,12 +190,64 @@ def install_os_linux(image_path, device_id):
             }
         else:
             error_msg = result.stderr or result.stdout or "Unknown error"
-            return {"success": False, "error": f"Installation failed: {error_msg}"}
+            error_debug(
+                "Linux dd command failed",
+                context={
+                    "returncode": result.returncode,
+                    "stdout": result.stdout,
+                    "stderr": result.stderr,
+                    "command": f"dd if={image_path} of={device_id} bs=4M status=progress conv=fsync",
+                    "image_path": image_path,
+                    "device_id": device_id
+                }
+            )
+            return {
+                "success": False,
+                "error": f"Installation failed: {error_msg}",
+                "debug_info": {
+                    "returncode": result.returncode,
+                    "stdout": result.stdout,
+                    "stderr": result.stderr,
+                    "command": f"dd if={image_path} of={device_id} bs=4M status=progress conv=fsync"
+                }
+            }
 
-    except subprocess.TimeoutExpired:
-        return {"success": False, "error": "Installation operation timed out"}
+    except subprocess.TimeoutExpired as e:
+        error_debug(
+            "Linux installation timed out",
+            exception=e,
+            context={
+                "image_path": image_path,
+                "device_id": device_id,
+                "timeout": 1800
+            }
+        )
+        return {
+            "success": False,
+            "error": "Installation operation timed out",
+            "debug_info": {
+                "exception_type": "TimeoutExpired",
+                "timeout_seconds": 1800
+            }
+        }
     except Exception as e:
-        return {"success": False, "error": f"Error installing OS: {str(e)}"}
+        error_debug(
+            "Linux installation failed",
+            exception=e,
+            context={
+                "image_path": image_path,
+                "device_id": device_id,
+                "platform": platform.system()
+            }
+        )
+        return {
+            "success": False,
+            "error": f"Error installing OS: {str(e)}",
+            "debug_info": {
+                "exception_type": type(e).__name__,
+                "traceback": ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+            }
+        }
 
 
 def install_os_macos(image_path, device_id):
@@ -212,12 +297,65 @@ def install_os_macos(image_path, device_id):
             }
         else:
             error_msg = result.stderr or result.stdout or "Unknown error"
-            return {"success": False, "error": f"Installation failed: {error_msg}"}
+            error_debug(
+                "macOS dd command failed",
+                context={
+                    "returncode": result.returncode,
+                    "stdout": result.stdout,
+                    "stderr": result.stderr,
+                    "command": f"dd if={image_path} of={raw_device} bs=4m status=progress",
+                    "image_path": image_path,
+                    "device_id": device_id,
+                    "raw_device": raw_device
+                }
+            )
+            return {
+                "success": False,
+                "error": f"Installation failed: {error_msg}",
+                "debug_info": {
+                    "returncode": result.returncode,
+                    "stdout": result.stdout,
+                    "stderr": result.stderr,
+                    "command": f"dd if={image_path} of={raw_device} bs=4m status=progress"
+                }
+            }
 
-    except subprocess.TimeoutExpired:
-        return {"success": False, "error": "Installation operation timed out"}
+    except subprocess.TimeoutExpired as e:
+        error_debug(
+            "macOS installation timed out",
+            exception=e,
+            context={
+                "image_path": image_path,
+                "device_id": device_id,
+                "timeout": 1800
+            }
+        )
+        return {
+            "success": False,
+            "error": "Installation operation timed out",
+            "debug_info": {
+                "exception_type": "TimeoutExpired",
+                "timeout_seconds": 1800
+            }
+        }
     except Exception as e:
-        return {"success": False, "error": f"Error installing OS: {str(e)}"}
+        error_debug(
+            "macOS installation failed",
+            exception=e,
+            context={
+                "image_path": image_path,
+                "device_id": device_id,
+                "platform": platform.system()
+            }
+        )
+        return {
+            "success": False,
+            "error": f"Error installing OS: {str(e)}",
+            "debug_info": {
+                "exception_type": type(e).__name__,
+                "traceback": ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+            }
+        }
 
 
 def main():
@@ -244,19 +382,28 @@ def main():
             sys.exit(1)
 
     except Exception as e:
-        print(json.dumps({"success": False, "error": str(e)}))
+        error_debug(
+            "Main installation process failed",
+            exception=e,
+            context={
+                "system": system,
+                "image_path": args.image_path,
+                "device_id": args.device_id,
+                "python_version": sys.version,
+                "platform": platform.platform()
+            }
+        )
+        error_result = {
+            "success": False,
+            "error": str(e),
+            "debug_info": {
+                "exception_type": type(e).__name__,
+                "traceback": ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+            }
+        }
+        print(json.dumps(error_result))
         sys.exit(1)
 
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-
-

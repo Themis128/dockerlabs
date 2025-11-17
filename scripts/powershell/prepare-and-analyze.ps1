@@ -7,7 +7,7 @@ param(
     [switch]$Quick,
     [switch]$Detailed,
     [string]$Model = "qwen2.5-coder:7b",
-    [int]$Timeout = 300,
+    [int]$Timeout = 600,
     [switch]$Stream,
     [int]$MaxRetries = 3,
     [switch]$Verbose,
@@ -47,35 +47,86 @@ try {
 if (-not $SkipPreload) {
     Write-ColorOutput ""
     Write-ColorOutput "[2/4] Pre-loading model '$Model'..." "Yellow"
-    
+
     # Check if model is already loaded
     try {
         $psResponse = Invoke-RestMethod -Uri "http://127.0.0.1:11434/api/ps" -Method Get -TimeoutSec 5 -ErrorAction Stop
         $loadedModels = $psResponse.models | ForEach-Object { $_.name }
-        
+
         if ($loadedModels -contains $Model) {
             Write-ColorOutput "  [OK] Model is already loaded in memory" "Green"
         } else {
-            Write-ColorOutput "  Loading model into memory (this may take 30-60 seconds)..." "Gray"
+            Write-ColorOutput "  Loading model into memory (this may take 60-120 seconds on first use)..." "Gray"
+            Write-ColorOutput "  Please wait..." "Gray"
             
-            # Pre-load with a minimal request
+            # Pre-load with a minimal request using async approach
             $preloadBody = @{
                 model = $Model
-                prompt = "test"
+                prompt = "hello"
                 stream = $false
                 options = @{
-                    num_predict = 1
+                    num_predict = 2
+                    temperature = 0.1
                 }
             } | ConvertTo-Json
             
             $preloadStart = Get-Date
+            $preloadSuccess = $false
+            
             try {
-                $preloadResponse = Invoke-RestMethod -Uri "http://127.0.0.1:11434/api/generate" -Method Post -Body $preloadBody -ContentType "application/json" -TimeoutSec 180 -ErrorAction Stop
-                $preloadTime = ((Get-Date) - $preloadStart).TotalSeconds
-                Write-ColorOutput "  [OK] Model loaded in $([math]::Round($preloadTime, 2)) seconds" "Green"
+                # Use a longer timeout for initial model load
+                $preloadJob = Start-Job -ScriptBlock {
+                    param($uri, $body, $contentType)
+                    try {
+                        $response = Invoke-RestMethod -Uri $uri -Method Post -Body $body -ContentType $contentType -TimeoutSec 300 -ErrorAction Stop
+                        return @{ Success = $true; Response = $response }
+                    } catch {
+                        return @{ Success = $false; Error = $_.Exception.Message }
+                    }
+                } -ArgumentList "http://127.0.0.1:11434/api/generate", $preloadBody, "application/json"
+                
+                # Wait with progress indicator
+                $dots = 0
+                while ($preloadJob.State -eq "Running") {
+                    Start-Sleep -Seconds 2
+                    $dots++
+                    if ($dots % 5 -eq 0) {
+                        Write-Host "." -NoNewline -ForegroundColor Gray
+                    }
+                    if ($dots -gt 150) {  # 5 minutes max
+                        Write-ColorOutput ""
+                        Write-ColorOutput "  [WARN] Pre-load taking longer than expected" "Yellow"
+                        Stop-Job $preloadJob -ErrorAction SilentlyContinue
+                        Remove-Job $preloadJob -ErrorAction SilentlyContinue
+                        break
+                    }
+                }
+                
+                if ($dots % 5 -ne 0) {
+                    Write-ColorOutput ""
+                }
+                
+                if ($preloadJob.State -eq "Completed") {
+                    $result = Receive-Job $preloadJob
+                    Remove-Job $preloadJob
+                    
+                    if ($result.Success) {
+                        $preloadTime = ((Get-Date) - $preloadStart).TotalSeconds
+                        Write-ColorOutput "  [OK] Model loaded in $([math]::Round($preloadTime, 2)) seconds" "Green"
+                        $preloadSuccess = $true
+                    } else {
+                        Write-ColorOutput "  [WARN] Pre-load had issues: $($result.Error)" "Yellow"
+                    }
+                } else {
+                    Write-ColorOutput "  [WARN] Pre-load timed out, but model may still be loading" "Yellow"
+                }
             } catch {
-                Write-ColorOutput "  [WARN] Pre-load timed out, but model may still be loading" "Yellow"
-                Write-ColorOutput "  Analysis will continue..." "Gray"
+                Write-ColorOutput "  [WARN] Pre-load error: $_" "Yellow"
+            }
+            
+            if (-not $preloadSuccess) {
+                Write-ColorOutput "  [INFO] Analysis will continue - model will load on first request" "Gray"
+                Write-ColorOutput "  [INFO] First analysis may take 60-120 seconds" "Gray"
             }
         }
     } catch {
@@ -104,7 +155,7 @@ try {
     $originalCode = Get-Content $FilePath -Raw -Encoding UTF8
     $fileSize = $originalCode.Length
     Write-ColorOutput "  [OK] File loaded: $FilePath ($fileSize characters)" "Green"
-    
+
     # Detect language if auto
     if ($Language -eq "auto") {
         $ext = [System.IO.Path]::GetExtension($FilePath).ToLower()
@@ -120,18 +171,18 @@ try {
         }
         Write-ColorOutput "  [INFO] Detected language: $Language" "Gray"
     }
-    
+
     $processedCode = $originalCode
-    
+
     if ($PreprocessCode) {
         Write-ColorOutput "  Pre-processing code for optimal model analysis..." "Gray"
-        
+
         # Step 1: Normalize line endings to Unix-style (LF)
         $processedCode = $processedCode -replace '\r\n', "`n" -replace '\r', "`n"
-        
+
         # Step 2: Remove trailing whitespace from each line (preserves indentation)
         $lines = $processedCode -split "`n"
-        $lines = $lines | ForEach-Object { 
+        $lines = $lines | ForEach-Object {
             if ($_ -match '^\s*$') {
                 # Keep blank lines as-is
                 ""
@@ -141,16 +192,16 @@ try {
             }
         }
         $processedCode = $lines -join "`n"
-        
+
         # Step 3: Normalize consecutive blank lines (max 2 blank lines)
         $processedCode = $processedCode -replace "(`n\s*){3,}", "`n`n"
-        
+
         # Step 4: Remove lines with only whitespace (but keep intentional blank lines)
         # This is already handled above, but ensure no lines with only spaces/tabs remain
         $lines = $processedCode -split "`n"
         $cleanedLines = @()
         $prevWasBlank = $false
-        
+
         foreach ($line in $lines) {
             if ($line -match '^\s*$') {
                 # Allow max 2 consecutive blank lines
@@ -164,12 +215,12 @@ try {
             }
         }
         $processedCode = $cleanedLines -join "`n"
-        
+
         # Step 5: Ensure file ends with a newline (standard practice)
         if ($processedCode -notmatch "`n$") {
             $processedCode += "`n"
         }
-        
+
         # Step 6: For Vue files, ensure proper structure visibility
         if ($Language -eq "Vue" -or $FilePath -match '\.vue$') {
             # Ensure template, script, and style sections are clearly separated
@@ -179,14 +230,14 @@ try {
             # Normalize again after adding newlines
             $processedCode = $processedCode -replace "(`n\s*){3,}", "`n`n"
         }
-        
+
         # Step 7: For TypeScript/JavaScript, ensure imports are at top and clearly visible
         if ($Language -match "TypeScript|JavaScript") {
             $lines = $processedCode -split "`n"
             $importLines = @()
             $otherLines = @()
             $inImportBlock = $false
-            
+
             foreach ($line in $lines) {
                 if ($line -match '^\s*(import|export\s+.*\s+from)') {
                     $importLines += $line
@@ -203,17 +254,17 @@ try {
                     $otherLines += $line
                 }
             }
-            
+
             if ($importLines.Count -gt 0) {
                 $processedCode = ($importLines + "" + $otherLines) -join "`n"
             }
         }
-        
+
         # Step 8: Remove BOM if present (UTF-8 BOM can cause issues)
         if ($processedCode.StartsWith([char]0xFEFF)) {
             $processedCode = $processedCode.Substring(1)
         }
-        
+
         $processedSize = $processedCode.Length
         $reduction = $fileSize - $processedSize
         if ($reduction -gt 0) {
@@ -224,7 +275,7 @@ try {
         } else {
             Write-ColorOutput "  [INFO] Code cleaned and normalized" "Gray"
         }
-        
+
         Write-ColorOutput "  [INFO] Code formatted for optimal AI analysis" "Green"
     } else {
         # Even without full preprocessing, do basic normalization
@@ -236,7 +287,7 @@ try {
             $processedCode += "`n"
         }
     }
-    
+
     # Create a temporary processed file if preprocessing was done
     $tempFile = $null
     if ($PreprocessCode -and $processedCode -ne $originalCode) {
@@ -247,7 +298,7 @@ try {
     } else {
         $analysisFile = $FilePath
     }
-    
+
     Write-ColorOutput "  [OK] File ready for analysis" "Green"
 } catch {
     Write-ColorOutput "  [FAIL] Error processing file: $_" "Red"
@@ -279,14 +330,14 @@ if ($Verbose) { $analysisParams.Verbose = $true }
 
 try {
     & $analysisScript @analysisParams
-    
+
     $exitCode = $LASTEXITCODE
     if ($exitCode -eq 0) {
         Write-ColorOutput ""
         Write-ColorOutput "============================================================" "Cyan"
         Write-ColorOutput "  Analysis Complete!" "Green"
         Write-ColorOutput "============================================================" "Cyan"
-        
+
         # Clean up temp file if created
         if ($tempFile -and (Test-Path $tempFile)) {
             Remove-Item $tempFile -Force
@@ -301,12 +352,11 @@ try {
 } catch {
     Write-ColorOutput ""
     Write-ColorOutput "  [FAIL] Analysis failed: $_" "Red"
-    
+
     # Clean up temp file on error
     if ($tempFile -and (Test-Path $tempFile)) {
         Remove-Item $tempFile -Force
     }
-    
+
     exit 1
 }
-

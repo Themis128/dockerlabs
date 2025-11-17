@@ -60,6 +60,7 @@
               <option value="en_GB.UTF-8">English (UK)</option>
               <option value="fr_FR.UTF-8">French</option>
               <option value="de_DE.UTF-8">German</option>
+              <option value="el_GR.UTF-8">Greek (Greece)</option>
               <option value="es_ES.UTF-8">Spanish</option>
               <option value="it_IT.UTF-8">Italian</option>
               <option value="ja_JP.UTF-8">Japanese</option>

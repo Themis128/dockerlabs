@@ -23,7 +23,7 @@ def progress(message, percent=None):
 
 
 def format_sdcard_windows(device_id):
-    """Format SD card on Windows for Raspberry Pi"""
+    """Format SD card on Windows for Raspberry Pi using diskpart"""
     try:
         # Extract disk number from device_id (e.g., \\.\PhysicalDrive1 -> 1)
         disk_num = None
@@ -35,63 +35,53 @@ def format_sdcard_windows(device_id):
         progress("Initializing SD card formatting process...", 0)
         progress(f"Detected device: {device_id} (Disk {disk_num})", 5)
 
-        # PowerShell script to format SD card for Raspberry Pi
-        # This creates two partitions: FAT32 boot (512MB) and ext4 root (rest)
-        ps_script = f"""
-        $ErrorActionPreference = "Stop"
-        try {{
-            $diskNumber = {disk_num}
+        # Check for administrator privileges
+        progress("Checking administrator privileges...", 8)
+        try:
+            import ctypes
+            is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
+            if not is_admin:
+                return {
+                    "success": False,
+                    "error": "Administrator privileges required. Please run this script as Administrator. Right-click and select 'Run as administrator'."
+                }
+        except Exception:
+            # If we can't check, try anyway but warn
+            progress("Warning: Could not verify administrator privileges", 8)
 
-            # Clean the disk
-            Write-Host "PROGRESS:Cleaning disk and removing existing partitions..."
-            Clear-Disk -Number $diskNumber -RemoveData -Confirm:$false -ErrorAction Stop
+        # Use diskpart instead of PowerShell CIM cmdlets (more reliable)
+        # Create a temporary script file for diskpart
+        import tempfile
+        diskpart_script = f"""select disk {disk_num}
+clean
+create partition primary size=512
+active
+format fs=fat32 label=boot quick
+create partition primary
+format fs=ntfs label=rootfs quick
+exit
+"""
 
-            # Create GPT partition table
-            Write-Host "PROGRESS:Creating partition table (GPT)..."
-            Initialize-Disk -Number $diskNumber -PartitionStyle GPT -Confirm:$false
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as f:
+            script_path = f.name
+            f.write(diskpart_script)
 
-            # Create boot partition (512MB, FAT32)
-            Write-Host "PROGRESS:Creating boot partition (512MB, FAT32)..."
-            $bootPart = New-Partition -DiskNumber $diskNumber -Size 512MB -AssignDriveLetter
-            Write-Host "PROGRESS:Formatting boot partition as FAT32..."
-            Format-Volume -Partition $bootPart -FileSystem FAT32 -NewFileSystemLabel "boot" -Confirm:$false
+        try:
+            progress("Cleaning disk and removing existing partitions...", 10)
 
-            # Create root partition (remaining space, but Windows can't format ext4 natively)
-            # We'll format it as NTFS and note that ext4 formatting should be done on Linux
-            Write-Host "PROGRESS:Creating root partition (remaining space)..."
-            $rootPart = New-Partition -DiskNumber $diskNumber -UseMaximumSize -AssignDriveLetter
-            Write-Host "PROGRESS:Formatting root partition as NTFS..."
-            Format-Volume -Partition $rootPart -FileSystem NTFS -NewFileSystemLabel "rootfs" -Confirm:$false
+            # Run diskpart with the script
+            process = subprocess.Popen(
+                ["diskpart", "/s", script_path],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0
+            )
 
-            Write-Host "PROGRESS:Formatting completed successfully!"
-            Write-Output "{{'success': true, 'message': 'Partitions created. Boot partition formatted as FAT32. Root partition formatted as NTFS (ext4 formatting requires Linux).'}}"
-        }} catch {{
-            Write-Host "PROGRESS:ERROR:$($_.Exception.Message)"
-            Write-Output "{{'success': false, 'error': $($_.Exception.Message)}}"
-            exit 1
-        }}
-        """
+            stdout_lines = []
+            stderr_lines = []
 
-        progress("Cleaning disk and removing existing partitions...", 10)
-
-        # Run PowerShell and capture output in real-time
-        # Use unbuffered output for real-time progress
-        process = subprocess.Popen(
-            ["powershell", "-NoProfile", "-Command", ps_script],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,  # Merge stderr into stdout
-            text=True,
-            bufsize=0,  # Unbuffered
-            universal_newlines=True
-        )
-
-        stdout_lines = []
-        last_progress = 10
-
-        # Read output line by line to capture progress
-        # For Windows, we need to read differently
-        if platform.system() == "Windows":
-            # On Windows, read from process.stdout directly
+            # Read output in real-time
             while True:
                 output = process.stdout.readline()
                 if output == '' and process.poll() is not None:
@@ -99,73 +89,49 @@ def format_sdcard_windows(device_id):
                 if output:
                     line = output.strip()
                     stdout_lines.append(line)
-                    # Check for progress messages
-                    if "PROGRESS:" in line:
-                        msg = line.replace("PROGRESS:", "").strip()
-                        if msg.startswith("ERROR:"):
-                            progress(msg.replace("ERROR:", ""), None)
+                    # Parse diskpart output for progress
+                    if "cleaning" in line.lower() or "cleaning disk" in line.lower():
+                        progress("Cleaning disk...", 15)
+                    elif "creating partition" in line.lower():
+                        progress("Creating partitions...", 30)
+                    elif "formatting" in line.lower() or "format" in line.lower():
+                        if "boot" in line.lower() or "fat32" in line.lower():
+                            progress("Formatting boot partition (FAT32)...", 45)
                         else:
-                            # Estimate progress based on step
-                            if "Cleaning" in msg or "removing" in msg.lower():
-                                last_progress = 15
-                                progress(msg, last_progress)
-                            elif "partition table" in msg.lower():
-                                last_progress = 25
-                                progress(msg, last_progress)
-                            elif "boot partition" in msg.lower() and "Creating" in msg:
-                                last_progress = 35
-                                progress(msg, last_progress)
-                            elif "boot partition" in msg.lower() and "Formatting" in msg:
-                                last_progress = 45
-                                progress(msg, last_progress)
-                            elif "root partition" in msg.lower() and "Creating" in msg:
-                                last_progress = 55
-                                progress(msg, last_progress)
-                            elif "root partition" in msg.lower() and "Formatting" in msg:
-                                last_progress = 70
-                                progress(msg, last_progress)
-                            elif "completed" in msg.lower():
-                                last_progress = 90
-                                progress(msg, last_progress)
-                            else:
-                                progress(msg, last_progress)
+                            progress("Formatting root partition (NTFS)...", 70)
+                    elif "successfully" in line.lower() or "completed" in line.lower():
+                        progress("Partitions created and formatted", 85)
 
-        # Wait for process to complete and get remaining output
-        remaining_stdout, _ = process.communicate()
-        if remaining_stdout:
-            for line in remaining_stdout.strip().split('\n'):
-                if line.strip():
-                    stdout_lines.append(line.strip())
-                    if "PROGRESS:" in line:
-                        msg = line.replace("PROGRESS:", "").strip()
-                        if "completed" in msg.lower():
-                            progress(msg, 90)
+            # Get remaining output
+            remaining_stdout, stderr = process.communicate()
+            if remaining_stdout:
+                stdout_lines.extend(remaining_stdout.strip().split('\n'))
+            if stderr:
+                stderr_lines.extend(stderr.strip().split('\n'))
 
-        returncode = process.returncode
-        # Create a simple result object
-        class Result:
-            def __init__(self, returncode, stdout, stderr):
-                self.returncode = returncode
-                self.stdout = stdout
-                self.stderr = stderr
+            returncode = process.returncode
 
-        result = Result(returncode, '\n'.join(stdout_lines), '')
+            if returncode == 0:
+                progress("Formatting completed successfully!", 100)
+                return {
+                    "success": True,
+                    "message": "SD card formatted successfully. Boot partition (FAT32, 512MB) and root partition (NTFS) created. Note: ext4 formatting for root partition requires Linux."
+                }
+            else:
+                error_msg = '\n'.join(stderr_lines) if stderr_lines else '\n'.join(stdout_lines) or "Unknown error"
+                # Clean up error message
+                if "Access is denied" in error_msg or "denied" in error_msg.lower():
+                    error_msg = "Access denied. Please run as Administrator (Right-click and select 'Run as administrator')."
+                elif "CIM" in error_msg or "WMI" in error_msg:
+                    error_msg = "System management error. Please run as Administrator and ensure the SD card is not in use."
+                return {"success": False, "error": f"Formatting failed: {error_msg}"}
 
-        if result.returncode == 0:
+        finally:
+            # Clean up temporary script file
             try:
-                output = result.stdout.strip()
-                # Extract JSON from PowerShell output
-                if "{" in output and "}" in output:
-                    start = output.find("{")
-                    end = output.rfind("}") + 1
-                    json_str = output[start:end]
-                    return json.loads(json_str)
-                return {"success": True, "message": "SD card formatted successfully"}
-            except json.JSONDecodeError:
-                return {"success": True, "message": "SD card formatted successfully"}
-        else:
-            error_msg = result.stderr or result.stdout or "Unknown error"
-            return {"success": False, "error": f"Formatting failed: {error_msg}"}
+                os.unlink(script_path)
+            except OSError:
+                pass
 
     except subprocess.TimeoutExpired:
         return {"success": False, "error": "Formatting operation timed out"}

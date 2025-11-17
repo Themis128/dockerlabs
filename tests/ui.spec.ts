@@ -80,72 +80,130 @@ test.describe('UI Functionality', () => {
   });
 
   test('tab buttons should have hover effects', async ({ page }) => {
-    const dashboardTab = page.locator('.tab-button:has-text("Dashboard")');
+    const dashboardTab = page.locator('.tab-button').filter({ hasText: 'Dashboard' });
 
-    // Hover over tab - no need for timeout, just verify it's still visible
+    // Wait for tab to be visible first
+    await expect(dashboardTab).toBeVisible({ timeout: 5000 });
+
+    // Get initial styles
+    const initialStyles = await dashboardTab.evaluate((el) => {
+      const styles = window.getComputedStyle(el);
+      return {
+        backgroundColor: styles.backgroundColor,
+        background: styles.background,
+        color: styles.color,
+      };
+    });
+
+    // Hover over tab
     await dashboardTab.hover();
+
+    // Wait a bit for hover transition (CSS transition is 0.2s)
+    await page.waitForTimeout(250);
+
+    // Get styles after hover
+    const hoverStyles = await dashboardTab.evaluate((el) => {
+      const styles = window.getComputedStyle(el);
+      return {
+        backgroundColor: styles.backgroundColor,
+        background: styles.background,
+        color: styles.color,
+      };
+    });
 
     // Tab should still be visible and interactive
     await expect(dashboardTab).toBeVisible();
+
+    // Verify hover effect: background or color should change
+    // Hover adds background color and changes text color
+    const backgroundChanged =
+      initialStyles.backgroundColor !== hoverStyles.backgroundColor ||
+      initialStyles.background !== hoverStyles.background;
+    const colorChanged = initialStyles.color !== hoverStyles.color;
+
+    // At least one style should change on hover
+    expect(backgroundChanged || colorChanged).toBe(true);
   });
 
   test('should display header with correct styling', async ({ page }) => {
     const header = page.locator('header');
-    await expect(header).toBeVisible();
+    await expect(header).toBeVisible({ timeout: 5000 });
 
     // Check header has gradient background (CSS class or style)
     const headerStyles = await header.evaluate((el) => {
       const styles = window.getComputedStyle(el);
       return {
         background: styles.background,
+        backgroundImage: styles.backgroundImage,
+        backgroundColor: styles.backgroundColor,
         color: styles.color,
       };
     });
 
-    // Header should have some background styling
+    // Header should have some background styling (not none or transparent)
     expect(headerStyles.background).toBeTruthy();
+    expect(headerStyles.background).not.toBe('none');
+    expect(headerStyles.background).not.toBe('');
+    // Should have either background image (gradient) or background color
+    expect(
+      headerStyles.backgroundImage !== 'none' ||
+      headerStyles.backgroundColor !== 'rgba(0, 0, 0, 0)'
+    ).toBe(true);
   });
 
   test('should display footer with correct content', async ({ page }) => {
     const footer = page.locator('footer[role="contentinfo"]');
-    await expect(footer).toBeVisible();
+    await expect(footer).toBeVisible({ timeout: 5000 });
 
     // Check footer content
-    await expect(footer).toContainText('Raspberry Pi Management System');
-    await expect(footer).toContainText('2025');
+    await expect(footer).toContainText('Raspberry Pi Management System', { timeout: 5000 });
+    await expect(footer).toContainText('2025', { timeout: 5000 });
   });
 
   test('layout should be responsive', async ({ page }) => {
     // Test desktop view - wait for layout to be visible instead of fixed timeout
     await page.setViewportSize({ width: 1920, height: 1080 });
-    await expect(page.locator('.layout-container')).toBeVisible();
+    await expect(page.locator('.layout-container')).toBeVisible({ timeout: 5000 });
 
     // Test tablet view
     await page.setViewportSize({ width: 768, height: 1024 });
-    await expect(page.locator('.layout-container')).toBeVisible();
+    await expect(page.locator('.layout-container')).toBeVisible({ timeout: 5000 });
 
     // Test mobile view
     await page.setViewportSize({ width: 375, height: 667 });
-    await expect(page.locator('.layout-container')).toBeVisible();
+    await expect(page.locator('.layout-container')).toBeVisible({ timeout: 5000 });
 
     // Tabs should still be accessible
     const tabs = page.locator('.tabs');
-    await expect(tabs).toBeVisible();
+    await expect(tabs).toBeVisible({ timeout: 5000 });
   });
 
   test('should have proper accessibility attributes', async ({ page }) => {
     // Check navigation has aria-label
     const nav = page.locator('nav[aria-label="Main navigation"]');
-    await expect(nav).toBeVisible();
+    await expect(nav).toBeVisible({ timeout: 5000 });
 
     // Check footer has role
     const footer = page.locator('footer[role="contentinfo"]');
-    await expect(footer).toBeVisible();
+    await expect(footer).toBeVisible({ timeout: 5000 });
 
     // Check tab buttons have aria-selected
-    const activeTab = page.locator('.tab-button.active');
+    // Wait for at least one tab to be active
+    const activeTab = page.locator('.tab-button.active').first();
+    await expect(activeTab).toBeVisible({ timeout: 5000 });
+
+    // Verify aria-selected attribute
     const ariaSelected = await activeTab.getAttribute('aria-selected');
     expect(ariaSelected).toBe('true');
+
+    // Also verify inactive tabs have aria-selected="false"
+    const inactiveTabs = page.locator('.tab-button:not(.active)');
+    const inactiveCount = await inactiveTabs.count();
+    if (inactiveCount > 0) {
+      const firstInactive = inactiveTabs.first();
+      const inactiveAriaSelected = await firstInactive.getAttribute('aria-selected');
+      expect(inactiveAriaSelected).toBe('false');
+    }
   });
 
   test('should handle rapid tab switching', async ({ page }) => {
@@ -157,6 +215,8 @@ test.describe('UI Functionality', () => {
       for (const tab of tabs) {
         try {
           await clickTab(page, tab);
+          // Small delay to allow state updates
+          await page.waitForTimeout(50);
         } catch (error) {
           // If click fails, continue to next tab
           continue;
@@ -166,7 +226,9 @@ test.describe('UI Functionality', () => {
 
     // Should still be functional - click Dashboard and verify
     await clickTab(page, 'Dashboard');
-    const activeTab = await page.locator('.tab-button.active').first().textContent();
-    expect(activeTab?.trim()).toBe('Dashboard');
+    const activeTab = page.locator('.tab-button.active').first();
+    await expect(activeTab).toBeVisible({ timeout: 5000 });
+    const activeTabText = await activeTab.textContent();
+    expect(activeTabText?.trim()).toBe('Dashboard');
   });
 });

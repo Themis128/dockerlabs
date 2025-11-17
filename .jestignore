@@ -1,0 +1,5 @@
+# This project uses Playwright, not Jest
+# Ignore all files to prevent Jest from running
+**
+
+

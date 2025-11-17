@@ -256,16 +256,6 @@
               <label class="checkbox-label">
                 <input
                   type="checkbox"
-                  v-model="config.boot.enable_ssh"
-                  id="os-enable-ssh"
-                  class="checkbox-input"
-                />
-                <span class="checkbox-custom"></span>
-                <span class="checkbox-text">Enable SSH</span>
-              </label>
-              <label class="checkbox-label">
-                <input
-                  type="checkbox"
                   v-model="config.boot.enable_serial"
                   id="os-enable-serial"
                   class="checkbox-input"
@@ -296,6 +286,135 @@
                 />
                 <small class="form-hint">16-512, typically 64 or 128</small>
               </label>
+
+              <!-- SSH Settings Section -->
+              <div class="nested-section" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--win11-border);">
+                <span class="nested-label" style="font-weight: 600; margin-bottom: 12px; display: block;">🔐 SSH Configuration</span>
+                <label class="checkbox-label">
+                  <input
+                    type="checkbox"
+                    v-model="config.boot.enable_ssh"
+                    id="os-enable-ssh"
+                    class="checkbox-input"
+                  />
+                  <span class="checkbox-custom"></span>
+                  <span class="checkbox-text">Enable SSH</span>
+                </label>
+                <div v-show="config.boot.enable_ssh" class="nested-section" style="margin-left: 24px; margin-top: 12px;">
+                  <label class="form-label-block">
+                    <span class="label-text">SSH Port:</span>
+                    <input
+                      type="number"
+                      v-model.number="config.boot.ssh_port"
+                      id="os-ssh-port"
+                      min="1"
+                      max="65535"
+                      class="form-input-full"
+                      placeholder="22"
+                    />
+                    <small class="form-hint">Default: 22 (1-65535)</small>
+                  </label>
+                  <label class="checkbox-label">
+                    <input
+                      type="checkbox"
+                      v-model="config.boot.ssh_enable_password_auth"
+                      id="os-ssh-password-auth"
+                      class="checkbox-input"
+                    />
+                    <span class="checkbox-custom"></span>
+                    <span class="checkbox-text">Enable Password Authentication</span>
+                  </label>
+                  <label class="checkbox-label">
+                    <input
+                      type="checkbox"
+                      v-model="config.boot.ssh_disable_root_login"
+                      id="os-ssh-disable-root"
+                      class="checkbox-input"
+                    />
+                    <span class="checkbox-custom"></span>
+                    <span class="checkbox-text">Disable Root Login (Recommended)</span>
+                  </label>
+                  <label class="form-label-block">
+                    <span class="label-text">SSH Authorized Keys (one per line):</span>
+                    <textarea
+                      v-model="sshAuthorizedKeysText"
+                      @input="updateSSHAuthorizedKeys"
+                      id="os-ssh-authorized-keys"
+                      class="form-input-full"
+                      rows="4"
+                      placeholder="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQ..."
+                      style="font-family: monospace; font-size: 12px;"
+                    ></textarea>
+                    <small class="form-hint">Paste your public SSH keys here (one per line)</small>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Telnet Settings Section -->
+              <div class="nested-section" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--win11-border);">
+                <span class="nested-label" style="font-weight: 600; margin-bottom: 12px; display: block;">📡 Telnet Configuration</span>
+                <label class="checkbox-label">
+                  <input
+                    type="checkbox"
+                    v-model="config.boot.enable_telnet"
+                    id="os-enable-telnet"
+                    class="checkbox-input"
+                  />
+                  <span class="checkbox-custom"></span>
+                  <span class="checkbox-text">Enable Telnet</span>
+                </label>
+                <div v-show="config.boot.enable_telnet" class="nested-section" style="margin-left: 24px; margin-top: 12px;">
+                  <label class="form-label-block">
+                    <span class="label-text">Telnet Port:</span>
+                    <input
+                      type="number"
+                      v-model.number="config.boot.telnet_port"
+                      id="os-telnet-port"
+                      min="1"
+                      max="65535"
+                      class="form-input-full"
+                      placeholder="23"
+                    />
+                    <small class="form-hint">Default: 23 (1-65535)</small>
+                  </label>
+                  <label class="checkbox-label">
+                    <input
+                      type="checkbox"
+                      v-model="config.boot.telnet_enable_login"
+                      id="os-telnet-enable-login"
+                      class="checkbox-input"
+                    />
+                    <span class="checkbox-custom"></span>
+                    <span class="checkbox-text">Enable Login Authentication</span>
+                  </label>
+                  <div v-show="config.boot.telnet_enable_login">
+                    <label class="form-label-block">
+                      <span class="label-text">Telnet Username:</span>
+                      <input
+                        type="text"
+                        v-model="config.boot.telnet_username"
+                        id="os-telnet-username"
+                        class="form-input-full"
+                        placeholder="pi"
+                        autocomplete="off"
+                      />
+                      <small class="form-hint">Username for Telnet login</small>
+                    </label>
+                    <label class="form-label-block">
+                      <span class="label-text">Telnet Password:</span>
+                      <input
+                        type="password"
+                        v-model="config.boot.telnet_password"
+                        id="os-telnet-password"
+                        class="form-input-full"
+                        placeholder="Enter password"
+                        autocomplete="new-password"
+                      />
+                      <small class="form-hint">Password for Telnet login</small>
+                    </label>
+                  </div>
+                </div>
+              </div>
             </div>
           </details>
 
@@ -341,6 +460,7 @@
                   <option value="en_GB.UTF-8">English (UK)</option>
                   <option value="fr_FR.UTF-8">French</option>
                   <option value="de_DE.UTF-8">German</option>
+                  <option value="el_GR.UTF-8">Greek (Greece)</option>
                   <option value="es_ES.UTF-8">Spanish</option>
                   <option value="it_IT.UTF-8">Italian</option>
                   <option value="ja_JP.UTF-8">Japanese</option>
@@ -559,6 +679,32 @@
         <p class="progress-message" :class="{ error: progress.status === 'error' }">
           {{ progress.message || 'Processing...' }}
         </p>
+
+        <!-- Detailed Progress Log -->
+        <div v-if="progressLogs?.length > 0" class="progress-log-container">
+          <div class="progress-log-header">
+            <h5>Detailed Log</h5>
+            <button
+              type="button"
+              class="btn-clear-log"
+              @click="clearProgressLog"
+              title="Clear log"
+            >
+              Clear
+            </button>
+          </div>
+          <div class="progress-log">
+            <div
+              v-for="(log, index) in (progressLogs || [])"
+              :key="index"
+              class="progress-log-entry"
+              :class="log.type"
+            >
+              <span class="log-timestamp">{{ log.timestamp }}</span>
+              <span class="log-message">{{ log.message }}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </form>
   </div>
@@ -577,6 +723,28 @@ const { sdcards, loadSdcards } = useSdcards()
 const { progress, start, update, complete, fail, reset } = useProgress()
 const notifications = useNotifications()
 
+// Progress log state
+interface ProgressLogEntry {
+  timestamp: string
+  message: string
+  type: 'info' | 'success' | 'error' | 'warning'
+}
+
+const progressLogs = ref<ProgressLogEntry[]>([])
+
+const addProgressLog = (message: string, type: ProgressLogEntry['type'] = 'info') => {
+  const timestamp = new Date().toLocaleTimeString()
+  progressLogs.value.push({ timestamp, message, type })
+  // Keep only last 100 log entries
+  if (progressLogs.value.length > 100) {
+    progressLogs.value.shift()
+  }
+}
+
+const clearProgressLog = () => {
+  progressLogs.value = []
+}
+
 // State
 const selectedDeviceId = ref('')
 const osSource = ref<'download' | 'custom'>('download')
@@ -587,6 +755,7 @@ const customFileInput = ref<HTMLInputElement | null>(null)
 const loading = ref(false)
 const scanningWifi = ref(false)
 const showErrors = ref(false)
+const sshAuthorizedKeysText = ref('')
 
 // Configuration state type
 interface OSInstallConfig {
@@ -595,6 +764,15 @@ interface OSInstallConfig {
     enable_serial: boolean
     disable_overscan: boolean
     gpu_memory: number
+    ssh_port: number
+    ssh_enable_password_auth: boolean
+    ssh_disable_root_login: boolean
+    ssh_authorized_keys: string[]
+    enable_telnet: boolean
+    telnet_port: number
+    telnet_username: string
+    telnet_password: string
+    telnet_enable_login: boolean
   }
   system: {
     hostname: string
@@ -644,6 +822,15 @@ const config = ref<OSInstallConfig>({
     enable_serial: false,
     disable_overscan: true,
     gpu_memory: 64,
+    ssh_port: 22,
+    ssh_enable_password_auth: true,
+    ssh_disable_root_login: true,
+    ssh_authorized_keys: [],
+    enable_telnet: false,
+    telnet_port: 23,
+    telnet_username: 'pi',
+    telnet_password: '',
+    telnet_enable_login: true,
   },
   system: {
     hostname: 'raspberrypi',
@@ -720,6 +907,14 @@ const updateOSDescription = () => {
   } else {
     osDescription.value = ''
   }
+}
+
+const updateSSHAuthorizedKeys = () => {
+  // Split by newlines and filter out empty lines
+  config.value.boot.ssh_authorized_keys = sshAuthorizedKeysText.value
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
 }
 
 const handleCustomFileChange = (event: Event) => {
@@ -854,17 +1049,26 @@ const formatSdcardWithStreaming = async (deviceId: string, piModel: string = 'pi
             if (percent !== null) {
               // Formatting takes first 50% of total progress
               update(Math.floor(percent * 0.5), `Formatting: ${message}`)
+              addProgressLog(`[${percent}%] ${message}`, 'info')
             } else if (message) {
               update(progress.value.percent || 0, `Formatting: ${message}`)
+              addProgressLog(message, 'info')
             }
           } else if (data.success !== undefined) {
             // Final result
             if (data.success) {
               update(50, 'SD card formatted successfully')
+              addProgressLog('SD card formatted successfully', 'success')
               return true
             } else {
-              fail(data.error || 'Formatting failed', 'Formatting failed')
-              notifications.error(data.error || 'Formatting failed')
+              let errorMsg = data.error || 'Formatting failed'
+              // Provide helpful guidance for Windows admin errors
+              if (errorMsg.includes('Administrator') || errorMsg.includes('privileges')) {
+                errorMsg = `${errorMsg}\n\nTo fix this on Windows:\n1. Stop the current server\n2. Right-click PowerShell and select "Run as administrator"\n3. Navigate to the project directory\n4. Run: python web-gui/server.py\n\nOr use: .\\scripts\\powershell\\start-server-as-admin.ps1`
+              }
+              fail(errorMsg, 'Formatting failed')
+              addProgressLog(errorMsg, 'error')
+              notifications.error(errorMsg)
               return false
             }
           }
@@ -895,11 +1099,14 @@ const handleInstall = async () => {
   }
 
   loading.value = true
+  progressLogs.value = [] // Clear previous logs
+  addProgressLog('Starting installation process...', 'info')
   start('Preparing installation...')
 
   try {
     // Step 1: Format the SD card first
     update(0, 'Step 1: Formatting SD card to correct format...')
+    addProgressLog('Step 1: Formatting SD card...', 'info')
     const formatSuccess = await formatSdcardWithStreaming(selectedDeviceId.value, 'pi5')
 
     if (!formatSuccess) {
@@ -910,6 +1117,7 @@ const handleInstall = async () => {
 
     // Step 2: Proceed with OS installation
     update(50, 'Step 2: Starting OS installation...')
+    addProgressLog('Step 2: Starting OS installation...', 'info')
 
     // Get selected OS version and download URL
     let osVersion: string | undefined
@@ -921,7 +1129,31 @@ const handleInstall = async () => {
       if (select) {
         const selectedOption = select.options[select.selectedIndex]
         downloadUrl = selectedOption?.getAttribute('data-url') || undefined
+
+        // Validate that download URL exists
+        if (!downloadUrl) {
+          const errorMsg = 'Download URL not found. Please select a valid OS version.'
+          fail(errorMsg, 'Configuration error')
+          addProgressLog(errorMsg, 'error')
+          notifications.error(errorMsg)
+          loading.value = false
+          return
+        }
+      } else {
+        const errorMsg = 'OS version select element not found. Please refresh the page.'
+        fail(errorMsg, 'Configuration error')
+        addProgressLog(errorMsg, 'error')
+        notifications.error(errorMsg)
+        loading.value = false
+        return
       }
+    } else if (osSource.value === 'download') {
+      const errorMsg = 'Please select an OS version to download.'
+      fail(errorMsg, 'Configuration error')
+      addProgressLog(errorMsg, 'error')
+      notifications.error(errorMsg)
+      loading.value = false
+      return
     }
 
     const requestData = {
@@ -987,18 +1219,107 @@ const handleInstall = async () => {
               if (percent !== null) {
                 // Installation takes last 50% of total progress (50-100%)
                 update(50 + Math.floor(percent * 0.5), `Installing: ${message}`)
+                addProgressLog(`[${percent}%] ${message}`, 'info')
               } else if (message) {
                 update(progress.value.percent || 50, `Installing: ${message}`)
+                addProgressLog(message, 'info')
+              }
+            } else if (data.type === 'error_debug') {
+              // Handle verbose error debugging information
+              let debugMessage = data.message || 'Debug information'
+
+              // Add exception type if available
+              if (data.exception_type) {
+                debugMessage += ` [${data.exception_type}]`
+              }
+
+              // Add traceback if available
+              if (data.traceback) {
+                addProgressLog(debugMessage, 'error')
+                // Split traceback into lines for better readability
+                const tracebackLines = data.traceback.split('\n').filter((line: string) => line.trim())
+                tracebackLines.forEach((line: string) => {
+                  addProgressLog(`  ${line}`, 'error')
+                })
+              } else {
+                addProgressLog(debugMessage, 'error')
+              }
+
+              // Add context information if available
+              if (data.context) {
+                const contextStr = JSON.stringify(data.context, null, 2)
+                const contextLines = contextStr.split('\n')
+                contextLines.forEach((line: string) => {
+                  addProgressLog(`  ${line}`, 'warning')
+                })
               }
             } else if (data.success !== undefined) {
               // Final result
               if (data.success) {
-                complete(data.message || 'OS installation completed!')
-                notifications.success(data.message || 'OS installation completed successfully')
+                const successMsg = data.message || 'OS installation completed!'
+                complete(successMsg)
+                addProgressLog(successMsg, 'success')
+                notifications.success(successMsg)
                 showErrors.value = false
               } else {
-                fail(data.error || 'Installation failed', 'Installation failed')
-                notifications.error(data.error || 'Installation failed')
+                // Ensure error message is a string, not a boolean or other type
+                let errorMsg = 'Installation failed'
+                if (data.error !== undefined && data.error !== null) {
+                  if (typeof data.error === 'string') {
+                    errorMsg = data.error
+                  } else if (typeof data.error === 'boolean') {
+                    errorMsg = data.error ? 'Installation failed (unknown error)' : 'Installation was cancelled'
+                  } else {
+                    errorMsg = String(data.error)
+                  }
+                }
+                fail(errorMsg, 'Installation failed')
+                addProgressLog(errorMsg, 'error')
+
+                // Display verbose debug information if available
+                if (data.debug_info) {
+                  addProgressLog('--- Debug Information ---', 'error')
+
+                  if (data.debug_info.exception_type) {
+                    addProgressLog(`Exception Type: ${data.debug_info.exception_type}`, 'error')
+                  }
+
+                  if (data.debug_info.traceback) {
+                    addProgressLog('Traceback:', 'error')
+                    const tracebackLines = data.debug_info.traceback.split('\n').filter((line: string) => line.trim())
+                    tracebackLines.forEach((line: string) => {
+                      addProgressLog(`  ${line}`, 'error')
+                    })
+                  }
+
+                  if (data.debug_info.returncode !== undefined) {
+                    addProgressLog(`Return Code: ${data.debug_info.returncode}`, 'error')
+                  }
+
+                  if (data.debug_info.command) {
+                    addProgressLog(`Command: ${data.debug_info.command}`, 'error')
+                  }
+
+                  if (data.debug_info.stdout) {
+                    addProgressLog('STDOUT:', 'error')
+                    const stdoutLines = data.debug_info.stdout.split('\n').filter((line: string) => line.trim())
+                    stdoutLines.forEach((line: string) => {
+                      addProgressLog(`  ${line}`, 'error')
+                    })
+                  }
+
+                  if (data.debug_info.stderr) {
+                    addProgressLog('STDERR:', 'error')
+                    const stderrLines = data.debug_info.stderr.split('\n').filter((line: string) => line.trim())
+                    stderrLines.forEach((line: string) => {
+                      addProgressLog(`  ${line}`, 'error')
+                    })
+                  }
+
+                  addProgressLog('--- End Debug Information ---', 'error')
+                }
+
+                notifications.error(errorMsg)
               }
               loading.value = false
               return
@@ -1016,8 +1337,10 @@ const handleInstall = async () => {
       notifications.error('Installation ended unexpectedly')
     }
   } catch (error: any) {
-    fail(error.message || 'Unknown error', 'Installation error')
-    notifications.error(`Installation error: ${error.message}`)
+    const errorMsg = error.message || 'Unknown error'
+    fail(errorMsg, 'Installation error')
+    addProgressLog(`Error: ${errorMsg}`, 'error')
+    notifications.error(`Installation error: ${errorMsg}`)
   } finally {
     loading.value = false
   }
@@ -1026,6 +1349,15 @@ const handleInstall = async () => {
 // Watch for tab activation and load data only when this tab is active
 const uiStore = useUIStore()
 const isActive = computed(() => uiStore.activeTab === 'osinstall')
+
+// Sync SSH authorized keys textarea with array
+watch(() => config.value.boot.ssh_authorized_keys, (keys) => {
+  if (keys && keys.length > 0) {
+    sshAuthorizedKeysText.value = keys.join('\n')
+  } else if (!sshAuthorizedKeysText.value) {
+    sshAuthorizedKeysText.value = ''
+  }
+}, { deep: true })
 
 // Load data when tab becomes active
 watch(isActive, async (active) => {
@@ -1705,6 +2037,94 @@ onMounted(async () => {
 
 .progress-message.error {
   color: #dc3545;
+}
+
+.progress-log-container {
+  margin-top: 20px;
+  border-top: 1px solid var(--win11-border, #e0e0e0);
+  padding-top: 16px;
+}
+
+.progress-log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.progress-log-header h5 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--win11-text, #1a1a1a);
+}
+
+.btn-clear-log {
+  background: transparent;
+  border: 1px solid var(--win11-border, #e0e0e0);
+  color: var(--win11-text-secondary, #666);
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-clear-log:hover {
+  background: var(--win11-bg-hover, #f5f5f5);
+  border-color: var(--win11-accent, #0078d4);
+  color: var(--win11-accent, #0078d4);
+}
+
+.progress-log {
+  max-height: 300px;
+  overflow-y: auto;
+  background: #f8f9fa;
+  border: 1px solid var(--win11-border, #e0e0e0);
+  border-radius: 4px;
+  padding: 12px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.progress-log-entry {
+  display: flex;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.progress-log-entry:last-child {
+  border-bottom: none;
+}
+
+.progress-log-entry.info {
+  color: #1a1a1a;
+}
+
+.progress-log-entry.success {
+  color: #28a745;
+}
+
+.progress-log-entry.error {
+  color: #dc3545;
+}
+
+.progress-log-entry.warning {
+  color: #ffc107;
+}
+
+.log-timestamp {
+  color: #666;
+  font-weight: 500;
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.log-message {
+  flex: 1;
+  word-break: break-word;
 }
 
 @media (max-width: 768px) {

@@ -7,7 +7,7 @@ param(
     [switch]$Quick,
     [switch]$Detailed,
     [string]$Model = "qwen2.5-coder:7b",
-    [int]$Timeout = 300,
+    [int]$Timeout = 600,
     [switch]$Stream,
     [int]$MaxRetries = 3,
     [switch]$Verbose,
@@ -353,7 +353,7 @@ Provide a thorough, structured analysis with clear sections and actionable recom
         } elseif ($Language -eq "Python") {
             $contextHints = "This is Python code. Pay attention to: PEP 8 style, type hints, error handling, and Pythonic patterns."
         }
-        
+
         $prompt = @"
 Analyze the following $Language code${chunkInfo} and provide a comprehensive code review.
 
@@ -422,28 +422,23 @@ Provide a structured analysis with clear sections and actionable recommendations
             $requestStart = Get-Date
             Write-VerboseLog "Attempt $($attempt + 1)/$MaxRetries - Sending request..." "Yellow"
 
-            # Use WebRequest for better timeout and error handling
-            $request = [System.Net.HttpWebRequest]::Create("http://127.0.0.1:11434/api/generate")
-            $request.Method = "POST"
-            $request.ContentType = "application/json"
-            $request.Timeout = $Timeout * 1000  # Convert to milliseconds
+            # Use async approach with better timeout handling for model loading
+            Write-VerboseLog "Sending request to Ollama (timeout: $Timeout seconds)..." "Gray"
 
-            $requestStream = $request.GetRequestStream()
-            $bytes = [System.Text.Encoding]::UTF8.GetBytes($bodyJson)
-            $requestStream.Write($bytes, 0, $bytes.Length)
-            $requestStream.Close()
-
-            try {
-                $responseStream = $request.GetResponse().GetResponseStream()
-                $reader = New-Object System.IO.StreamReader($responseStream)
-                $responseJson = $reader.ReadToEnd()
-                $reader.Close()
-                $responseStream.Close()
-
-                $response = $responseJson | ConvertFrom-Json
-            } catch {
-                throw "Request failed: $($_.Exception.Message)"
+            # For first request (model loading), use longer timeout
+            $actualTimeout = if ($attempt -eq 1) {
+                [math]::Max($Timeout, 600)  # At least 10 minutes for first load
+            } else {
+                $Timeout
             }
+
+            # Use Invoke-RestMethod with proper timeout
+            $response = Invoke-RestMethod -Uri "http://127.0.0.1:11434/api/generate" `
+                -Method Post `
+                -Body $bodyJson `
+                -ContentType "application/json" `
+                -TimeoutSec $actualTimeout `
+                -ErrorAction Stop
 
             $requestTime = ((Get-Date) - $requestStart).TotalSeconds
             Write-VerboseLog "Request completed in $([math]::Round($requestTime, 2)) seconds" "Green"
@@ -461,15 +456,43 @@ Provide a structured analysis with clear sections and actionable recommendations
         } catch {
             $attempt++
             $errorDetails = $_.Exception.Message
+            $statusCode = $null
+
+            # Try to extract HTTP status code
+            if ($_.Exception.Response) {
+                $statusCode = $_.Exception.Response.StatusCode.value__
+            }
+
             Write-DebugLog "Request failed: $errorDetails"
+            if ($statusCode) {
+                Write-DebugLog "HTTP Status Code: $statusCode"
+            }
+
+            # Handle specific error types
+            if ($statusCode -eq 500) {
+                Write-Log "Ollama server error (500) - model may be loading or overloaded" "WARN" "Yellow"
+                if ($attempt -eq 1) {
+                    Write-Log "Waiting longer for model to finish loading..." "INFO" "Gray"
+                    $delay = 10  # Wait 10 seconds for 500 errors on first attempt
+                } else {
+                    $delay = $attempt * 3  # Longer delay for server errors
+                }
+            } elseif ($errorDetails -like "*timeout*") {
+                Write-Log "Request timeout - model may still be loading" "WARN" "Yellow"
+                $delay = $attempt * 2
+            } else {
+                $delay = $attempt * 2
+            }
 
             if ($attempt -lt $MaxRetries) {
-                $delay = $attempt * 2
                 Write-Log "Analysis attempt $attempt failed, retrying in ${delay}s... ($errorDetails)" "WARN" "Yellow"
                 Write-VerboseLog "Waiting $delay seconds before retry..." "Gray"
                 Start-Sleep -Seconds $delay
             } else {
                 Write-Log "Analysis failed after $MaxRetries attempts: $errorDetails" "ERROR" "Red"
+                if ($statusCode) {
+                    Write-Log "HTTP Status: $statusCode" "ERROR" "Red"
+                }
                 if ($script:VerboseMode) {
                     Write-DebugLog "Full error: $($_.Exception | ConvertTo-Json -Depth 5)"
                 }
@@ -531,13 +554,16 @@ function Invoke-CodeAnalysis {
 
     # Debug: Check what's actually in the chunks list
     Write-DebugLog "Chunks list type: $($chunks.GetType().FullName)"
-    for ($j = 0; $j -lt $chunks.Count; $j++) {
-        $testChunk = if ($chunks -is [System.Collections.Generic.List[string]]) {
-            $chunks.Item($j)
-        } else {
-            $chunks[$j]
+    if ($script:VerboseMode) {
+        for ($j = 0; $j -lt $chunks.Count; $j++) {
+            $testChunk = if ($chunks -is [System.Collections.Generic.List[string]]) {
+                $chunkArray = $chunks.ToArray()
+                $chunkArray[$j]
+            } else {
+                $chunks[$j]
+            }
+            Write-DebugLog "Chunk $($j + 1) in list: type=$($testChunk.GetType().Name), length=$($testChunk.Length)"
         }
-        Write-DebugLog "Chunk $($j + 1) in list: type=$($testChunk.GetType().Name), length=$($testChunk.Length)"
     }
 
     $allResults = @()
