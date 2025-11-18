@@ -100,12 +100,38 @@ export default defineNitroPlugin(async (nitroApp) => {
       console.log(`[Nuxt Startup] Checking Python backend connection at ${pythonServerUrl}...`);
     }
 
-    const response = await $fetch<{ status?: string; [key: string]: any }>(healthUrl, {
-      method: 'GET',
-      timeout: 5000, // 5 second timeout
-      retry: 0,
-    });
+    // Use $fetch.raw() to get the full response even on error status codes (like 503)
+    let response: { status?: string; [key: string]: any } | null = null;
+    let responseStatusCode: number | null = null;
 
+    try {
+      const rawResponse = await $fetch.raw<{ status?: string; [key: string]: any }>(healthUrl, {
+        method: 'GET',
+        timeout: 5000, // 5 second timeout
+        retry: 0,
+      });
+      response = rawResponse._data ?? null;
+      responseStatusCode = rawResponse.status;
+    } catch (error: any) {
+      // $fetch.raw() might still throw on some errors, try to extract response data
+      const statusCode = error.statusCode || error.status;
+      if (statusCode === 503) {
+        // Try to extract response data from error
+        const responseData = error.data || error.response?._data;
+        if (responseData && typeof responseData === 'object') {
+          response = responseData;
+          responseStatusCode = 503;
+        } else {
+          // If we can't extract the response, re-throw to be handled by outer catch
+          throw error;
+        }
+      } else {
+        // Not a 503, re-throw to be handled by outer catch
+        throw error;
+      }
+    }
+
+    // Check response status (works for both 200 and 503 with valid status field)
     if (
       response &&
       (response.status === 'healthy' || response.status === 'ok' || response.status === 'degraded')
@@ -118,7 +144,8 @@ export default defineNitroPlugin(async (nitroApp) => {
       }
       // Only log success message on first check or if we were previously warned
       if (isFirstCheck || wasWarned) {
-        console.log(`[Nuxt Startup] ✓ Python backend connection verified at ${pythonServerUrl}`);
+        const statusMsg = response.status === 'degraded' ? ' (degraded mode - some features may be limited)' : '';
+        console.log(`[Nuxt Startup] ✓ Python backend connection verified at ${pythonServerUrl}${statusMsg}`);
       }
     } else {
       if (isFirstCheck) {

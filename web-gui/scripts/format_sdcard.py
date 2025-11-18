@@ -22,8 +22,14 @@ def progress(message, percent=None):
     print(json.dumps(progress_data), flush=True)
 
 
-def format_sdcard_windows(device_id):
-    """Format SD card on Windows for Raspberry Pi using diskpart"""
+def format_sdcard_windows(device_id, clean_only=False):
+    """Format SD card on Windows for Raspberry Pi using diskpart
+
+    Args:
+        device_id: Device identifier (e.g., \\\\.\\\\PhysicalDrive1)
+        clean_only: If True, only clean the disk (for OS installation).
+                   If False, create partitions (for general formatting).
+    """
     try:
         # Extract disk number from device_id (e.g., \\.\PhysicalDrive1 -> 1)
         disk_num = None
@@ -52,7 +58,16 @@ def format_sdcard_windows(device_id):
         # Use diskpart instead of PowerShell CIM cmdlets (more reliable)
         # Create a temporary script file for diskpart
         import tempfile
-        diskpart_script = f"""select disk {disk_num}
+
+        if clean_only:
+            # For OS installation: just clean the disk, let the image write create partitions
+            diskpart_script = f"""select disk {disk_num}
+clean
+exit
+"""
+        else:
+            # For general formatting: create partitions
+            diskpart_script = f"""select disk {disk_num}
 clean
 create partition primary size=512
 active
@@ -91,7 +106,10 @@ exit
                     stdout_lines.append(line)
                     # Parse diskpart output for progress
                     if "cleaning" in line.lower() or "cleaning disk" in line.lower():
-                        progress("Cleaning disk...", 15)
+                        if clean_only:
+                            progress("Cleaning disk (preparing for OS installation)...", 50)
+                        else:
+                            progress("Cleaning disk...", 15)
                     elif "creating partition" in line.lower():
                         progress("Creating partitions...", 30)
                     elif "formatting" in line.lower() or "format" in line.lower():
@@ -100,7 +118,10 @@ exit
                         else:
                             progress("Formatting root partition (NTFS)...", 70)
                     elif "successfully" in line.lower() or "completed" in line.lower():
-                        progress("Partitions created and formatted", 85)
+                        if clean_only:
+                            progress("Disk cleaned successfully (ready for OS installation)", 100)
+                        else:
+                            progress("Partitions created and formatted", 85)
 
             # Get remaining output
             remaining_stdout, stderr = process.communicate()
@@ -112,11 +133,18 @@ exit
             returncode = process.returncode
 
             if returncode == 0:
-                progress("Formatting completed successfully!", 100)
-                return {
-                    "success": True,
-                    "message": "SD card formatted successfully. Boot partition (FAT32, 512MB) and root partition (NTFS) created. Note: ext4 formatting for root partition requires Linux."
-                }
+                if clean_only:
+                    progress("Disk cleaned successfully (ready for OS installation)", 100)
+                    return {
+                        "success": True,
+                        "message": "SD card cleaned successfully. Ready for OS image installation."
+                    }
+                else:
+                    progress("Formatting completed successfully!", 100)
+                    return {
+                        "success": True,
+                        "message": "SD card formatted successfully. Boot partition (FAT32, 512MB) and root partition (NTFS) created. Note: ext4 formatting for root partition requires Linux."
+                    }
             else:
                 error_msg = '\n'.join(stderr_lines) if stderr_lines else '\n'.join(stdout_lines) or "Unknown error"
                 # Clean up error message
@@ -139,8 +167,14 @@ exit
         return {"success": False, "error": f"Error formatting SD card: {str(e)}"}
 
 
-def format_sdcard_linux(device_id):
-    """Format SD card on Linux for Raspberry Pi"""
+def format_sdcard_linux(device_id, clean_only=False):
+    """Format SD card on Linux for Raspberry Pi
+
+    Args:
+        device_id: Device identifier (e.g., /dev/sdb)
+        clean_only: If True, only clean the disk (for OS installation).
+                   If False, create partitions (for general formatting).
+    """
     try:
         progress("Initializing SD card formatting process...", 0)
         progress(f"Detected device: {device_id}", 5)
@@ -166,63 +200,79 @@ def format_sdcard_linux(device_id):
         except (OSError, subprocess.SubprocessError):
             pass  # Ignore unmount errors
 
-        # Use parted to create partitions
-        # Create partition table (MSDOS for compatibility with Pi 3B and Pi 5)
-        progress("Creating partition table (MSDOS)...", 20)
-        subprocess.run(
-            ["parted", "-s", device_id, "mklabel", "msdos"],
-            check=True,
-            timeout=30,
-        )
-        progress("Partition table created", 25)
+        if clean_only:
+            # For OS installation: just wipe the partition table
+            progress("Cleaning disk (preparing for OS installation)...", 20)
+            # Use wipefs to remove all filesystem signatures
+            subprocess.run(
+                ["wipefs", "-a", device_id],
+                check=True,
+                timeout=30,
+            )
+            progress("Disk cleaned successfully (ready for OS installation)", 100)
+            return {
+                "success": True,
+                "message": "SD card cleaned successfully. Ready for OS image installation.",
+            }
+        else:
+            # For general formatting: create partitions
+            # Use parted to create partitions
+            # Create partition table (MSDOS for compatibility with Pi 3B and Pi 5)
+            progress("Creating partition table (MSDOS)...", 20)
+            subprocess.run(
+                ["parted", "-s", device_id, "mklabel", "msdos"],
+                check=True,
+                timeout=30,
+            )
+            progress("Partition table created", 25)
 
-        # Create boot partition (512MB, FAT32)
-        progress("Creating boot partition (512MB, FAT32)...", 30)
-        subprocess.run(
-            ["parted", "-s", device_id, "mkpart", "primary", "fat32", "1MiB", "513MiB"],
-            check=True,
-            timeout=30,
-        )
-        progress("Boot partition created", 35)
+            # Create boot partition (512MB, FAT32)
+            progress("Creating boot partition (512MB, FAT32)...", 30)
+            subprocess.run(
+                ["parted", "-s", device_id, "mkpart", "primary", "fat32", "1MiB", "513MiB"],
+                check=True,
+                timeout=30,
+            )
+            progress("Boot partition created", 35)
 
-        # Create root partition (ext4, rest of space)
-        progress("Creating root partition (ext4, remaining space)...", 40)
-        subprocess.run(
-            ["parted", "-s", device_id, "mkpart", "primary", "ext4", "513MiB", "100%"],
-            check=True,
-            timeout=30,
-        )
-        progress("Root partition created", 45)
+            # Create root partition (ext4, rest of space)
+            progress("Creating root partition (ext4, remaining space)...", 40)
+            subprocess.run(
+                ["parted", "-s", device_id, "mkpart", "primary", "ext4", "513MiB", "100%"],
+                check=True,
+                timeout=30,
+            )
+            progress("Root partition created", 45)
 
-        # Wait a moment for partitions to be recognized
-        progress("Waiting for partitions to be recognized...", 50)
-        time.sleep(1)
+            # Wait a moment for partitions to be recognized
+            progress("Waiting for partitions to be recognized...", 50)
+            time.sleep(1)
 
-        # Format boot partition as FAT32
-        boot_partition = device_id + "1"
-        progress(f"Formatting boot partition {boot_partition} as FAT32...", 55)
-        subprocess.run(
-            ["mkfs.vfat", "-F", "32", "-n", "boot", boot_partition],
-            check=True,
-            timeout=60,
-        )
-        progress("Boot partition formatted successfully", 70)
+            # Format boot partition as FAT32
+            boot_partition = device_id + "1"
+            progress(f"Formatting boot partition {boot_partition} as FAT32...", 55)
+            subprocess.run(
+                ["mkfs.vfat", "-F", "32", "-n", "boot", boot_partition],
+                check=True,
+                timeout=60,
+            )
+            progress("Boot partition formatted successfully", 70)
 
-        # Format root partition as ext4
-        root_partition = device_id + "2"
-        progress(f"Formatting root partition {root_partition} as ext4...", 75)
-        subprocess.run(
-            ["mkfs.ext4", "-F", "-L", "rootfs", root_partition],
-            check=True,
-            timeout=120,
-        )
-        progress("Root partition formatted successfully", 90)
+            # Format root partition as ext4
+            root_partition = device_id + "2"
+            progress(f"Formatting root partition {root_partition} as ext4...", 75)
+            subprocess.run(
+                ["mkfs.ext4", "-F", "-L", "rootfs", root_partition],
+                check=True,
+                timeout=120,
+            )
+            progress("Root partition formatted successfully", 90)
 
-        progress("Formatting completed successfully!", 100)
-        return {
-            "success": True,
-            "message": "SD card formatted successfully for Raspberry Pi (boot: FAT32 512MB, root: ext4)",
-        }
+            progress("Formatting completed successfully!", 100)
+            return {
+                "success": True,
+                "message": "SD card formatted successfully for Raspberry Pi (boot: FAT32 512MB, root: ext4)",
+            }
 
     except subprocess.CalledProcessError as e:
         error_msg = e.stderr.decode() if e.stderr else str(e)
@@ -233,8 +283,14 @@ def format_sdcard_linux(device_id):
         return {"success": False, "error": f"Error formatting SD card: {str(e)}"}
 
 
-def format_sdcard_macos(device_id):
-    """Format SD card on macOS for Raspberry Pi"""
+def format_sdcard_macos(device_id, clean_only=False):
+    """Format SD card on macOS for Raspberry Pi
+
+    Args:
+        device_id: Device identifier (e.g., /dev/disk2)
+        clean_only: If True, only clean the disk (for OS installation).
+                   If False, create partitions (for general formatting).
+    """
     try:
         progress("Initializing SD card formatting process...", 0)
         progress(f"Detected device: {device_id}", 5)
@@ -252,30 +308,50 @@ def format_sdcard_macos(device_id):
         )
         progress("Disk unmounted", 15)
 
-        # Erase the disk and create partition scheme
-        # Note: macOS doesn't support ext4 natively, so we'll create the partitions
-        # but the user may need to format ext4 on Linux
-        progress("Erasing disk and creating partition scheme...", 20)
-        result = subprocess.run(
-            ["diskutil", "eraseDisk", "MS-DOS", "RASPBERRYPI", "MBR", device_id],
-            capture_output=True,
-            text=True,
-            timeout=120,
-            check=False,
-        )
-        progress("Partition scheme created", 80)
-
-        if result.returncode == 0:
-            # Create two partitions using diskutil
-            # First, we need to repartition the disk
-            # This is complex on macOS, so we'll provide a message
-            return {
-                "success": True,
-                "message": "SD card partition table created. For full Raspberry Pi formatting (FAT32 boot + ext4 root), please use Linux or format manually.",
-            }
+        if clean_only:
+            # For OS installation: just erase the partition table
+            progress("Cleaning disk (preparing for OS installation)...", 20)
+            result = subprocess.run(
+                ["diskutil", "eraseDisk", "Free", "RASPBERRYPI", device_id],
+                capture_output=True,
+                text=True,
+                timeout=120,
+                check=False,
+            )
+            if result.returncode == 0:
+                progress("Disk cleaned successfully (ready for OS installation)", 100)
+                return {
+                    "success": True,
+                    "message": "SD card cleaned successfully. Ready for OS image installation.",
+                }
+            else:
+                error_msg = result.stderr or result.stdout or "Unknown error"
+                return {"success": False, "error": f"Cleaning failed: {error_msg}"}
         else:
-            error_msg = result.stderr or result.stdout or "Unknown error"
-            return {"success": False, "error": f"Formatting failed: {error_msg}"}
+            # For general formatting: create partition scheme
+            # Note: macOS doesn't support ext4 natively, so we'll create the partitions
+            # but the user may need to format ext4 on Linux
+            progress("Erasing disk and creating partition scheme...", 20)
+            result = subprocess.run(
+                ["diskutil", "eraseDisk", "MS-DOS", "RASPBERRYPI", "MBR", device_id],
+                capture_output=True,
+                text=True,
+                timeout=120,
+                check=False,
+            )
+            progress("Partition scheme created", 80)
+
+            if result.returncode == 0:
+                # Create two partitions using diskutil
+                # First, we need to repartition the disk
+                # This is complex on macOS, so we'll provide a message
+                return {
+                    "success": True,
+                    "message": "SD card partition table created. For full Raspberry Pi formatting (FAT32 boot + ext4 root), please use Linux or format manually.",
+                }
+            else:
+                error_msg = result.stderr or result.stdout or "Unknown error"
+                return {"success": False, "error": f"Formatting failed: {error_msg}"}
 
     except subprocess.TimeoutExpired:
         return {"success": False, "error": "Formatting operation timed out"}
@@ -289,15 +365,17 @@ def main():
         sys.exit(1)
 
     device_id = sys.argv[1]
+    # Check for clean_only flag (for OS installation)
+    clean_only = "--clean-only" in sys.argv or "-c" in sys.argv
     system = platform.system()
 
     try:
         if system == "Windows":
-            result = format_sdcard_windows(device_id)
+            result = format_sdcard_windows(device_id, clean_only=clean_only)
         elif system == "Linux":
-            result = format_sdcard_linux(device_id)
+            result = format_sdcard_linux(device_id, clean_only=clean_only)
         elif system == "Darwin":  # macOS
-            result = format_sdcard_macos(device_id)
+            result = format_sdcard_macos(device_id, clean_only=clean_only)
         else:
             result = {"success": False, "error": f"Unsupported platform: {system}"}
 

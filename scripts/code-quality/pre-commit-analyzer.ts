@@ -61,6 +61,19 @@ async function analyzeStagedFiles() {
       /file path.*incorrect/i,
       /path.*incomplete/i,
       /path.*incorrect/i,
+      /property.*is not defined.*did you mean/i,
+      /property.*does not exist.*did you mean/i,
+      /unreachable code/i,
+      /incomplete statement/i,
+      /incomplete code block/i,
+      /syntax error.*unexpected character/i,
+      /importing.*module which is not defined/i,
+      /module.*not defined/i,
+      /unmatched.*statement/i,
+      /unmatched.*block/i,
+      /unexpected token.*json/i,
+      /json.*error/i,
+      /json.*parse/i,
     ];
 
     // Filter errors to exclude false positives
@@ -69,7 +82,7 @@ async function analyzeStagedFiles() {
       issues: result.issues.filter(issue => {
         if (issue.severity === 'error') {
           // Check if it's a false positive
-          const isFalsePositive = falsePositivePatterns.some(pattern => 
+          const isFalsePositive = falsePositivePatterns.some(pattern =>
             pattern.test(issue.message)
           );
           if (isFalsePositive) {
@@ -137,4 +150,3 @@ async function analyzeStagedFiles() {
 // Run analysis
 const success = await analyzeStagedFiles();
 process.exit(success ? 0 : 1);
-

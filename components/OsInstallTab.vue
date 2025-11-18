@@ -5,16 +5,16 @@
       <p class="subtitle">Install Raspberry Pi OS or custom images to your SD card</p>
     </div>
 
-    <form @submit.prevent="handleInstall" class="os-install-form">
+    <form @submit.prevent="handleInstall" class="os-install-form" autocomplete="off">
       <!-- Step 1: SD Card Selection -->
-      <div class="install-card">
-        <div class="card-header">
+      <fieldset class="install-card">
+        <legend class="card-header">
           <div class="step-number">1</div>
           <div class="card-title-group">
             <h3>Select SD Card</h3>
             <p class="card-subtitle">Choose the SD card where you want to install the OS</p>
           </div>
-        </div>
+        </legend>
         <div class="card-content">
           <div class="select-wrapper">
             <select
@@ -38,17 +38,17 @@
             </div>
           </div>
         </div>
-      </div>
+      </fieldset>
 
       <!-- Step 2: OS Image Source -->
-      <div class="install-card">
-        <div class="card-header">
+      <fieldset class="install-card">
+        <legend class="card-header">
           <div class="step-number">2</div>
           <div class="card-title-group">
             <h3>Select OS Image Source</h3>
             <p class="card-subtitle">Choose to download an official image or use your own</p>
           </div>
-        </div>
+        </legend>
         <div class="card-content">
           <div class="radio-cards">
             <label class="radio-card" :class="{ active: osSource === 'download' }">
@@ -85,17 +85,17 @@
             </label>
           </div>
         </div>
-      </div>
+      </fieldset>
 
       <!-- Step 3: OS Selection -->
-      <div v-show="osSource === 'download'" class="install-card">
-        <div class="card-header">
+      <fieldset v-show="osSource === 'download'" class="install-card">
+        <legend class="card-header">
           <div class="step-number">3</div>
           <div class="card-title-group">
             <h3>Choose OS Image</h3>
             <p class="card-subtitle">Select the operating system to install</p>
           </div>
-        </div>
+        </legend>
         <div class="card-content">
           <div class="select-wrapper">
             <select
@@ -110,21 +110,21 @@
               <optgroup label="🍓 Raspberry Pi OS - Official (32-bit)">
                 <option
                   value="raspios_lite_armhf"
-                  data-url="https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-latest/"
+                  data-url="https://downloads.raspberrypi.org/raspios_lite_armhf/images/"
                   data-desc="Minimal Raspberry Pi OS without desktop environment. Perfect for headless servers, IoT projects, and applications where you don't need a GUI. Uses less resources and boots faster."
                 >
                   Raspberry Pi OS Lite (32-bit)
                 </option>
                 <option
                   value="raspios_armhf"
-                  data-url="https://downloads.raspberrypi.org/raspios_armhf/images/raspios_armhf-latest/"
+                  data-url="https://downloads.raspberrypi.org/raspios_armhf/images/"
                   data-desc="Raspberry Pi OS with desktop environment (PIXEL). Ideal for general computing, programming, web browsing, and educational use. Includes essential software but not all recommended packages."
                 >
                   Raspberry Pi OS with Desktop (32-bit)
                 </option>
                 <option
                   value="raspios_full_armhf"
-                  data-url="https://downloads.raspberrypi.org/raspios_full_armhf/images/raspios_full_armhf-latest/"
+                  data-url="https://downloads.raspberrypi.org/raspios_full_armhf/images/"
                   data-desc="Full Raspberry Pi OS with desktop and all recommended software pre-installed. Best for beginners who want everything ready to use, including office suite, programming tools, and educational software."
                 >
                   Raspberry Pi OS Full (32-bit)
@@ -133,21 +133,21 @@
               <optgroup label="🍓 Raspberry Pi OS - Official (64-bit)">
                 <option
                   value="raspios_lite_arm64"
-                  data-url="https://downloads.raspberrypi.org/raspios_lite_arm64/images/raspios_lite_arm64-latest/"
+                  data-url="https://downloads.raspberrypi.org/raspios_lite_arm64/images/"
                   data-desc="64-bit minimal Raspberry Pi OS without desktop. Better performance on Pi 4/5, supports more RAM, and runs 64-bit applications. Perfect for servers and headless projects."
                 >
                   Raspberry Pi OS Lite (64-bit)
                 </option>
                 <option
                   value="raspios_arm64"
-                  data-url="https://downloads.raspberrypi.org/raspios_arm64/images/raspios_arm64-latest/"
+                  data-url="https://downloads.raspberrypi.org/raspios_arm64/images/"
                   data-desc="64-bit Raspberry Pi OS with desktop environment. Takes advantage of 64-bit architecture for better performance on Pi 4/5. Ideal for modern applications and development."
                 >
                   Raspberry Pi OS with Desktop (64-bit)
                 </option>
                 <option
                   value="raspios_full_arm64"
-                  data-url="https://downloads.raspberrypi.org/raspios_full_arm64/images/raspios_full_arm64-latest/"
+                  data-url="https://downloads.raspberrypi.org/raspios_full_arm64/images/"
                   data-desc="Complete 64-bit Raspberry Pi OS with all software pre-installed. Best performance and compatibility for Pi 4/5 with full software suite ready to use."
                 >
                   Raspberry Pi OS Full (64-bit)
@@ -197,17 +197,17 @@
             Some images may require manual URL resolution for the latest version.
           </div>
         </div>
-      </div>
+      </fieldset>
 
       <!-- Step 3: Custom Image -->
-      <div v-show="osSource === 'custom'" class="install-card">
-        <div class="card-header">
+      <fieldset v-show="osSource === 'custom'" class="install-card">
+        <legend class="card-header">
           <div class="step-number">3</div>
           <div class="card-title-group">
             <h3>Upload Custom Image</h3>
             <p class="card-subtitle">Select your custom OS image file</p>
           </div>
-        </div>
+        </legend>
         <div class="card-content">
           <div class="file-upload-wrapper">
             <label for="os-custom-file" class="file-upload-label">
@@ -234,17 +234,17 @@
             </div>
           </div>
         </div>
-      </div>
+      </fieldset>
 
       <!-- Step 4: Configuration Options -->
-      <div class="install-card config-card">
-        <div class="card-header">
+      <fieldset class="install-card config-card">
+        <legend class="card-header">
           <div class="step-number">4</div>
           <div class="card-title-group">
             <h3>Configuration Options</h3>
             <p class="card-subtitle">Customize your OS installation (optional)</p>
           </div>
-        </div>
+        </legend>
         <div class="card-content">
           <!-- Boot Settings -->
           <details class="config-details">
@@ -406,9 +406,10 @@
                         type="password"
                         v-model="config.boot.telnet_password"
                         id="os-telnet-password"
+                        name="telnet-password"
                         class="form-input-full"
                         placeholder="Enter password"
-                        autocomplete="new-password"
+                        autocomplete="off"
                       />
                       <small class="form-hint">Password for Telnet login</small>
                     </label>
@@ -584,9 +585,10 @@
                     type="password"
                     v-model="config.network.wifi_password"
                     id="os-wifi-password"
+                    name="wifi-password"
                     class="form-input-full"
                     placeholder="WiFi password"
-                    autocomplete="new-password"
+                    autocomplete="off"
                   />
                 </label>
                 <label class="form-label-block">
@@ -639,7 +641,7 @@
             </div>
           </details>
         </div>
-      </div>
+      </fieldset>
 
       <!-- Warning Box -->
       <div class="warning-box">
@@ -717,11 +719,13 @@ import { useSdcards } from '~/composables/useSdcards'
 import { useProgress } from '~/composables/useProgress'
 import { useNotifications } from '~/composables/useNotifications'
 import { useUIStore } from '~/stores/ui'
+import { useOSInstallationStore } from '~/stores/os-installation'
 
 const { installOS, scanWifi: scanWifiApi } = useApi()
 const { sdcards, loadSdcards } = useSdcards()
 const { progress, start, update, complete, fail, reset } = useProgress()
 const notifications = useNotifications()
+const osInstallStore = useOSInstallationStore()
 
 // Progress log state
 interface ProgressLogEntry {
@@ -738,6 +742,11 @@ const addProgressLog = (message: string, type: ProgressLogEntry['type'] = 'info'
   // Keep only last 100 log entries
   if (progressLogs.value.length > 100) {
     progressLogs.value.shift()
+  }
+
+  // Also add to store if installation is active
+  if (selectedDeviceId.value && osInstallStore.activeInstallation === selectedDeviceId.value) {
+    osInstallStore.addInstallationLog(selectedDeviceId.value, type, message)
   }
 }
 
@@ -1004,14 +1013,30 @@ const formatSdcardWithStreaming = async (deviceId: string, piModel: string = 'pi
     body: JSON.stringify({
       device_id: deviceId,
       pi_model: piModel,
+      clean_only: true,  // For OS installation: only clean disk, don't create partitions
       stream: true,
     }),
   })
 
+  // Check if response is OK and has a readable body
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ error: 'Formatting request failed' }))
-    fail(errorData.error || 'Formatting failed', 'Formatting failed')
-    notifications.error(errorData.error || 'Formatting failed')
+    let errorMessage = `HTTP ${response.status}: ${response.statusText}`
+    try {
+      const errorData = await response.json()
+      errorMessage = errorData.error || errorMessage
+    } catch {
+      try {
+        const errorText = await response.text()
+        if (errorText) {
+          errorMessage = errorText.substring(0, 500)
+        }
+      } catch {
+        // Use default error message
+      }
+    }
+    fail(errorMessage, 'Formatting failed')
+    addProgressLog(`HTTP error: ${response.status} - ${errorMessage}`, 'error')
+    notifications.error(errorMessage)
     return false
   }
 
@@ -1021,7 +1046,12 @@ const formatSdcardWithStreaming = async (deviceId: string, piModel: string = 'pi
   let buffer = ''
 
   if (!reader) {
-    throw new Error('Response body is not readable')
+    const errorMsg = 'Response body is not readable. The server may have returned an invalid response.'
+    fail(errorMsg, 'Formatting failed')
+    addProgressLog(errorMsg, 'error')
+    addProgressLog('This may indicate the Python backend is not running or returned an error.', 'error')
+    notifications.error(errorMsg)
+    return false
   }
 
   while (true) {
@@ -1100,6 +1130,15 @@ const handleInstall = async () => {
 
   loading.value = true
   progressLogs.value = [] // Clear previous logs
+
+  // Initialize installation in store
+  osInstallStore.startInstallation(selectedDeviceId.value)
+  osInstallStore.updateInstallationProgress(selectedDeviceId.value, {
+    stage: 'formatting',
+    progress: 0,
+    message: 'Starting installation process...',
+  })
+
   addProgressLog('Starting installation process...', 'info')
   start('Preparing installation...')
 
@@ -1107,10 +1146,17 @@ const handleInstall = async () => {
     // Step 1: Format the SD card first
     update(0, 'Step 1: Formatting SD card to correct format...')
     addProgressLog('Step 1: Formatting SD card...', 'info')
+    osInstallStore.updateInstallationProgress(selectedDeviceId.value, {
+      stage: 'formatting',
+      progress: 0,
+      message: 'Formatting SD card...',
+    })
+
     const formatSuccess = await formatSdcardWithStreaming(selectedDeviceId.value, 'pi5')
 
     if (!formatSuccess) {
       // Formatting failed, stop here
+      osInstallStore.failInstallation(selectedDeviceId.value, 'SD card formatting failed')
       loading.value = false
       return
     }
@@ -1118,6 +1164,11 @@ const handleInstall = async () => {
     // Step 2: Proceed with OS installation
     update(50, 'Step 2: Starting OS installation...')
     addProgressLog('Step 2: Starting OS installation...', 'info')
+    osInstallStore.updateInstallationProgress(selectedDeviceId.value, {
+      stage: 'downloading',
+      progress: 50,
+      message: 'Starting OS installation...',
+    })
 
     // Get selected OS version and download URL
     let osVersion: string | undefined
@@ -1133,6 +1184,9 @@ const handleInstall = async () => {
         // Validate that download URL exists
         if (!downloadUrl) {
           const errorMsg = 'Download URL not found. Please select a valid OS version.'
+          if (selectedDeviceId.value) {
+            osInstallStore.failInstallation(selectedDeviceId.value, errorMsg)
+          }
           fail(errorMsg, 'Configuration error')
           addProgressLog(errorMsg, 'error')
           notifications.error(errorMsg)
@@ -1141,6 +1195,9 @@ const handleInstall = async () => {
         }
       } else {
         const errorMsg = 'OS version select element not found. Please refresh the page.'
+        if (selectedDeviceId.value) {
+          osInstallStore.failInstallation(selectedDeviceId.value, errorMsg)
+        }
         fail(errorMsg, 'Configuration error')
         addProgressLog(errorMsg, 'error')
         notifications.error(errorMsg)
@@ -1149,6 +1206,9 @@ const handleInstall = async () => {
       }
     } else if (osSource.value === 'download') {
       const errorMsg = 'Please select an OS version to download.'
+      if (selectedDeviceId.value) {
+        osInstallStore.failInstallation(selectedDeviceId.value, errorMsg)
+      }
       fail(errorMsg, 'Configuration error')
       addProgressLog(errorMsg, 'error')
       notifications.error(errorMsg)
@@ -1166,22 +1226,94 @@ const handleInstall = async () => {
     }
 
     // Use streaming installation with SSE
+    // Use Nuxt API endpoint to avoid CORS issues - it handles streaming and proxies to Python backend
     const runtimeConfig = useRuntimeConfig()
     const apiBase = runtimeConfig.public.apiBase || '/api'
+    const installUrl = `${apiBase}/install-os`
 
-    const response = await fetch(`${apiBase}/install-os`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'text/event-stream',
-      },
-      body: JSON.stringify(requestData),
-    })
+    // Log the request for debugging
+    if (process.dev) {
+      console.log('[Install] Connecting via Nuxt API endpoint:', installUrl)
+      console.log('[Install] Request data:', { ...requestData, configuration: '...' })
+    }
 
+    // Use Nuxt API endpoint which handles CORS and proxies to Python backend
+    // The Nuxt endpoint supports streaming responses via Server-Sent Events
+    let response: Response
+    try {
+      response = await fetch(installUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+        },
+        body: JSON.stringify(requestData),
+      })
+
+      if (process.dev) {
+        console.log('[Install] Response received:', response.status, response.statusText)
+        console.log('[Install] Response headers:', Object.fromEntries(response.headers.entries()))
+      }
+    } catch (fetchError: any) {
+      // Handle network errors
+      const errorMessage = fetchError.message || 'Failed to connect to API endpoint'
+      const errorName = fetchError.name || 'UnknownError'
+
+      if (process.dev) {
+        console.error('[Install] Fetch error:', {
+          name: errorName,
+          message: errorMessage,
+          stack: fetchError.stack,
+          url: installUrl,
+        })
+      }
+
+      let userMessage = 'Failed to connect to API endpoint'
+
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError') || errorName === 'TypeError') {
+        const pythonServerUrl = runtimeConfig.public.pythonServerUrl || 'http://localhost:3000'
+        userMessage = `Cannot connect to API endpoint.\n\nPlease check:\n1. Nuxt server is running (port 3001)\n2. Python server is running (port 3000)\n3. Firewall/antivirus settings\n4. Try: ${pythonServerUrl}/api/health in your browser`
+      } else {
+        userMessage = `Connection error: ${errorMessage}`
+      }
+
+      if (selectedDeviceId.value) {
+        osInstallStore.failInstallation(selectedDeviceId.value, userMessage)
+      }
+      fail(userMessage, 'Connection error')
+      addProgressLog(`Connection error: ${errorName} - ${errorMessage}`, 'error')
+      addProgressLog(`Attempted URL: ${installUrl}`, 'error')
+      addProgressLog(`Current origin: ${window.location.origin}`, 'error')
+      notifications.error(userMessage)
+      loading.value = false
+      return
+    }
+
+    // Check if response is OK and has a readable body
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Installation request failed' }))
-      fail(errorData.error || 'Installation failed', 'Installation failed')
-      notifications.error(errorData.error || 'Installation failed')
+      // Try to get error message from response
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`
+      try {
+        const errorData = await response.json()
+        errorMessage = errorData.error || errorMessage
+      } catch {
+        // If response is not JSON, try to read as text
+        try {
+          const errorText = await response.text()
+          if (errorText) {
+            errorMessage = errorText.substring(0, 500) // Limit error message length
+          }
+        } catch {
+          // Ignore - use default error message
+        }
+      }
+      if (selectedDeviceId.value) {
+        osInstallStore.failInstallation(selectedDeviceId.value, errorMessage)
+      }
+      fail(errorMessage, 'Installation failed')
+      addProgressLog(`HTTP error: ${response.status} - ${errorMessage}`, 'error')
+      notifications.error(errorMessage)
+      loading.value = false
       return
     }
 
@@ -1191,7 +1323,16 @@ const handleInstall = async () => {
     let buffer = ''
 
     if (!reader) {
-      throw new Error('Response body is not readable')
+      const errorMsg = 'Response body is not readable. The server may have returned an invalid response.'
+      if (selectedDeviceId.value) {
+        osInstallStore.failInstallation(selectedDeviceId.value, errorMsg)
+      }
+      fail(errorMsg, 'Installation failed')
+      addProgressLog(errorMsg, 'error')
+      addProgressLog('This may indicate the Python backend is not running or returned an error.', 'error')
+      notifications.error(errorMsg)
+      loading.value = false
+      return
     }
 
     while (true) {
@@ -1216,12 +1357,29 @@ const handleInstall = async () => {
               // Update progress from backend (scale to 50-100% for installation phase)
               const percent = data.percent !== null && data.percent !== undefined ? data.percent : null
               const message = data.message || ''
+              const totalPercent = percent !== null ? 50 + Math.floor(percent * 0.5) : (progress.value.percent || 50)
+
+              // Determine stage based on progress
+              let stage: 'downloading' | 'installing' | 'configuring' = 'installing'
+              if (message.toLowerCase().includes('download')) {
+                stage = 'downloading'
+              } else if (message.toLowerCase().includes('config') || message.toLowerCase().includes('apply')) {
+                stage = 'configuring'
+              }
+
+              // Update store
+              osInstallStore.updateInstallationProgress(selectedDeviceId.value, {
+                stage,
+                progress: totalPercent,
+                message: `Installing: ${message}`,
+              })
+
               if (percent !== null) {
                 // Installation takes last 50% of total progress (50-100%)
-                update(50 + Math.floor(percent * 0.5), `Installing: ${message}`)
+                update(totalPercent, `Installing: ${message}`)
                 addProgressLog(`[${percent}%] ${message}`, 'info')
               } else if (message) {
-                update(progress.value.percent || 50, `Installing: ${message}`)
+                update(totalPercent, `Installing: ${message}`)
                 addProgressLog(message, 'info')
               }
             } else if (data.type === 'error_debug') {
@@ -1257,6 +1415,12 @@ const handleInstall = async () => {
               // Final result
               if (data.success) {
                 const successMsg = data.message || 'OS installation completed!'
+                osInstallStore.completeInstallation(selectedDeviceId.value)
+                osInstallStore.updateInstallationProgress(selectedDeviceId.value, {
+                  stage: 'completed',
+                  progress: 100,
+                  message: successMsg,
+                })
                 complete(successMsg)
                 addProgressLog(successMsg, 'success')
                 notifications.success(successMsg)
@@ -1273,8 +1437,19 @@ const handleInstall = async () => {
                     errorMsg = String(data.error)
                   }
                 }
+
+                // Update store with error
+                osInstallStore.failInstallation(selectedDeviceId.value, errorMsg)
+
+                // Always display the error message prominently in Detailed Log
                 fail(errorMsg, 'Installation failed')
-                addProgressLog(errorMsg, 'error')
+                addProgressLog('', 'error') // Empty line for spacing
+                addProgressLog('='.repeat(70), 'error')
+                addProgressLog('INSTALLATION FAILED', 'error')
+                addProgressLog('='.repeat(70), 'error')
+                addProgressLog('', 'error')
+                addProgressLog(`Error: ${errorMsg}`, 'error')
+                addProgressLog('', 'error')
 
                 // Display verbose debug information if available
                 if (data.debug_info) {
@@ -1333,11 +1508,22 @@ const handleInstall = async () => {
 
     // If we get here without a final result, something went wrong
     if (progress.value.status === 'running') {
-      fail('Installation ended without completion status', 'Installation error')
+      const errorMsg = 'Installation ended without completion status. The server may have disconnected or the process was interrupted.'
+      osInstallStore.failInstallation(selectedDeviceId.value, errorMsg)
+      fail(errorMsg, 'Installation error')
+      addProgressLog(errorMsg, 'error')
+      addProgressLog('This usually means:', 'error')
+      addProgressLog('  - The server process was terminated', 'error')
+      addProgressLog('  - Network connection was lost', 'error')
+      addProgressLog('  - The installation script crashed without sending a final result', 'error')
+      addProgressLog('Check the server console for detailed error messages.', 'error')
       notifications.error('Installation ended unexpectedly')
     }
   } catch (error: any) {
     const errorMsg = error.message || 'Unknown error'
+    if (selectedDeviceId.value) {
+      osInstallStore.failInstallation(selectedDeviceId.value, errorMsg)
+    }
     fail(errorMsg, 'Installation error')
     addProgressLog(`Error: ${errorMsg}`, 'error')
     notifications.error(`Installation error: ${errorMsg}`)
@@ -1345,6 +1531,20 @@ const handleInstall = async () => {
     loading.value = false
   }
 }
+
+// Computed properties for store state
+const currentInstallation = computed(() => {
+  if (!selectedDeviceId.value) return null
+  return osInstallStore.getInstallationProgress(selectedDeviceId.value)
+})
+
+const installationStage = computed(() => {
+  return currentInstallation.value?.stage || null
+})
+
+const installationProgress = computed(() => {
+  return currentInstallation.value?.progress || 0
+})
 
 // Watch for tab activation and load data only when this tab is active
 const uiStore = useUIStore()
@@ -1418,6 +1618,15 @@ onMounted(async () => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   overflow: hidden;
   transition: all 0.2s ease;
+  margin: 0;
+  padding: 0;
+}
+
+fieldset.install-card {
+  border: 1px solid var(--win11-border, #e0e0e0);
+  border-radius: 12px;
+  margin: 0;
+  padding: 0;
 }
 
 .install-card:hover {
@@ -1431,6 +1640,17 @@ onMounted(async () => {
   padding: 20px 24px;
   background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
   border-bottom: 1px solid var(--win11-border, #e0e0e0);
+}
+
+legend.card-header {
+  width: 100%;
+  margin: 0;
+  padding: 20px 24px;
+  border: none;
+  border-bottom: 1px solid var(--win11-border, #e0e0e0);
+  box-sizing: border-box;
+  display: block;
+  position: relative;
 }
 
 .step-number {

@@ -327,9 +327,23 @@ const confirmFormat = async () => {
       }),
     })
 
+    // Check if response is OK and has a readable body
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Formatting failed' }))
-      throw new Error(errorData.error || 'Formatting failed')
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`
+      try {
+        const errorData = await response.json()
+        errorMessage = errorData.error || errorMessage
+      } catch {
+        try {
+          const errorText = await response.text()
+          if (errorText) {
+            errorMessage = errorText.substring(0, 500)
+          }
+        } catch {
+          // Use default error message
+        }
+      }
+      throw new Error(errorMessage)
     }
 
     // Handle streaming response
@@ -338,7 +352,7 @@ const confirmFormat = async () => {
     let buffer = ''
 
     if (!reader) {
-      throw new Error('Response body is not readable')
+      throw new Error('Response body is not readable. The server may have returned an invalid response.')
     }
 
     while (true) {

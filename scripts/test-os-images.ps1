@@ -16,14 +16,15 @@ Write-Host "Test 1: Checking C# service file..." -ForegroundColor Green
 $serviceFile = "RaspberryPiManager\Services\ImageDownloadService.cs"
 if (Test-Path $serviceFile) {
     Write-Host "✓ Service file exists" -ForegroundColor Green
-    
+
     # Count OS images in the file
     $content = Get-Content $serviceFile -Raw
-    $imageMatches = [regex]::Matches($content, 'new\(\)\s*\{[^}]*Name\s*=\s*"[^"]+"')
+    $imagePattern = 'new\(\)\s*\{[^}]*Name\s*=\s*"[^"]+"'
+    $imageMatches = [regex]::Matches($content, $imagePattern)
     $actualCount = $imageMatches.Count
-    
+
     Write-Host "  Found $actualCount OS image definitions" -ForegroundColor $(if ($actualCount -eq $expectedCount) { "Green" } else { "Yellow" })
-    
+
     if ($actualCount -eq $expectedCount) {
         Write-Host "✓ OS image count matches expected value" -ForegroundColor Green
     } else {
@@ -39,7 +40,7 @@ Write-Host "Test 2: Checking documentation..." -ForegroundColor Green
 $docFile = "docs\OS_DOWNLOAD_PATHS.md"
 if (Test-Path $docFile) {
     Write-Host "✓ Documentation file exists" -ForegroundColor Green
-    
+
     $docContent = Get-Content $docFile -Raw
     $urlCount = ([regex]::Matches($docContent, 'https://')).Count
     Write-Host "  Found $urlCount URLs in documentation" -ForegroundColor Green
@@ -52,32 +53,37 @@ Write-Host ""
 Write-Host "Test 3: Extracting download URLs..." -ForegroundColor Green
 if (Test-Path $serviceFile) {
     $content = Get-Content $serviceFile -Raw
-    
-    # Extract all DownloadUrl values
-    $urlPattern = 'DownloadUrl\s*=\s*"([^"]+)"'
-    $urlMatches = [regex]::Matches($content, $urlPattern)
-    
+
+    # Extract all DownloadUrl values using Select-String
+    $urlLines = Select-String -Path $serviceFile -Pattern 'DownloadUrl\s*=\s*"https://[^"]+"' -AllMatches
     $urls = @()
-    foreach ($match in $urlMatches) {
-        $urls += $match.Groups[1].Value
+    foreach ($line in $urlLines) {
+        if ($line.Matches) {
+            foreach ($match in $line.Matches) {
+                $urlMatch = [regex]::Match($match.Value, 'https://[^"]+')
+                if ($urlMatch.Success) {
+                    $urls += $urlMatch.Value
+                }
+            }
+        }
     }
-    
+
     Write-Host "  Found $($urls.Count) download URLs" -ForegroundColor Green
-    
+
     # Categorize URLs
     $raspberryPiUrls = $urls | Where-Object { $_ -like "*downloads.raspberrypi.org*" }
     $ubuntuUrls = $urls | Where-Object { $_ -like "*cdimage.ubuntu.com*" }
     $debianUrls = $urls | Where-Object { $_ -like "*raspi.debian.net*" }
     $githubUrls = $urls | Where-Object { $_ -like "*github.com*" }
     $otherUrls = $urls | Where-Object { $_ -notlike "*downloads.raspberrypi.org*" -and $_ -notlike "*cdimage.ubuntu.com*" -and $_ -notlike "*raspi.debian.net*" -and $_ -notlike "*github.com*" }
-    
+
     Write-Host "  URL Categories:" -ForegroundColor Cyan
     Write-Host "    - Raspberry Pi OS: $($raspberryPiUrls.Count)" -ForegroundColor White
     Write-Host "    - Ubuntu: $($ubuntuUrls.Count)" -ForegroundColor White
     Write-Host "    - Debian: $($debianUrls.Count)" -ForegroundColor White
     Write-Host "    - GitHub: $($githubUrls.Count)" -ForegroundColor White
     Write-Host "    - Other: $($otherUrls.Count)" -ForegroundColor White
-    
+
     Write-Host "✓ URLs extracted successfully" -ForegroundColor Green
 } else {
     Write-Host "✗ Cannot extract URLs - service file not found" -ForegroundColor Red
@@ -93,7 +99,7 @@ if ($urls) {
             $invalidUrls += $url
         }
     }
-    
+
     if ($invalidUrls.Count -eq 0) {
         Write-Host "✓ All URLs have valid format" -ForegroundColor Green
     } else {
@@ -112,7 +118,7 @@ Write-Host "Test 5: Checking for duplicate URLs..." -ForegroundColor Green
 if ($urls) {
     $uniqueUrls = $urls | Select-Object -Unique
     $duplicateCount = $urls.Count - $uniqueUrls.Count
-    
+
     if ($duplicateCount -eq 0) {
         Write-Host "✓ No duplicate URLs found" -ForegroundColor Green
     } else {
@@ -127,25 +133,32 @@ Write-Host ""
 Write-Host "Test 6: Checking OS families..." -ForegroundColor Green
 if (Test-Path $serviceFile) {
     $content = Get-Content $serviceFile -Raw
-    
-    $familyPattern = 'OSFamily\s*=\s*"([^"]+)"'
-    $familyMatches = [regex]::Matches($content, $familyPattern)
-    
+
+    # Extract OS families using Select-String
+    $familyLines = Select-String -Path $serviceFile -Pattern 'OSFamily\s*=\s*"[^"]+"' -AllMatches
     $families = @{}
-    foreach ($match in $familyMatches) {
-        $family = $match.Groups[1].Value
-        if ($families.ContainsKey($family)) {
-            $families[$family]++
-        } else {
-            $families[$family] = 1
+    foreach ($line in $familyLines) {
+        if ($line.Matches) {
+            foreach ($match in $line.Matches) {
+                $familyPattern = [regex]'"[^"]+"'
+                $familyMatch = $familyPattern.Match($match.Value)
+                if ($familyMatch.Success) {
+                    $family = $familyMatch.Value.Trim('"')
+                    if ($families.ContainsKey($family)) {
+                        $families[$family]++
+                    } else {
+                        $families[$family] = 1
+                    }
+                }
+            }
         }
     }
-    
+
     Write-Host "  OS Families found:" -ForegroundColor Cyan
     foreach ($family in $families.Keys | Sort-Object) {
         Write-Host "    - $family : $($families[$family]) images" -ForegroundColor White
     }
-    
+
     Write-Host "✓ OS families categorized" -ForegroundColor Green
 } else {
     Write-Host "✗ Cannot check OS families - service file not found" -ForegroundColor Red
@@ -188,4 +201,3 @@ if ($allTestsPassed) {
     Write-Host "⚠ Some issues found - please review" -ForegroundColor Yellow
     exit 1
 }
-

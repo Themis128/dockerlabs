@@ -34,14 +34,6 @@ export interface SDCardFormatResult {
   error?: string;
 }
 
-export interface OSImage {
-  name: string;
-  url: string;
-  size?: number;
-  version?: string;
-  description?: string;
-}
-
 export interface SDCardWriteOptions {
   deviceId: string;
   imageUrl: string;

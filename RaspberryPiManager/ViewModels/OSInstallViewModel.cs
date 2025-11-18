@@ -113,7 +113,12 @@ public partial class OSInstallViewModel : ObservableObject
     {
         try
         {
-            SdCards = await _sdCardService.GetSDCardsAsync();
+            var cards = new ObservableCollection<SDCardInfo>();
+            await foreach (var card in _sdCardService.GetSDCardsAsync().ConfigureAwait(true))
+            {
+                cards.Add(card);
+            }
+            SdCards = cards;
         }
         catch (Exception ex)
         {

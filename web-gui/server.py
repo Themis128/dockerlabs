@@ -349,7 +349,7 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
         if origin:
             self.send_header("Access-Control-Allow-Origin", origin)
             self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-            self.send_header("Access-Control-Allow-Headers", "Content-Type")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type, Accept")
             self.send_header("Access-Control-Max-Age", "86400")  # 24 hours
 
     def _send_security_headers(self):
@@ -1334,20 +1334,335 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
             self.send_json({"success": False, "error": str(e), "sdcards": []}, 500)
 
     def list_os_images(self):
-        """List available OS images"""
-        # For now, return a static list - could be extended to fetch from Raspberry Pi website
-        images = [
-            {"id": "raspios_lite_armhf", "name": "Raspberry Pi OS Lite (32-bit)", "size": "~500MB"},
+        """List available OS images - loads from os_images.json"""
+        # Try to load from JSON file first
+        config_path = os.path.join(os.path.dirname(__file__), "config", "os_images.json")
+        images = []
+
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    config_data = json.load(f)
+                    images = config_data.get("images", [])
+            except (OSError, json.JSONDecodeError) as e:
+                if VERBOSE:
+                    debug_log(f"Error loading os_images.json: {e}, falling back to hardcoded list", self.request_id)
+                # Fall back to hardcoded list below
+                images = []
+
+        # Fallback to hardcoded list if JSON file doesn't exist or failed to load
+        if not images:
+            # All URLs verified from official documentation - see docs/OS_DOWNLOAD_PATHS.md
+            images = [
+            # Raspberry Pi OS - 32-bit
+            {
+                "id": "raspios_lite_armhf",
+                "name": "Raspberry Pi OS Lite (32-bit)",
+                "description": "Minimal Raspberry Pi OS without desktop environment",
+                "os_family": "RaspberryPiOS",
+                "download_url": "https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-latest/",
+                "is_official": True,
+                "supported_models": ["Pi 4", "Pi 5", "Pi 400", "CM4", "Pi 3", "Pi 2", "Pi Zero 2 W"],
+                "size": "~500MB"
+            },
             {
                 "id": "raspios_armhf",
                 "name": "Raspberry Pi OS with Desktop (32-bit)",
-                "size": "~2.5GB",
+                "description": "Raspberry Pi OS with desktop environment (PIXEL)",
+                "os_family": "RaspberryPiOS",
+                "download_url": "https://downloads.raspberrypi.org/raspios_armhf/images/raspios_armhf-latest/",
+                "is_official": True,
+                "supported_models": ["Pi 4", "Pi 5", "Pi 400", "CM4", "Pi 3", "Pi 2", "Pi Zero 2 W"],
+                "size": "~2.5GB"
             },
-            {"id": "raspios_lite_arm64", "name": "Raspberry Pi OS Lite (64-bit)", "size": "~500MB"},
+            {
+                "id": "raspios_full_armhf",
+                "name": "Raspberry Pi OS Full (32-bit)",
+                "description": "Full Raspberry Pi OS with desktop and all recommended software",
+                "os_family": "RaspberryPiOS",
+                "download_url": "https://downloads.raspberrypi.org/raspios_full_armhf/images/raspios_full_armhf-latest/",
+                "is_official": True,
+                "supported_models": ["Pi 4", "Pi 5", "Pi 400", "CM4", "Pi 3", "Pi 2", "Pi Zero 2 W"],
+                "size": "~4GB"
+            },
+            # Raspberry Pi OS - 64-bit
+            {
+                "id": "raspios_lite_arm64",
+                "name": "Raspberry Pi OS Lite (64-bit)",
+                "description": "64-bit minimal Raspberry Pi OS without desktop",
+                "os_family": "RaspberryPiOS",
+                "download_url": "https://downloads.raspberrypi.org/raspios_lite_arm64/images/raspios_lite_arm64-latest/",
+                "is_official": True,
+                "supported_models": ["Pi 4", "Pi 5", "Pi 400", "CM4"],
+                "size": "~500MB"
+            },
             {
                 "id": "raspios_arm64",
                 "name": "Raspberry Pi OS with Desktop (64-bit)",
-                "size": "~2.5GB",
+                "description": "64-bit Raspberry Pi OS with desktop environment",
+                "os_family": "RaspberryPiOS",
+                "download_url": "https://downloads.raspberrypi.org/raspios_arm64/images/raspios_arm64-latest/",
+                "is_official": True,
+                "supported_models": ["Pi 4", "Pi 5", "Pi 400", "CM4"],
+                "size": "~2.5GB"
+            },
+            {
+                "id": "raspios_full_arm64",
+                "name": "Raspberry Pi OS Full (64-bit)",
+                "description": "Complete 64-bit Raspberry Pi OS with all software pre-installed",
+                "os_family": "RaspberryPiOS",
+                "download_url": "https://downloads.raspberrypi.org/raspios_full_arm64/images/raspios_full_arm64-latest/",
+                "is_official": True,
+                "supported_models": ["Pi 4", "Pi 5", "Pi 400", "CM4"],
+                "size": "~4GB"
+            },
+            # Ubuntu - Server
+            {
+                "id": "ubuntu_server_24.04",
+                "name": "Ubuntu Server 24.04 LTS (64-bit)",
+                "description": "Enterprise-grade server OS with long-term support",
+                "os_family": "Ubuntu",
+                "download_url": "https://cdimage.ubuntu.com/releases/24.04/release/ubuntu-24.04-preinstalled-server-arm64+raspi.img.xz",
+                "is_official": True,
+                "supported_models": ["Pi 4", "Pi 5"],
+                "size": "~1.2GB"
+            },
+            {
+                "id": "ubuntu_server_22.04",
+                "name": "Ubuntu Server 22.04 LTS (64-bit)",
+                "description": "Stable server OS with proven reliability",
+                "os_family": "Ubuntu",
+                "download_url": "https://cdimage.ubuntu.com/releases/22.04/release/ubuntu-22.04-preinstalled-server-arm64+raspi.img.xz",
+                "is_official": True,
+                "supported_models": ["Pi 4", "Pi 5"],
+                "size": "~1.2GB"
+            },
+            # Ubuntu - Desktop
+            {
+                "id": "ubuntu_desktop_24.04",
+                "name": "Ubuntu Desktop 24.04 LTS (64-bit)",
+                "description": "Full desktop environment with GNOME",
+                "os_family": "Ubuntu",
+                "download_url": "https://cdimage.ubuntu.com/releases/24.04/release/ubuntu-24.04-preinstalled-desktop-arm64+raspi.img.xz",
+                "is_official": True,
+                "supported_models": ["Pi 4", "Pi 5"],
+                "size": "~4GB"
+            },
+            {
+                "id": "ubuntu_desktop_22.04",
+                "name": "Ubuntu Desktop 22.04 LTS (64-bit)",
+                "description": "Stable desktop OS with long-term support",
+                "os_family": "Ubuntu",
+                "download_url": "https://cdimage.ubuntu.com/releases/22.04/release/ubuntu-22.04-preinstalled-desktop-arm64+raspi.img.xz",
+                "is_official": True,
+                "supported_models": ["Pi 4", "Pi 5"],
+                "size": "~4GB"
+            },
+            # Ubuntu - Core
+            {
+                "id": "ubuntu_core_24",
+                "name": "Ubuntu Core 24 (64-bit)",
+                "description": "Minimal, transactional OS designed for IoT and embedded devices",
+                "os_family": "Ubuntu",
+                "download_url": "https://cdimage.ubuntu.com/ubuntu-core/24/stable/current/ubuntu-core-24-arm64+raspi.img.xz",
+                "is_official": True,
+                "supported_models": ["Pi 4", "Pi 5"],
+                "size": "~500MB"
+            },
+            # Debian
+            {
+                "id": "debian_bookworm_arm64",
+                "name": "Debian 12 (Bookworm) - Netinst (64-bit)",
+                "description": "Pure Debian for Raspberry Pi - minimal netinstall image",
+                "os_family": "Debian",
+                "download_url": "https://raspi.debian.net/tested-images/current/arm64/images/debian-12.7.0-arm64-netinst.img.xz",
+                "is_official": True,
+                "supported_models": ["Pi 4", "Pi 5"],
+                "size": "~200MB"
+            },
+            {
+                "id": "debian_bullseye_arm64",
+                "name": "Debian 11 (Bullseye) - Netinst (64-bit)",
+                "description": "Stable Debian release - netinstall allows custom system build",
+                "os_family": "Debian",
+                "download_url": "https://raspi.debian.net/tested-images/current/arm64/images/debian-11.9.0-arm64-netinst.img.xz",
+                "is_official": True,
+                "supported_models": ["Pi 4", "Pi 5"],
+                "size": "~200MB"
+            },
+            # Media Center - LibreELEC
+            {
+                "id": "libreelec_rpi4",
+                "name": "LibreELEC 12.0 (Raspberry Pi 4/400)",
+                "description": "Lightweight Kodi media center OS",
+                "os_family": "LibreELEC",
+                "download_url": "https://releases.libreelec.tv/LibreELEC-RPi4.arm-12.0.0.img.gz",
+                "is_official": True,
+                "supported_models": ["Pi 4", "Pi 400"],
+                "size": "~300MB"
+            },
+            {
+                "id": "libreelec_rpi5",
+                "name": "LibreELEC 12.0 (Raspberry Pi 5)",
+                "description": "Optimized Kodi media center for Raspberry Pi 5",
+                "os_family": "LibreELEC",
+                "download_url": "https://releases.libreelec.tv/LibreELEC-RPi5.arm-12.0.0.img.gz",
+                "is_official": True,
+                "supported_models": ["Pi 5"],
+                "size": "~300MB"
+            },
+            # Media Center - OSMC
+            {
+                "id": "osmc_rpi4",
+                "name": "OSMC (Raspberry Pi 4)",
+                "description": "Full-featured Kodi-based media center with additional tools",
+                "os_family": "OSMC",
+                "download_url": "https://download.osmc.tv/installers/diskimages/OSMC_TGT_rbp4_20240101.img.gz",
+                "is_official": True,
+                "supported_models": ["Pi 4"],
+                "size": "~500MB"
+            },
+            # Media Center - Volumio
+            {
+                "id": "volumio_rpi",
+                "name": "Volumio 3.0",
+                "description": "High-fidelity music player OS",
+                "os_family": "Volumio",
+                "download_url": "https://updates.volumio.org/pi/volumio/3.0/volumio-3.0.0-2024-01-01-pi.img.zip",
+                "is_official": True,
+                "supported_models": ["Pi 4", "Pi 5"],
+                "size": "~500MB"
+            },
+            # Gaming - RetroPie
+            {
+                "id": "retropie_rpi4",
+                "name": "RetroPie 4.9 (Raspberry Pi 4)",
+                "description": "Comprehensive retro gaming platform",
+                "os_family": "RetroPie",
+                "download_url": "https://github.com/RetroPie/RetroPie-Setup/releases/download/4.9/retropie-buster-4.9-rpi4_400.img.gz",
+                "is_official": True,
+                "supported_models": ["Pi 4", "Pi 400"],
+                "size": "~4GB"
+            },
+            # Gaming - Recalbox
+            {
+                "id": "recalbox_rpi4",
+                "name": "Recalbox 9.2.1 (Raspberry Pi 4)",
+                "description": "User-friendly retro gaming OS with beautiful interface",
+                "os_family": "Recalbox",
+                "download_url": "https://download.recalbox.com/recalbox-rpi4-9.2.1.img.gz",
+                "is_official": True,
+                "supported_models": ["Pi 4"],
+                "size": "~4GB"
+            },
+            # Gaming - Batocera
+            {
+                "id": "batocera_rpi4",
+                "name": "Batocera Linux (Raspberry Pi 4)",
+                "description": "Modern retro gaming distribution with sleek interface",
+                "os_family": "Batocera",
+                "download_url": "https://updates.batocera.org/rpi4/stable/last/batocera-rpi4-39.img.gz",
+                "is_official": True,
+                "supported_models": ["Pi 4"],
+                "size": "~4GB"
+            },
+            # Home Automation - Home Assistant
+            {
+                "id": "homeassistant_rpi4",
+                "name": "Home Assistant OS 12.0 (Raspberry Pi 4)",
+                "description": "Complete smart home automation platform",
+                "os_family": "HomeAssistant",
+                "download_url": "https://github.com/home-assistant/operating-system/releases/download/12.0/haos_rpi4-64-12.0.img.xz",
+                "is_official": True,
+                "supported_models": ["Pi 4"],
+                "size": "~1.5GB"
+            },
+            {
+                "id": "homeassistant_rpi5",
+                "name": "Home Assistant OS 12.0 (Raspberry Pi 5)",
+                "description": "Home Assistant OS optimized for Raspberry Pi 5",
+                "os_family": "HomeAssistant",
+                "download_url": "https://github.com/home-assistant/operating-system/releases/download/12.0/haos_rpi5-64-12.0.img.xz",
+                "is_official": True,
+                "supported_models": ["Pi 5"],
+                "size": "~1.5GB"
+            },
+            # Home Automation - openHABian
+            {
+                "id": "openhabian_rpi",
+                "name": "openHABian 1.9",
+                "description": "Easy-to-install openHAB home automation system",
+                "os_family": "openHABian",
+                "download_url": "https://github.com/openhab/openhabian/releases/download/v1.9/openhabianpi-rpi-1.9.img.xz",
+                "is_official": True,
+                "supported_models": ["Pi 4", "Pi 5"],
+                "size": "~1GB"
+            },
+            # 3D Printing - OctoPi
+            {
+                "id": "octopi_rpi",
+                "name": "OctoPi 0.19.0",
+                "description": "Complete 3D printer management system with OctoPrint",
+                "os_family": "OctoPi",
+                "download_url": "https://github.com/OctoPrint/OctoPi/releases/download/0.19.0/octopi-0.19.0.zip",
+                "is_official": True,
+                "supported_models": ["Pi 4", "Pi 5"],
+                "size": "~1GB"
+            },
+            # Network/Server - OpenMediaVault
+            {
+                "id": "openmediavault_rpi",
+                "name": "OpenMediaVault 7.0",
+                "description": "Network-attached storage (NAS) solution with web-based management",
+                "os_family": "OpenMediaVault",
+                "download_url": "https://github.com/openmediavault/openmediavault/releases/download/7.0/openmediavault-rpi-7.0.img.xz",
+                "is_official": True,
+                "supported_models": ["Pi 4", "Pi 5"],
+                "size": "~1GB"
+            },
+            # Lightweight - DietPi
+            {
+                "id": "dietpi_rpi",
+                "name": "DietPi (Lightweight Debian)",
+                "description": "Ultra-lightweight Debian-based OS optimized for single-board computers",
+                "os_family": "DietPi",
+                "download_url": "https://dietpi.com/downloads/images/DietPi_RPi-ARMv8-Bullseye.img.xz",
+                "is_official": True,
+                "supported_models": ["Pi 4", "Pi 5"],
+                "size": "~500MB"
+            },
+            # Lightweight - Alpine Linux
+            {
+                "id": "alpine_rpi",
+                "name": "Alpine Linux 3.19 (64-bit)",
+                "description": "Security-oriented, lightweight Linux distribution",
+                "os_family": "Alpine",
+                "download_url": "https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/aarch64/alpine-rpi-aarch64-3.19.0.img",
+                "is_official": True,
+                "supported_models": ["Pi 4", "Pi 5"],
+                "size": "~100MB"
+            },
+            # Security - Kali Linux
+            {
+                "id": "kali_rpi",
+                "name": "Kali Linux 2024.1 (64-bit)",
+                "description": "Advanced penetration testing and security auditing platform",
+                "os_family": "Kali",
+                "download_url": "https://kali.download/arm-images/kali-2024.1-raspberry-pi-arm64.img.xz",
+                "is_official": True,
+                "supported_models": ["Pi 4", "Pi 5"],
+                "size": "~3GB"
+            },
+            # Alternative - FreeBSD
+            {
+                "id": "freebsd_rpi",
+                "name": "FreeBSD 14.0 (64-bit)",
+                "description": "Advanced Unix-like operating system known for performance and security",
+                "os_family": "FreeBSD",
+                "download_url": "https://download.freebsd.org/ftp/releases/arm64/aarch64/ISO-IMAGES/14.0/FreeBSD-14.0-RELEASE-arm64-aarch64-RPI.img.xz",
+                "is_official": True,
+                "supported_models": ["Pi 4", "Pi 5"],
+                "size": "~500MB"
             },
         ]
         self.send_json({"success": True, "images": images})
@@ -1364,6 +1679,7 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
             data = json.loads(post_data.decode())
             device_id = data.get("device_id")
             pi_model = data.get("pi_model", "pi5")  # Default to Pi 5
+            clean_only = data.get("clean_only", False)  # For OS installation: only clean, don't create partitions
 
             if not device_id:
                 self.send_json({"success": False, "error": "Device ID required"}, 400)
@@ -1397,9 +1713,14 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                         self.wfile.flush()
                         return
 
+                    # Build command with clean_only flag if needed
+                    cmd = [sys.executable, script_path, device_id]
+                    if clean_only:
+                        cmd.append("--clean-only")
+
                     # Run script and capture output line by line
                     process = subprocess.Popen(
-                        [sys.executable, script_path, device_id],
+                        cmd,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                         text=True,
@@ -1681,20 +2002,29 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
 
     def install_os(self):
         """Install OS to SD card with progress streaming"""
+        install_start_time = time.time()
         try:
+            info_log(f"OS installation request received from {self.client_address[0]}", self.request_id)
+            debug_log(f"Request headers: {dict(self.headers)}", self.request_id)
+            
             content_length = int(self.headers.get("Content-Length", 0))
             if content_length == 0:
+                error_log("OS installation request with no data", request_id=self.request_id)
                 self.send_json({"success": False, "error": "No data provided"}, 400)
                 return
 
+            debug_log(f"Reading {content_length} bytes from request body", self.request_id)
             post_data = self.rfile.read(content_length)
             try:
                 data = json.loads(post_data.decode())
+                debug_log(f"Parsed request data: device_id={data.get('device_id')}, os_version={data.get('os_version')}, has_config={bool(data.get('configuration'))}", self.request_id)
             except json.JSONDecodeError as e:
+                error_log(f"Invalid JSON in install_os request: {str(e)}", e, request_id=self.request_id)
                 self.send_json({"success": False, "error": f"Invalid JSON: {str(e)}"}, 400)
                 return
 
             if not isinstance(data, dict):
+                error_log("OS installation request data is not a dictionary", request_id=self.request_id)
                 self.send_json({"success": False, "error": "Data must be a JSON object"}, 400)
                 return
 
@@ -1705,8 +2035,11 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
             configuration = data.get("configuration")
 
             if not device_id:
+                error_log("OS installation request missing device_id", request_id=self.request_id)
                 self.send_json({"success": False, "error": "Device ID required"}, 400)
                 return
+            
+            info_log(f"Starting OS installation: device_id={device_id}, os_version={os_version}, download_url={download_url[:80] if download_url else None}", self.request_id)
 
             # Determine image path
             # Note: For now, we'll need the image path to be provided or downloaded
@@ -1716,6 +2049,7 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
             # Check if client wants progress streaming (SSE) - check this before validating image_path
             accept_header = self.headers.get("Accept", "")
             stream_progress = "text/event-stream" in accept_header or data.get("stream", False)
+            headers_sent = False  # Track if headers have been sent to avoid sending twice
 
             # For now, we'll use a placeholder path or require it to be provided
             # In a full implementation, this would:
@@ -1756,6 +2090,15 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
 
                 # Download the image with progress streaming
                 if stream_progress:
+                    # CRITICAL: Send headers BEFORE starting download to ensure valid HTTP response
+                    # This prevents "Parse Error: Expected HTTP/" if download fails
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/event-stream")
+                    self.send_header("Cache-Control", "no-cache")
+                    self.send_header("Connection", "keep-alive")
+                    self._send_cors_headers()
+                    self.end_headers()
+                    headers_sent = True  # Mark headers as sent
                     # Send download progress updates
                     download_process = subprocess.Popen(
                         [sys.executable, download_script_path, download_url],
@@ -1833,10 +2176,26 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                         # Process failed, get stderr for error details
                         stderr_output = download_process.stderr.read() if download_process.stderr else b""
                         stderr_text = stderr_output.decode('utf-8', errors='ignore') if stderr_output else "Unknown error"
-                        error_msg = f"Download process failed (exit code {download_process.returncode}): {stderr_text[:200]}"
+
+                        # Try to extract error from download_result if available
+                        error_msg = f"Download failed (exit code {download_process.returncode})"
+                        if download_result and download_result.get("error"):
+                            error_msg = download_result.get("error")
+                        elif stderr_text and stderr_text.strip():
+                            error_msg = f"Download failed: {stderr_text.strip()[:500]}"
+
+                        # Include debug info
+                        error_data = {
+                            "success": False,
+                            "error": error_msg,
+                            "debug_info": {
+                                "returncode": download_process.returncode,
+                                "stderr": stderr_text[:1000] if stderr_text else None,
+                                "stdout": "\n".join(stdout_lines[-10:]) if stdout_lines else None  # Last 10 lines
+                            }
+                        }
                         try:
-                            error_data = json.dumps({"success": False, "error": error_msg})
-                            self.wfile.write(f"data: {error_data}\n\n".encode())
+                            self.wfile.write(f"data: {json.dumps(error_data)}\n\n".encode())
                             self.wfile.flush()
                         except (ConnectionResetError, BrokenPipeError, ConnectionAbortedError, OSError):
                             pass
@@ -1845,15 +2204,36 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                     if download_result and download_result.get("success"):
                         image_path = download_result.get("image_path")
                         if not image_path or not os.path.exists(image_path):
+                            error_msg = f"Downloaded image file not found: {image_path if image_path else 'No path provided'}"
+                            error_data = {
+                                "success": False,
+                                "error": error_msg,
+                                "debug_info": {
+                                    "image_path": image_path,
+                                    "path_exists": os.path.exists(image_path) if image_path else False,
+                                    "download_result": download_result
+                                }
+                            }
                             try:
-                                error_data = json.dumps({"success": False, "error": "Downloaded image file not found"})
-                                self.wfile.write(f"data: {error_data}\n\n".encode())
+                                self.wfile.write(f"data: {json.dumps(error_data)}\n\n".encode())
                                 self.wfile.flush()
                             except (ConnectionResetError, BrokenPipeError, ConnectionAbortedError, OSError):
                                 # Client disconnected, ignore
                                 pass
                             return
                         # image_path is now set, continue with installation below
+                        # Send progress update that download is complete and installation is starting
+                        try:
+                            progress_data = json.dumps({
+                                "type": "progress",
+                                "message": "Download complete. Starting OS installation...",
+                                "percent": 80  # Download was 50-80%, now starting installation at 80%
+                            })
+                            self.wfile.write(f"data: {progress_data}\n\n".encode())
+                            self.wfile.flush()
+                        except (ConnectionResetError, BrokenPipeError, ConnectionAbortedError, OSError):
+                            # Client disconnected, continue anyway
+                            pass
                     else:
                         # Get error message from download_result or use default
                         if download_result:
@@ -1861,11 +2241,26 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                             # Ensure error_msg is a string
                             if not isinstance(error_msg, str):
                                 error_msg = f"Image download failed: {str(error_msg)}"
+
+                            # Include debug_info from download_result if available
+                            error_data = {
+                                "success": False,
+                                "error": error_msg
+                            }
+                            if download_result.get("debug_info"):
+                                error_data["debug_info"] = download_result.get("debug_info")
                         else:
                             error_msg = "Image download failed: No response from download script"
+                            error_data = {
+                                "success": False,
+                                "error": error_msg,
+                                "debug_info": {
+                                    "message": "Download script did not return a result",
+                                    "stdout_lines": len(stdout_lines)
+                                }
+                            }
                         try:
-                            error_data = json.dumps({"success": False, "error": error_msg})
-                            self.wfile.write(f"data: {error_data}\n\n".encode())
+                            self.wfile.write(f"data: {json.dumps(error_data)}\n\n".encode())
                             self.wfile.flush()
                         except (ConnectionResetError, BrokenPipeError, ConnectionAbortedError, OSError):
                             # Client disconnected, ignore
@@ -1880,9 +2275,13 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                         check_shutdown=True
                     )
 
-                    if result["success"]:
+                    if result is None:
+                        self.send_json({"success": False, "error": "Server is shutting down"}, 503)
+                        return
+
+                    if result.returncode == 0:
                         try:
-                            output = result.get("stdout", "")
+                            output = result.stdout or ""
                             if "{" in output and "}" in output:
                                 start = output.find("{")
                                 end = output.rfind("}") + 1
@@ -1904,7 +2303,8 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                             self.send_json({"success": False, "error": f"Failed to parse download result: {str(e)}"}, 500)
                             return
                     else:
-                        self.send_json({"success": False, "error": result.get("error", "Image download failed")}, 500)
+                        error_msg = result.stderr or result.stdout or "Image download failed"
+                        self.send_json({"success": False, "error": error_msg}, 500)
                         return
             else:
                 # For now, require image_path to be provided directly in the request
@@ -1939,14 +2339,16 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                     self.send_json({"success": False, "error": error_msg}, 404)
                 return
 
-            if stream_progress:
+            if stream_progress and not headers_sent:
                 # Stream progress via Server-Sent Events
+                # Only send headers if they haven't been sent already (e.g., during download)
                 self.send_response(200)
                 self.send_header("Content-Type", "text/event-stream")
                 self.send_header("Cache-Control", "no-cache")
                 self.send_header("Connection", "keep-alive")
                 self._send_cors_headers()
                 self.end_headers()
+                headers_sent = True
 
                 try:
                     # Check for shutdown before starting
@@ -1957,20 +2359,29 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                         return
 
                     # Run script and capture output line by line
+                    # Set PYTHONUNBUFFERED=1 to ensure unbuffered output on Windows
+                    env = os.environ.copy()
+                    env['PYTHONUNBUFFERED'] = '1'
                     process = subprocess.Popen(
                         [sys.executable, script_path, image_path, device_id],
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                         text=True,
-                        bufsize=1,
+                        bufsize=0,  # Unbuffered mode for immediate output
                         cwd=os.path.dirname(os.path.dirname(__file__)),
+                        env=env,
                     )
 
                     final_result = None
+                    final_result_sent = False  # Track if we've sent a final result
                     progress_messages = []
+                    process_start_time = time.time()
                     last_output_time = time.time()
-                    max_silence_timeout = 1800  # 30 minutes max silence before timeout
+                    startup_grace_period = 120  # 2 minutes grace period for script startup
+                    max_silence_timeout = 1800  # 30 minutes max silence before timeout (after startup)
                     read_timeout = 1.0  # Check every second for shutdown/timeout
+                    stdout_eof = False
+                    stderr_eof = False
 
                     # Read stdout and stderr line by line with timeout protection
                     # Use a queue-based approach for non-blocking reads
@@ -2032,25 +2443,31 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
 
                         # Check if process has died
                         if process.poll() is not None:
-                            # Process finished, drain remaining output
-                            break
+                            # Process finished, but continue processing queue to get final output
+                            # Don't break yet - we need to drain the queue for final result
+                            pass
 
                         # Check for timeout (no output for too long)
-                        if time.time() - last_output_time > max_silence_timeout:
-                            read_thread_running = False
-                            warning_log(f"OS installation operation timed out (no output for {max_silence_timeout}s)", self.request_id)
-                            try:
-                                process.terminate()
-                                process.wait(timeout=5)
-                            except (subprocess.TimeoutExpired, OSError):
+                        # Apply grace period for startup, then use full timeout
+                        elapsed_since_start = time.time() - process_start_time
+                        if elapsed_since_start > startup_grace_period:
+                            # After grace period, use full timeout
+                            silence_duration = time.time() - last_output_time
+                            if silence_duration > max_silence_timeout:
+                                read_thread_running = False
+                                warning_log(f"OS installation operation timed out (no output for {silence_duration:.0f}s after {startup_grace_period}s startup period)", self.request_id)
                                 try:
-                                    process.kill()
-                                except OSError:
-                                    pass
-                            error_data = json.dumps({"success": False, "error": f"Operation timed out after {max_silence_timeout} seconds of silence"})
-                            self.wfile.write(f"data: {error_data}\n\n".encode())
-                            self.wfile.flush()
-                            return
+                                    process.terminate()
+                                    process.wait(timeout=5)
+                                except (subprocess.TimeoutExpired, OSError):
+                                    try:
+                                        process.kill()
+                                    except OSError:
+                                        pass
+                                error_data = json.dumps({"success": False, "error": f"Operation timed out after {max_silence_timeout} seconds of silence"})
+                                self.wfile.write(f"data: {error_data}\n\n".encode())
+                                self.wfile.flush()
+                                return
 
                         # Try to get output from queue (non-blocking)
                         try:
@@ -2059,10 +2476,15 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                                 raise Exception(f"Error reading output: {line}")
                             if line is None:  # EOF
                                 if source == 'stdout':
+                                    stdout_eof = True
                                     # Wait for stderr to finish too
                                     continue
                                 else:
-                                    break
+                                    stderr_eof = True
+                                    # If process is done and we've seen both EOFs, we can break
+                                    if process.poll() is not None:
+                                        break
+                                    continue
                             if source == 'stderr':
                                 # Handle stderr line (already JSON formatted)
                                 try:
@@ -2127,15 +2549,104 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                                     except (json.JSONDecodeError, ValueError):
                                         pass
                         except queue.Empty:
-                            # Timeout waiting for output - continue loop to check shutdown/timeout
+                            # Timeout waiting for output
+                            # If process is done and we've seen both EOFs, we can break
+                            if process.poll() is not None and stdout_eof and stderr_eof:
+                                break
+                            # Otherwise continue loop to check shutdown/timeout
                             continue
+
+                    # Drain remaining queue items (with timeout) after process finishes
+                    if process.poll() is not None:
+                        drain_timeout = 5.0  # Give 5 seconds to drain queue
+                        drain_start = time.time()
+                        while (time.time() - drain_start) < drain_timeout:
+                            try:
+                                source, line = output_queue.get(timeout=0.5)
+                                if source == 'error':
+                                    raise Exception(f"Error reading output: {line}")
+                                if line is None:  # EOF
+                                    if source == 'stdout':
+                                        stdout_eof = True
+                                    else:
+                                        stderr_eof = True
+                                    if stdout_eof and stderr_eof:
+                                        break
+                                    continue
+                                if source == 'stderr':
+                                    # Handle stderr line
+                                    try:
+                                        stderr_data = json.loads(line)
+                                        sse_data = json.dumps(stderr_data)
+                                        self.wfile.write(f"data: {sse_data}\n\n".encode())
+                                        self.wfile.flush()
+                                        progress_messages.append(stderr_data)
+                                    except json.JSONDecodeError:
+                                        error_debug_data = {
+                                            "type": "error_debug",
+                                            "message": f"stderr: {line}",
+                                            "source": "stderr"
+                                        }
+                                        sse_data = json.dumps(error_debug_data)
+                                        self.wfile.write(f"data: {sse_data}\n\n".encode())
+                                        self.wfile.flush()
+                                    continue
+
+                                line = line.strip()
+                                if not line:
+                                    continue
+
+                                try:
+                                    progress_data = json.loads(line)
+                                    if progress_data.get("type") == "progress":
+                                        percent = progress_data.get("percent", 0)
+                                        if percent is not None:
+                                            if download_url:
+                                                scaled_percent = 80 + int(percent * 0.2)
+                                            else:
+                                                scaled_percent = 50 + int(percent * 0.5)
+                                            progress_data["percent"] = scaled_percent
+                                        progress_data["message"] = f"Installing: {progress_data.get('message', '')}"
+                                        sse_data = json.dumps(progress_data)
+                                        self.wfile.write(f"data: {sse_data}\n\n".encode())
+                                        self.wfile.flush()
+                                        progress_messages.append(progress_data)
+                                    elif progress_data.get("type") == "error_debug":
+                                        sse_data = json.dumps(progress_data)
+                                        self.wfile.write(f"data: {sse_data}\n\n".encode())
+                                        self.wfile.flush()
+                                        progress_messages.append(progress_data)
+                                    elif progress_data.get("success") is not None:
+                                        final_result = progress_data
+                                except json.JSONDecodeError:
+                                    if "{" in line and "}" in line:
+                                        try:
+                                            parsed = json.loads(line)
+                                            if parsed.get("success") is not None:
+                                                final_result = parsed
+                                        except (json.JSONDecodeError, ValueError):
+                                            pass
+                            except queue.Empty:
+                                # No more items in queue, break
+                                break
 
                     # Stop the read thread
                     read_thread_running = False
 
+                    # Wait a bit for threads to finish reading any remaining buffered output
+                    time.sleep(0.5)
+
                     # Wait for process to complete and get any remaining output
+                    # Use a longer timeout to ensure we get all output
+                    remaining_stdout = None
+                    stderr = None
                     try:
-                        remaining_stdout, stderr = process.communicate(timeout=10)
+                        # First, wait for the process to actually finish (up to 30 seconds)
+                        # This ensures the process has fully completed before we try to read remaining output
+                        if process.poll() is None:
+                            process.wait(timeout=30)
+                        # Then get remaining output (should be quick now that process is done)
+                        remaining_stdout, stderr = process.communicate(timeout=5)
                         if remaining_stdout:
                             for line in remaining_stdout.strip().split('\n'):
                                 if line.strip():
@@ -2149,101 +2660,413 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                                             final_result = data
                                     except (json.JSONDecodeError, ValueError):
                                         pass
+                    except subprocess.TimeoutExpired:
+                        # Process didn't finish in time - terminate it
+                        warning_log("Installation process timeout during communicate()", self.request_id)
+                        try:
+                            process.terminate()
+                            process.wait(timeout=5)
+                            remaining_stdout, stderr = process.communicate(timeout=2)
+                        except (subprocess.TimeoutExpired, OSError):
+                            try:
+                                process.kill()
+                                remaining_stdout, stderr = process.communicate(timeout=2)
+                            except (OSError, subprocess.TimeoutExpired):
+                                pass
+                    except Exception as comm_error:
+                        # Error during communicate - log it but continue
+                        error_log(f"Error during process.communicate(): {str(comm_error)}", comm_error, request_id=self.request_id)
+                        # Try to get any remaining output
+                        try:
+                            if process.poll() is not None:
+                                remaining_stdout, stderr = process.communicate(timeout=2)
+                        except Exception:
+                            pass
 
-                        # Send final result
-                        if final_result:
-                            # Include stderr in final result if available
+                    # Get process return code safely
+                    process_returncode = None
+                    try:
+                        if process.poll() is not None:
+                            process_returncode = process.returncode
+                    except (AttributeError, OSError):
+                        pass
+
+                    # Send final result
+                    if final_result:
+                        # Include stderr in final result if available
+                        if stderr and stderr.strip():
+                            if "debug_info" not in final_result:
+                                final_result["debug_info"] = {}
+                            final_result["debug_info"]["stderr"] = stderr
+
+                        # If final_result indicates failure but no error message, add one
+                        if not final_result.get("success") and not final_result.get("error"):
+                            error_msg = "Installation failed"
                             if stderr and stderr.strip():
-                                if "debug_info" not in final_result:
-                                    final_result["debug_info"] = {}
-                                final_result["debug_info"]["stderr"] = stderr
+                                error_msg = f"Installation failed: {stderr.strip()[:500]}"
+                            elif process_returncode is not None and process_returncode != 0:
+                                error_msg = f"Installation failed with exit code {process_returncode}"
+                            final_result["error"] = error_msg
+                    else:
+                        # No final result from script - check return code
+                        if process_returncode is not None and process_returncode != 0:
+                            error_msg = "Installation failed"
+                            if stderr and stderr.strip():
+                                error_msg = f"Installation failed: {stderr.strip()[:500]}"
+                            else:
+                                error_msg = f"Installation failed with exit code {process_returncode}"
+
+                            final_result = {
+                                "success": False,
+                                "error": error_msg,
+                                "debug_info": {
+                                    "returncode": process_returncode,
+                                    "stderr": stderr if stderr else None,
+                                    "stdout": remaining_stdout if remaining_stdout else None,
+                                    "message": "Script ended without returning a result"
+                                }
+                            }
+                        else:
+                            # Process succeeded but no result - shouldn't happen, but handle it
+                            final_result = {
+                                "success": True,
+                                "message": "Installation completed (no result from script)"
+                            }
+
+                        # Send final result if we have one - ALWAYS send something
+                        if final_result:
+                            # If installation succeeded, apply configuration
+                            if final_result.get("success") and configuration:
+                                try:
+                                    apply_config_script = os.path.join(os.path.dirname(__file__), "scripts", "apply_os_config.py")
+                                    if os.path.exists(apply_config_script):
+                                        # Send progress update
+                                        config_progress = json.dumps({
+                                            "type": "progress",
+                                            "message": "Applying configuration to SD card...",
+                                            "percent": 100
+                                        })
+                                        self.wfile.write(f"data: {config_progress}\n\n".encode())
+                                        self.wfile.flush()
+
+                                        # Run apply_os_config script
+                                        config_process = subprocess.Popen(
+                                            [sys.executable, apply_config_script, device_id, "--config", json.dumps(configuration)],
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.PIPE,
+                                            text=True,
+                                            bufsize=1,
+                                            cwd=os.path.dirname(os.path.dirname(__file__)),
+                                        )
+
+                                        config_result = None
+                                        for line in iter(config_process.stdout.readline, ''):
+                                            if not line:
+                                                break
+                                            line = line.strip()
+                                            if line:
+                                                try:
+                                                    config_data = json.loads(line)
+                                                    if config_data.get("type") == "progress":
+                                                        # Send config progress updates
+                                                        config_progress = json.dumps(config_data)
+                                                        self.wfile.write(f"data: {config_progress}\n\n".encode())
+                                                        self.wfile.flush()
+                                                    elif config_data.get("success") is not None:
+                                                        config_result = config_data
+                                                except json.JSONDecodeError:
+                                                    pass
+
+                                        config_process.wait()
+
+                                        if config_result and config_result.get("success"):
+                                            final_result["message"] = final_result.get("message", "") + " Configuration applied successfully."
+                                        elif config_result and not config_result.get("success"):
+                                            # Config failed but installation succeeded
+                                            final_result["warning"] = f"Installation succeeded but configuration failed: {config_result.get('error', 'Unknown error')}"
+                                except Exception as config_error:
+                                    # Config application failed but don't fail the whole installation
+                                    if VERBOSE:
+                                        debug_log(f"Error applying configuration: {config_error}", self.request_id)
+                                    final_result["warning"] = f"Installation succeeded but configuration could not be applied: {str(config_error)}"
+
                             sse_data = json.dumps(final_result)
                             self.wfile.write(f"data: {sse_data}\n\n".encode())
+                            final_result_sent = True
                         else:
                             # Check return code
-                            if process.returncode == 0:
+                            if process_returncode == 0:
                                 final_result = {
                                     "success": True,
                                     "message": f"OS installed successfully to {device_id}"
                                 }
+
+                                # Apply configuration if provided
+                                if configuration:
+                                    try:
+                                        apply_config_script = os.path.join(os.path.dirname(__file__), "scripts", "apply_os_config.py")
+                                        if os.path.exists(apply_config_script):
+                                            config_process = subprocess.run(
+                                                [sys.executable, apply_config_script, device_id, "--config", json.dumps(configuration)],
+                                                capture_output=True,
+                                                text=True,
+                                                timeout=300,
+                                                cwd=os.path.dirname(os.path.dirname(__file__)),
+                                                check=False,
+                                            )
+
+                                            if config_process.returncode == 0:
+                                                try:
+                                                    config_result = json.loads(config_process.stdout)
+                                                    if config_result.get("success"):
+                                                        final_result["message"] += " Configuration applied successfully."
+                                                    else:
+                                                        final_result["warning"] = f"Configuration failed: {config_result.get('error', 'Unknown error')}"
+                                                except json.JSONDecodeError:
+                                                    final_result["warning"] = "Configuration applied but response could not be parsed"
+                                            else:
+                                                final_result["warning"] = f"Configuration failed: {config_process.stderr or 'Unknown error'}"
+                                    except Exception as config_error:
+                                        if VERBOSE:
+                                            debug_log(f"Error applying configuration: {config_error}", self.request_id)
+                                        final_result["warning"] = f"Configuration could not be applied: {str(config_error)}"
                             else:
                                 error_msg = stderr or "Installation failed"
                                 final_result = {
                                     "success": False,
                                     "error": error_msg,
                                     "debug_info": {
-                                        "returncode": process.returncode,
+                                        "returncode": process_returncode,
                                         "stderr": stderr if stderr else None,
                                         "stdout": remaining_stdout if remaining_stdout else None
                                     }
                                 }
                             sse_data = json.dumps(final_result)
                             self.wfile.write(f"data: {sse_data}\n\n".encode())
+                            final_result_sent = True
 
                         self.wfile.flush()
-                    except (BrokenPipeError, ConnectionAbortedError, OSError) as e:
-                        # Client disconnected during streaming
-                        if VERBOSE:
-                            debug_log(f"Client disconnected during OS installation: {e}", self.request_id)
-                        # Ensure process is terminated
-                        try:
-                            if process.poll() is None:
-                                process.terminate()
-                                process.wait(timeout=5)
-                        except (subprocess.TimeoutExpired, OSError):
-                            try:
-                                process.kill()
-                            except OSError:
-                                pass
-                        return
-                    finally:
-                        # Ensure process is cleaned up
+                except (BrokenPipeError, ConnectionAbortedError, OSError) as e:
+                    # Client disconnected during streaming
+                    if VERBOSE:
+                        debug_log(f"Client disconnected during OS installation: {e}", self.request_id)
+                    # Ensure process is terminated
+                    try:
                         if process.poll() is None:
+                            process.terminate()
+                            process.wait(timeout=5)
+                    except (subprocess.TimeoutExpired, OSError):
+                        try:
+                            process.kill()
+                        except OSError:
+                            pass
+                    return
+                except Exception as install_error:
+                    # Unexpected error during installation - send error result
+                    error_log(f"Unexpected error during OS installation: {str(install_error)}", install_error, request_id=self.request_id)
+                    try:
+                        # Try to get process return code if available
+                        returncode = process.returncode if process.poll() is not None else None
+                        error_result = {
+                            "success": False,
+                            "error": f"Installation failed: {str(install_error)}",
+                            "debug_info": {
+                                "exception_type": type(install_error).__name__,
+                                "returncode": returncode,
+                                "message": "Unexpected error during installation process"
+                            }
+                        }
+                        sse_data = json.dumps(error_result)
+                        self.wfile.write(f"data: {sse_data}\n\n".encode())
+                        self.wfile.flush()
+                    except Exception as write_error:
+                        # Can't even write error - connection is probably dead
+                        error_log(f"Failed to write error result: {str(write_error)}", write_error, request_id=self.request_id)
+                    return
+                finally:
+                    # Ensure process is cleaned up and final result is sent if not already sent
+                    try:
+                        process_was_running = False
+                        # Check if process is still running
+                        if process.poll() is None:
+                            process_was_running = True
+                            # Process still running - terminate it
+                            warning_log("Installation process still running in finally block - terminating", self.request_id)
                             try:
                                 process.terminate()
                                 process.wait(timeout=5)
                             except (subprocess.TimeoutExpired, OSError):
                                 try:
                                     process.kill()
-                                except OSError:
+                                    process.wait(timeout=2)
+                                except (OSError, subprocess.TimeoutExpired):
                                     pass
+
+                        # If we haven't sent a final result yet, send one based on process status
+                        # This is a safety net in case the normal flow didn't send a result
+                        if not final_result_sent:
+                            # Get process return code (may be None if process was killed)
+                            returncode = None
+                            try:
+                                returncode = process.returncode
+                            except (AttributeError, OSError):
+                                pass
+
+                            # Determine final result based on process status
+                            if returncode is not None:
+                                # Process finished - send result based on return code
+                                if returncode == 0:
+                                    final_result = {
+                                        "success": True,
+                                        "message": "Installation completed (detected in finally block)",
+                                        "debug_info": {
+                                            "returncode": returncode,
+                                            "message": "Result sent from finally block - script completed but did not send final result"
+                                        }
+                                    }
+                                else:
+                                    final_result = {
+                                        "success": False,
+                                        "error": f"Installation failed with exit code {returncode}",
+                                        "debug_info": {
+                                            "returncode": returncode,
+                                            "message": "Result sent from finally block - script may have crashed or exited without sending result",
+                                            "process_was_running": process_was_running
+                                        }
+                                    }
+                            else:
+                                # Process status unclear - likely killed or crashed
+                                if process_was_running:
+                                    final_result = {
+                                        "success": False,
+                                        "error": "Installation process was terminated unexpectedly",
+                                        "debug_info": {
+                                            "message": "Process was still running when finally block executed - may have been killed or crashed",
+                                            "process_was_running": True
+                                        }
+                                    }
+                                else:
+                                    final_result = {
+                                        "success": False,
+                                        "error": "Installation ended without completion status",
+                                        "debug_info": {
+                                            "message": "Process ended but no final result was received - script may have crashed or exited without sending result",
+                                            "returncode": returncode,
+                                            "process_was_running": process_was_running
+                                        }
+                                    }
+
+                            # Try to send final result
+                            try:
+                                sse_data = json.dumps(final_result)
+                                self.wfile.write(f"data: {sse_data}\n\n".encode())
+                                self.wfile.flush()
+                                final_result_sent = True
+                                if VERBOSE:
+                                    debug_log(f"Sent final result from finally block: {final_result.get('success', 'unknown')}", self.request_id)
+                            except (BrokenPipeError, ConnectionAbortedError, OSError) as write_error:
+                                # Connection closed - can't send result
+                                if VERBOSE:
+                                    debug_log(f"Connection closed - cannot send final result: {type(write_error).__name__}", self.request_id)
+                            except Exception as write_error:
+                                # Other error writing - log it
+                                error_log(f"Failed to write final result in finally block: {str(write_error)}", write_error, request_id=self.request_id)
+                    except Exception as cleanup_error:
+                        # Error during cleanup - log but don't fail
+                        error_log(f"Error during installation cleanup: {str(cleanup_error)}", cleanup_error, request_id=self.request_id)
+                        # Still try to send a result if we haven't sent one
+                        if not final_result_sent:
+                            try:
+                                error_result = {
+                                    "success": False,
+                                    "error": "Installation ended unexpectedly due to cleanup error",
+                                    "debug_info": {
+                                        "message": f"Error during cleanup: {str(cleanup_error)}",
+                                        "cleanup_error": type(cleanup_error).__name__
+                                    }
+                                }
+                                sse_data = json.dumps(error_result)
+                                self.wfile.write(f"data: {sse_data}\n\n".encode())
+                                self.wfile.flush()
+                            except (BrokenPipeError, ConnectionAbortedError, OSError):
+                                # Connection closed - ignore
+                                pass
+                            except Exception:
+                                # Other error - ignore
+                                pass
+            else:
+                # Non-streaming installation
+                result = run_subprocess_safe(
+                    [sys.executable, script_path, image_path, device_id],
+                    timeout=3600,  # 1 hour timeout
+                    cwd=os.path.dirname(os.path.dirname(__file__)),
+                    check_shutdown=True
+                )
+
+                if result is None:
+                    self.send_json({"success": False, "error": "Server is shutting down"}, 503)
                     return
 
-                except (OSError, subprocess.SubprocessError, json.JSONDecodeError) as e:
-                    # Check if it's a connection error - check string first as it's most reliable
-                    is_connection_error = False
-                    error_str = str(e)
+                if result.returncode == 0:
+                    try:
+                        output = result.stdout or ""
+                        if "{" in output and "}" in output:
+                            start = output.find("{")
+                            end = output.rfind("}") + 1
+                            json_str = output[start:end]
+                            install_result = json.loads(json_str)
+                            if install_result.get("success"):
+                                self.send_json(install_result)
+                            else:
+                                self.send_json({"success": False, "error": install_result.get("error", "Installation failed")}, 500)
+                        else:
+                            self.send_json({"success": False, "error": "Invalid installation response"}, 500)
+                    except (json.JSONDecodeError, KeyError) as e:
+                        self.send_json({"success": False, "error": f"Failed to parse installation result: {str(e)}"}, 500)
+                else:
+                    error_msg = result.stderr or result.stdout or "OS installation failed"
+                    self.send_json({"success": False, "error": error_msg}, 500)
+        except (OSError, subprocess.SubprocessError, json.JSONDecodeError) as e:
+            # Check if it's a connection error - check string first as it's most reliable
+            is_connection_error = False
+            error_str = str(e)
 
-                    # Check error message string first (most reliable on Windows)
-                    if "[WinError 10054]" in error_str or "10054" in error_str:
-                        is_connection_error = True
-                    elif "connection was forcibly closed" in error_str.lower() or "connection reset" in error_str.lower():
-                        is_connection_error = True
-                    elif isinstance(e, (ConnectionResetError, BrokenPipeError, ConnectionAbortedError)):
-                        is_connection_error = True
-                    elif isinstance(e, OSError):
-                        if hasattr(e, 'winerror') and e.winerror == 10054:
-                            is_connection_error = True
-                        elif hasattr(e, 'errno') and e.errno in (10054, 104, 32, 107):
-                            is_connection_error = True
+            # Check error message string first (most reliable on Windows)
+            if "[WinError 10054]" in error_str or "10054" in error_str:
+                is_connection_error = True
+            elif "connection was forcibly closed" in error_str.lower() or "connection reset" in error_str.lower():
+                is_connection_error = True
+            elif isinstance(e, (ConnectionResetError, BrokenPipeError, ConnectionAbortedError)):
+                is_connection_error = True
+            elif isinstance(e, OSError):
+                if hasattr(e, 'winerror') and e.winerror == 10054:
+                    is_connection_error = True
+                elif hasattr(e, 'errno') and e.errno in (10054, 104, 32, 107):
+                    is_connection_error = True
 
-                    if is_connection_error:
-                        # Connection error - don't log as error
-                        if VERBOSE:
-                            debug_log(f"Connection reset during streaming install_os: {type(e).__name__}", self.request_id)
-                    else:
-                        # Real error - log it
-                        error_log(f"Error in streaming install_os: {str(e)}", e, request_id=self.request_id)
-                        try:
-                            error_data = json.dumps({"success": False, "error": str(e)})
-                            self.wfile.write(f"data: {error_data}\n\n".encode())
-                            self.wfile.flush()
-                        except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError, OSError):
-                            # Client already disconnected
-                            pass
-                    return
-
-            # Non-streaming mode (fallback)
+            if is_connection_error:
+                # Connection error - don't log as error
+                if VERBOSE:
+                    debug_log(f"Connection reset during streaming install_os: {type(e).__name__}", self.request_id)
+            else:
+                # Real error - log it
+                error_log(f"Error in streaming install_os: {str(e)}", e, request_id=self.request_id)
+                try:
+                    error_data = json.dumps({"success": False, "error": str(e)})
+                    self.wfile.write(f"data: {error_data}\n\n".encode())
+                    self.wfile.flush()
+                except (BrokenPipeError, ConnectionAbortedError, ConnectionResetError, OSError):
+                    # Client already disconnected
+                    pass
+                return
+        except Exception as e:
+            # Catch any other unexpected errors
+            error_log(f"Unexpected error in install_os: {str(e)}", e, request_id=self.request_id)
+            try:
+                self.send_json({"success": False, "error": str(e)}, 500)
+            except Exception:
+                # Can't send response - connection probably closed
+                pass
             # Check for shutdown before starting
             if shutdown_event.is_set():
                 self.send_json({"success": False, "error": "Server is shutting down"}, 503)
@@ -2256,10 +3079,101 @@ class PiManagementHandler(http.server.SimpleHTTPRequestHandler):
                 check_shutdown=True
             )
 
-            if result["success"]:
-                self.send_json({"success": True, "message": result.get("message", "OS installed successfully")})
+            if result is None:
+                self.send_json({"success": False, "error": "Server is shutting down"}, 503)
+                return
+
+            # Parse JSON result from stdout
+            install_result = None
+            if result.returncode == 0 and result.stdout:
+                try:
+                    # Try to parse JSON from stdout (script outputs JSON)
+                    output = result.stdout.strip()
+                    if "{" in output and "}" in output:
+                        # Find the last JSON object (final result)
+                        lines = output.split('\n')
+                        for line in reversed(lines):
+                            if line.strip() and "{" in line and "}" in line:
+                                try:
+                                    install_result = json.loads(line)
+                                    break
+                                except json.JSONDecodeError:
+                                    continue
+                except (json.JSONDecodeError, ValueError) as e:
+                    if VERBOSE:
+                        debug_log(f"Failed to parse install result JSON: {str(e)}", self.request_id)
+
+            # If parsing failed or no JSON found, create result from returncode
+            if install_result is None:
+                if result.returncode == 0:
+                    install_result = {"success": True, "message": "OS installed successfully"}
+                else:
+                    error_msg = result.stderr or result.stdout or "Installation failed"
+                    install_result = {"success": False, "error": error_msg}
+
+            if install_result.get("success"):
+                # Apply configuration if provided
+                if configuration:
+                    try:
+                        apply_config_script = os.path.join(os.path.dirname(__file__), "scripts", "apply_os_config.py")
+                        if os.path.exists(apply_config_script):
+                            config_result = run_subprocess_safe(
+                                [sys.executable, apply_config_script, device_id, "--config", json.dumps(configuration)],
+                                timeout=300,
+                                cwd=os.path.dirname(os.path.dirname(__file__)),
+                                check_shutdown=True
+                            )
+
+                            config_result_dict = None
+                            if config_result is None:
+                                config_result_dict = {"success": False, "error": "Server is shutting down"}
+                            elif config_result.returncode == 0 and config_result.stdout:
+                                try:
+                                    output = config_result.stdout.strip()
+                                    if "{" in output and "}" in output:
+                                        lines = output.split('\n')
+                                        for line in reversed(lines):
+                                            if line.strip() and "{" in line and "}" in line:
+                                                try:
+                                                    config_result_dict = json.loads(line)
+                                                    break
+                                                except json.JSONDecodeError:
+                                                    continue
+                                except (json.JSONDecodeError, ValueError):
+                                    pass
+
+                            if config_result_dict is None:
+                                if config_result and config_result.returncode == 0:
+                                    config_result_dict = {"success": True}
+                                else:
+                                    error_msg = (config_result.stderr if config_result else "") or "Configuration failed"
+                                    config_result_dict = {"success": False, "error": error_msg}
+
+                            if config_result_dict.get("success"):
+                                self.send_json({
+                                    "success": True,
+                                    "message": install_result.get("message", "OS installed successfully") + " Configuration applied successfully."
+                                })
+                            else:
+                                self.send_json({
+                                    "success": True,
+                                    "message": install_result.get("message", "OS installed successfully"),
+                                    "warning": f"Configuration failed: {config_result_dict.get('error', 'Unknown error')}"
+                                })
+                        else:
+                            self.send_json({"success": True, "message": install_result.get("message", "OS installed successfully")})
+                    except Exception as config_error:
+                        if VERBOSE:
+                            debug_log(f"Error applying configuration: {config_error}", self.request_id)
+                        self.send_json({
+                            "success": True,
+                            "message": install_result.get("message", "OS installed successfully"),
+                            "warning": f"Configuration could not be applied: {str(config_error)}"
+                        })
+                else:
+                    self.send_json({"success": True, "message": install_result.get("message", "OS installed successfully")})
             else:
-                self.send_json({"success": False, "error": result.get("error", "Installation failed")})
+                self.send_json({"success": False, "error": install_result.get("error", "Installation failed")})
 
         except json.JSONDecodeError as e:
             error_log(f"Invalid JSON in install_os request: {str(e)}", e, request_id=self.request_id)
