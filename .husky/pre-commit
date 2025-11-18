@@ -58,5 +58,35 @@ if git diff --cached --name-only | grep -q "\.json$"; then
   done
 fi
 
+# Ollama code quality analysis (only if speed score >= 90)
+echo "Checking Ollama performance for pre-commit eligibility..."
+if command -v tsx > /dev/null 2>&1; then
+  # Test performance and check if speed score >= 90
+  tsx scripts/code-quality/test-performance.ts > /tmp/ollama-perf-test.txt 2>&1
+  PERF_EXIT_CODE=$?
+  cat /tmp/ollama-perf-test.txt
+
+  # If performance test passed (score >= 90), run pre-commit analysis
+  if [ $PERF_EXIT_CODE -eq 0 ]; then
+    echo ""
+    echo "✅ Ollama speed score >= 90 - Running code quality analysis..."
+    if tsx scripts/code-quality/pre-commit-analyzer.ts; then
+      echo "✅ Ollama analysis passed"
+    else
+      echo "❌ Ollama analysis found issues"
+      echo "⚠️  Please fix issues before committing"
+      exit 1
+    fi
+  else
+    echo ""
+    echo "⚠️  Ollama speed score < 90 - Skipping analysis in pre-commit"
+    echo "💡 Run 'npm run analyze:quality:test' to check performance"
+    echo "💡 Or set ENABLE_OLLAMA_ANALYSIS=true to force enable (not recommended)"
+  fi
+else
+  echo "⚠️  tsx not found, skipping Ollama analysis"
+  echo "💡 Install tsx: npm install -D tsx"
+fi
+
 echo "✅ Pre-commit checks completed (lenient mode - warnings allowed)"
 exit 0

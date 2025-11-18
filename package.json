@@ -4,6 +4,9 @@
   "description": "Raspberry Pi management project with Playwright tests",
   "scripts": {
     "test": "playwright test",
+    "test:parallel": "playwright test --workers=50%",
+    "test:max": "playwright test --workers=100%",
+    "test:shard": "playwright test --shard=$SHARD/$SHARD_TOTAL",
     "test:wpa": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/run-tests.ps1",
     "test:wpa:ui": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/run-tests.ps1 --ui",
     "test:wpa:headed": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/run-tests.ps1 --headed",
@@ -62,6 +65,14 @@
     "ollama:status:detailed": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/check-ollama-status.ps1 -Detailed -CheckModels",
     "analyze:codebase": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/review-codebase-with-ollama.ps1",
     "analyze:quick": "powershell -ExecutionPolicy Bypass -File ./scripts/powershell/review-codebase-with-ollama.ps1 -Quick -MaxFiles 5",
+    "analyze:quality": "tsx scripts/code-quality/ollama-analyzer.ts",
+    "analyze:quality:quick": "tsx scripts/code-quality/ollama-analyzer.ts --quick",
+    "analyze:quality:detailed": "tsx scripts/code-quality/ollama-analyzer.ts --detailed",
+    "analyze:quality:comprehensive": "tsx scripts/code-quality/ollama-analyzer.ts --comprehensive",
+    "analyze:quality:security": "tsx scripts/code-quality/ollama-analyzer.ts --security",
+    "analyze:quality:performance": "tsx scripts/code-quality/ollama-analyzer.ts --performance",
+    "analyze:quality:file": "tsx scripts/code-quality/ollama-analyzer.ts --file",
+    "analyze:quality:test": "tsx scripts/code-quality/test-performance.ts",
     "prepare": "husky"
   },
   "dependencies": {
@@ -77,6 +88,7 @@
     "htmlhint": "^1.7.1",
     "husky": "^9.1.7",
     "prettier": "^3.6.2",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "vue-tsc": "^3.1.3",
     "wait-on": "^8.0.5"
